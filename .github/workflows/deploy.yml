@@ -1,0 +1,48 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build for Cloudflare Pages
+        run: pnpm pages:build
+        env:
+          NEXT_PUBLIC_CF_IPFS_GATEWAY: ${{ vars.NEXT_PUBLIC_CF_IPFS_GATEWAY }}
+          NEXT_PUBLIC_CF_RPC_ENDPOINT: ${{ vars.NEXT_PUBLIC_CF_RPC_ENDPOINT }}
+          NEXT_PUBLIC_CINA_NFT_CONTRACT: ${{ vars.NEXT_PUBLIC_CINA_NFT_CONTRACT }}
+          NEXT_PUBLIC_WC_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_WC_PROJECT_ID }}
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: cinachain-nft-dapp
+          directory: .vercel/output/static
