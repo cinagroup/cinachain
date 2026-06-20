@@ -2,49 +2,22 @@
 // Networks
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 import { http } from "wagmi"
-import {
-  arbitrum,
-  arbitrumSepolia,
-  base,
-  baseSepolia,
-  gnosis,
-  gnosisChiado,
-  hardhat,
-  mainnet,
-  optimism,
-  optimismSepolia,
-  polygon,
-  polygonMumbai,
-  sepolia,
-} from "wagmi/chains"
+import { mainnet, sepolia } from "wagmi/chains"
 
-export const chains = [
-  mainnet,
-  optimism,
-  arbitrum,
-  polygon,
-  gnosis,
-  hardhat,
-  base,
-  baseSepolia,
-  polygonMumbai,
-  mainnet,
-  sepolia,
-  polygonMumbai,
-  gnosisChiado,
-  optimismSepolia,
-  arbitrumSepolia,
-] as const
+const rpcToken = process.env.CF_RPC_SERVICE_AUTH_TOKEN
+const rpcEndpoint = process.env.NEXT_PUBLIC_CF_RPC_ENDPOINT
+
+const rpcUrl =
+  rpcEndpoint && rpcToken
+    ? `${rpcEndpoint}?token=${rpcToken}`
+    : rpcEndpoint || undefined
+
+export const chains = [mainnet, sepolia] as const
 
 export const transports = {
-  [mainnet.id]: http(),
+  [mainnet.id]: http(rpcUrl, {
+    batch: true,
+    cacheTime: 1000 * 60 * 5,
+  }),
   [sepolia.id]: http(),
-  [polygonMumbai.id]: http(),
-  [gnosisChiado.id]: http(),
-  [hardhat.id]: http(),
-  [optimism.id]: http(),
-  [arbitrum.id]: http(),
-  [polygon.id]: http(),
-  [gnosis.id]: http(),
-  [base.id]: http(),
 } as const

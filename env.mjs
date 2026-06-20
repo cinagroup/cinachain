@@ -23,6 +23,7 @@ export const env = createEnv({
     MORALIS_API_KEY: z.string().min(1).optional(),
     GITCOIN_PASSPORT_SCORER_ID: z.string().min(1).optional(),
     GITCOIN_PASSPORT_API_KEY: z.string().min(1).optional(),
+    CF_RPC_SERVICE_AUTH_TOKEN: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_USE_PUBLIC_PROVIDER: z.enum(["true", "false"]).default("true"),
@@ -32,6 +33,12 @@ export const env = createEnv({
     NEXT_PUBLIC_LIVEPEER_API_KEY: z.string().min(1).optional(),
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
     NEXT_PUBLIC_WC_PROJECT_ID: z.string().min(1),
+    NEXT_PUBLIC_CF_IPFS_GATEWAY: z.string().url().optional(),
+    NEXT_PUBLIC_CF_RPC_ENDPOINT: z.string().url().optional(),
+    NEXT_PUBLIC_CINA_NFT_CONTRACT: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/)
+      .optional(),
   },
   runtimeEnv: {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
@@ -54,5 +61,9 @@ export const env = createEnv({
     NEXT_PUBLIC_LIVEPEER_API_KEY: process.env.NEXT_PUBLIC_LIVEPEER_API_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_WC_PROJECT_ID: process.env.NEXT_PUBLIC_WC_PROJECT_ID,
+    NEXT_PUBLIC_CF_IPFS_GATEWAY: process.env.NEXT_PUBLIC_CF_IPFS_GATEWAY,
+    NEXT_PUBLIC_CF_RPC_ENDPOINT: process.env.NEXT_PUBLIC_CF_RPC_ENDPOINT,
+    NEXT_PUBLIC_CINA_NFT_CONTRACT: process.env.NEXT_PUBLIC_CINA_NFT_CONTRACT,
+    CF_RPC_SERVICE_AUTH_TOKEN: process.env.CF_RPC_SERVICE_AUTH_TOKEN,
   },
 })
