@@ -15,22 +15,22 @@ interface SiteConfig {
   }
 }
 
-export const SITE_CANONICAL = "https://turboeth.xyz"
+export const SITE_CANONICAL = "https://cinachain.com"
 
 export const siteConfig: SiteConfig = {
-  name: "TurboETH",
-  title: "TurboETH - Web3 App Template",
-  emoji: "⚡",
+  name: "CinaChain",
+  title: "CinaChain - NFT DApp",
+  emoji: "🔗",
   description:
-    "Start building full-stack Web3 applications in minutes with TurboETH.",
+    "CinaChain NFT Platform built on Ethereum with Cloudflare Web3 infrastructure.",
   localeDefault: "en",
   links: {
-    docs: "https://docs.turboeth.xyz/overview",
-    discord: "https://discord.gg/U4jy7Xfh76",
-    twitter: "https://twitter.com/district_labs",
-    github: "https://github.com/turbo-eth/template-web3-app",
+    docs: "https://docs.cinachain.com",
+    discord: "https://discord.gg/cinachain",
+    twitter: "https://twitter.com/cinachain",
+    github: "https://github.com/cinagroup/cinachain",
   },
 }
 
 export const DEPLOY_URL =
-  "https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fturbo-eth%2Ftemplate-web3-app&project-name=TurboETH&repository-name=turbo-eth&demo-title=TurboETH&env=NEXTAUTH_SECRET,DATABASE_URL&envDescription=How%20to%20get%20these%20env%20variables%3A&envLink=https%3A%2F%2Fgithub.com%2Fturbo-eth%2Ftemplate-web3-app%2Fblob%2Fintegrations%2F.env.example"
+  "https://dash.cloudflare.com/sign-up?pt=f&redirect_url=https%3A%2F%2Fpages.cloudflare.com"

@@ -1,12 +1,12 @@
 {
-  "theme_color": "#feefc4",
+  "theme_color": "#000000",
   "background_color": "#ffffff",
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "TurboETH",
-  "short_name": "TurboETH",
-  "description": "Full-Stack Web3 Application",
+  "name": "CinaChain NFT DApp",
+  "short_name": "CinaChain",
+  "description": "CinaChain NFT Platform on Ethereum",
   "icons": [
     {
       "src": "/icon-192x192.png",

@@ -29,7 +29,7 @@ export function MainNav() {
         <LightDarkImage
           LightImage="/logo-dark.png"
           DarkImage="/logo-light.png"
-          alt="TurboETH"
+          alt="CinaChain"
           className="rounded-full"
           height={32}
           width={32}
@@ -80,7 +80,7 @@ function MainNavMenu() {
           </NavigationMenuContent>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <LinkComponent href="https://docs.turboeth.xyz/overview">
+          <LinkComponent href="https://docs.cinachain.com">
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
               <span>Documentation</span>
             </NavigationMenuLink>

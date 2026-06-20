@@ -1,11 +1,10 @@
 {
-  "name": "@turbo-eth/template-web3-app",
-  "version": "0.0.0",
+  "name": "cinachain-nft-dapp",
+  "version": "1.0.0",
   "license": "MIT",
   "contributors": [
     {
-      "name": "Kames Geraghty",
-      "did": "kames.eth"
+      "name": "cinagroup"
     }
   ],
   "scripts": {
@@ -17,6 +16,9 @@
     "format": "prettier . --list-different",
     "format-fix": "prettier . --write",
     "run-ci": "concurrently -c \"auto\" -p \"name\" -n \"format,lint\" \"pnpm format\"  \"pnpm lint\"  ",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "pages:preview": "pnpm pages:build && wrangler pages dev .vercel/output/static",
+    "pages:deploy": "pnpm pages:build && wrangler pages deploy .vercel/output/static",
     "prepare": "husky install ; prisma generate ; wagmi generate"
   },
   "husky": {

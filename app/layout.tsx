@@ -20,7 +20,7 @@ export const metadata = {
   icons: {
     icon: "/favicon.ico",
   },
-  themeColor: "#feefc4",
+  themeColor: "#000000",
   openGraph: {
     title: siteConfig.name,
     description: siteConfig.description,
