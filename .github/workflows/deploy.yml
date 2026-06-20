@@ -17,22 +17,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install
+        run: npm install --legacy-peer-deps --ignore-scripts
 
       - name: Build for Cloudflare Pages
-        run: pnpm pages:build
+        run: npx @cloudflare/next-on-pages@1.11.3
         env:
           NEXT_PUBLIC_CF_IPFS_GATEWAY: ${{ vars.NEXT_PUBLIC_CF_IPFS_GATEWAY }}
           NEXT_PUBLIC_CF_RPC_ENDPOINT: ${{ vars.NEXT_PUBLIC_CF_RPC_ENDPOINT }}
