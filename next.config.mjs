@@ -1,17 +1,14 @@
 import "./env.mjs"
 
-import withPWA from "next-pwa"
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: [
-      "avatars.githubusercontent.com",
-      "app.aave.com",
-      "images.unsplash.com",
-      "cloudflare-ipfs.com",
-      "gateway.ipfs.io",
+    remotePatterns: [
+      { protocol: "https", hostname: "ipfs.cinachain.com" },
+      { protocol: "https", hostname: "cloudflare-ipfs.com" },
+      { protocol: "https", hostname: "ipfs.io" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
     ],
   },
   env: {
@@ -34,12 +31,18 @@ const nextConfig = {
     })
     return config
   },
-  ...withPWA({
-    dest: "public",
-    register: true,
-    skipWaiting: true,
-    disable: process.env.NODE_ENV === "development",
-  }),
+}
+
+// Cloudflare Pages 本地开发兼容
+if (process.env.NODE_ENV === "development") {
+  try {
+    const { setupDevPlatform } = await import(
+      "@cloudflare/next-on-pages/next-dev"
+    )
+    await setupDevPlatform()
+  } catch {
+    // @cloudflare/next-on-pages not installed, skip
+  }
 }
 
 export default nextConfig

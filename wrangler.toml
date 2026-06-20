@@ -1,0 +1,15 @@
+name = "cinachain-nft-dapp"
+compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+[vars]
+NEXT_PUBLIC_CF_IPFS_GATEWAY = "https://ipfs.cinachain.com"
+NEXT_PUBLIC_CF_RPC_ENDPOINT = "https://rpc.cinachain.com/v1"
+NEXT_PUBLIC_CINA_NFT_CONTRACT = "0x0000000000000000000000000000000000000000"
+NEXT_PUBLIC_WC_PROJECT_ID = "your-walletconnect-project-id"
+
+# KV 命名空间（白名单缓存）- 部署时取消注释并填入实际 ID
+# [[kv_namespaces]]
+# binding = "CINA_WHITELIST_KV"
+# id = "YOUR_KV_NAMESPACE_ID"
