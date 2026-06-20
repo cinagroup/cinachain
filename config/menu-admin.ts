@@ -3,7 +3,19 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 export const menuAdmin = [
   {
-    label: "Users",
-    href: "/dashboard/admin",
+    label: "Overview",
+    href: "/admin",
+  },
+  {
+    label: "Whitelist",
+    href: "/admin/whitelist",
+  },
+  {
+    label: "Statistics",
+    href: "/admin/stats",
+  },
+  {
+    label: "Contract",
+    href: "/admin/contract",
   },
 ]
