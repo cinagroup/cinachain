@@ -1,0 +1,11 @@
+name = "cinachain-whitelist-api"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+# KV 命名空间 - 部署时取消注释并填入实际 ID
+# [[kv_namespaces]]
+# binding = "CINA_WHITELIST_KV"
+# id = "YOUR_KV_NAMESPACE_ID"
+
+[vars]
+API_VERSION = "v1"
