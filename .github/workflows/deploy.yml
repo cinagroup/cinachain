@@ -26,12 +26,12 @@ jobs:
         run: npm install --legacy-peer-deps --ignore-scripts
 
       - name: Build for Cloudflare Pages
-        run: npx @cloudflare/next-on-pages@1.11.3
+        run: npx --yes @cloudflare/next-on-pages@1.11.3
         env:
-          NEXT_PUBLIC_CF_IPFS_GATEWAY: ${{ vars.NEXT_PUBLIC_CF_IPFS_GATEWAY }}
-          NEXT_PUBLIC_CF_RPC_ENDPOINT: ${{ vars.NEXT_PUBLIC_CF_RPC_ENDPOINT }}
-          NEXT_PUBLIC_CINA_NFT_CONTRACT: ${{ vars.NEXT_PUBLIC_CINA_NFT_CONTRACT }}
-          NEXT_PUBLIC_WC_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_WC_PROJECT_ID }}
+          NEXT_PUBLIC_CF_IPFS_GATEWAY: ${{ vars.NEXT_PUBLIC_CF_IPFS_GATEWAY || 'https://ipfs.cinachain.com' }}
+          NEXT_PUBLIC_CF_RPC_ENDPOINT: ${{ vars.NEXT_PUBLIC_CF_RPC_ENDPOINT || 'https://rpc.cinachain.com/v1' }}
+          NEXT_PUBLIC_CINA_NFT_CONTRACT: ${{ vars.NEXT_PUBLIC_CINA_NFT_CONTRACT || '0x0000000000000000000000000000000000000000' }}
+          NEXT_PUBLIC_WC_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_WC_PROJECT_ID || 'placeholder' }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -40,3 +40,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: cinachain-nft-dapp
           directory: .vercel/output/static
+          wranglerVersion: "3"
