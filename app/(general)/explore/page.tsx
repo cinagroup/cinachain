@@ -2,6 +2,9 @@ import { getCinaNftContract } from "@/lib/contracts/cina-nft"
 import CinaNftImage from "@/components/CinaNftImage"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+export const fetchCache = "force-no-store"
+
 export const metadata = {
   title: "Explore - CinaChain NFT Gallery",
   description: "Browse CinaChain NFT collection",
@@ -10,7 +13,7 @@ export const metadata = {
 export default async function ExplorePage() {
   const contract = getCinaNftContract()
 
-  let totalSupply = 0n
+  let totalSupply = BigInt(0)
   let nfts: Array<{ tokenId: string; tokenURI: string }> = []
 
   try {
@@ -33,7 +36,7 @@ export default async function ExplorePage() {
     <div>
       <h1 className="text-4xl font-bold mb-8">CinaChain NFT Gallery</h1>
 
-      {totalSupply === 0n && (
+      {totalSupply === BigInt(0) && (
         <p className="text-muted-foreground">
           No NFTs minted yet. Check back soon!
         </p>

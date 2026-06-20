@@ -17,12 +17,7 @@ export default function MintPage() {
   const [quantity, setQuantity] = useState(1)
   const [mintPhase, setMintPhase] = useState<"whitelist" | "public" | "inactive">("inactive")
 
-  const { useMintWhitelist, useMintPublic } = useMintContract()
-  const { write: mintWhitelist, isLoading: mintWhitelistLoading } = useMintWhitelist(
-    whitelistData?.proof || [],
-    quantity
-  )
-  const { write: mintPublic, isLoading: mintPublicLoading } = useMintPublic(quantity)
+  const { mintWhitelist, mintWhitelistLoading, mintPublic, mintPublicLoading } = useMintContract()
 
   useEffect(() => {
     if (!whitelistData) return
@@ -39,9 +34,9 @@ export default function MintPage() {
 
   const handleMint = () => {
     if (mintPhase === "whitelist" && whitelistData?.proof) {
-      mintWhitelist?.()
+      mintWhitelist(whitelistData.proof, quantity)
     } else if (mintPhase === "public") {
-      mintPublic?.()
+      mintPublic(quantity)
     }
   }
 

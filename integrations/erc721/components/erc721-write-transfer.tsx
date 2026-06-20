@@ -57,7 +57,9 @@ export function Erc721WriteTransfer({ address }: Erc721WriteTransferProps) {
   })
 
   const onSubmit = () => {
-    writeContract?.(config!.request)
+    if (config?.request) {
+      writeContract?.(config.request as any)
+    }
   }
 
   return (

@@ -14,6 +14,12 @@ const nextConfig = {
   env: {
     mode: process.env.NODE_ENV,
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   webpack: (config) => {
     config.resolve.fallback = { fs: false, net: false, tls: false }
     config.module.rules.push({

@@ -61,9 +61,9 @@ export default function ContractManagementPage() {
     functionName: "paused",
   })
 
-  const { write: pause, isPending: isPausing } = useWriteContract()
-  const { write: unpause, isPending: isUnpausing } = useWriteContract()
-  const { write: withdraw, isPending: isWithdrawing } = useWriteContract()
+  const { writeContract: pause, isPending: isPausing } = useWriteContract()
+  const { writeContract: unpause, isPending: isUnpausing } = useWriteContract()
+  const { writeContract: withdraw, isPending: isWithdrawing } = useWriteContract()
 
   const handlePause = () => {
     pause({

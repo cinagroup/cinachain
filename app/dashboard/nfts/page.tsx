@@ -36,7 +36,7 @@ export default function MyNftsPage() {
           </CardContent>
         </Card>
 
-        {nftBalance && nftBalance > 0n ? (
+        {nftBalance && nftBalance > BigInt(0) ? (
           <div>
             <h2 className="text-xl font-semibold mb-4">Your NFTs</h2>
             <p className="text-muted-foreground mb-4">

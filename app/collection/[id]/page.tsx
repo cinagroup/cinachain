@@ -26,8 +26,8 @@ async function getNftData(tokenId: string) {
   const contract = getCinaNftContract()
   
   try {
-    const tokenURI = await contract.read.tokenURI([BigInt(tokenId)])
-    const owner = await contract.read.ownerOf([BigInt(tokenId)])
+    const tokenURI = (await contract.read.tokenURI([BigInt(tokenId)])) as string
+    const owner = (await contract.read.ownerOf([BigInt(tokenId)])) as string
     
     // Fetch metadata from IPFS
     const httpsUrl = ipfsToHttps(tokenURI)
@@ -137,7 +137,7 @@ export default async function NftDetailPage({ params }: NftDetailPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  {metadata.attributes.map((attr, index) => (
+                  {metadata.attributes.map((attr: { trait_type: string; value: string | number }, index: number) => (
                     <div
                       key={index}
                       className="rounded-lg border bg-muted/50 p-3"
