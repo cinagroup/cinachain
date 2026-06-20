@@ -7,11 +7,11 @@ export const menuDashboard = [
     href: "/dashboard",
   },
   {
-    label: "Account",
-    href: "/dashboard/account",
+    label: "My NFTs",
+    href: "/dashboard/nfts",
   },
   {
-    label: "Transactions",
-    href: "/dashboard/transactions",
+    label: "Account",
+    href: "/dashboard/account",
   },
 ]
