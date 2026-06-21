@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button"
 import { useAccount } from "wagmi"
 import { useNftBalance } from "@/lib/hooks/use-nft-balance"
 import { SignInButton } from "@/components/blockchain/sign-in-button"
+import { PWAInstallPrompt } from "@/components/pwa/install-prompt"
+import { GitcoinPassport } from "@/components/blockchain/gitcoin-passport"
 
 export default function PageDashboard() {
   const { address } = useAccount()
@@ -88,6 +90,12 @@ export default function PageDashboard() {
                 <Link href="/dashboard/nfts">View My NFTs</Link>
               </Button>
             </div>
+          </div>
+
+          {/* PWA Install & Gitcoin Passport */}
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <PWAInstallPrompt />
+            <GitcoinPassport />
           </div>
         </IsWalletConnected>
 

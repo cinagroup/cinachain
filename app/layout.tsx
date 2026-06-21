@@ -9,6 +9,7 @@ import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 import RootProvider from "@/components/providers/root-provider"
+import { PWARegister } from "@/components/pwa/pwa-register"
 
 const url = env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
@@ -19,8 +20,14 @@ export const metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
+    apple: "/icon-192x192.png",
   },
-  themeColor: "#000000",
+  themeColor: "#171717",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: siteConfig.name,
+  },
   openGraph: {
     title: siteConfig.name,
     description: siteConfig.description,
@@ -47,6 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           <RootProvider>{children}</RootProvider>
           <Toaster />
+          <PWARegister />
         </body>
       </html>
     </>
