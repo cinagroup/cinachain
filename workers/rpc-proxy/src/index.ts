@@ -1,11 +1,11 @@
 // Cloudflare Worker - RPC Proxy
 // 解决 rpc.cinachain.com CORS 问题
 
-const UPSTREAM_RPC = 'https://eth.llamarpc.com'
-const ALLOWED_ORIGIN = 'https://nft.cinachain.com'
-
 export default {
   async fetch(request: Request): Promise<Response> {
+    const UPSTREAM_RPC = 'https://ethereum.publicnode.com'
+    const ALLOWED_ORIGIN = 'https://nft.cinachain.com'
+
     const headers = {
       'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -35,7 +35,7 @@ export default {
       })
 
       // Return response with CORS headers
-      return new Response(response.body, {
+      return new Response(await response.text(), {
         status: response.status,
         statusText: response.statusText,
         headers,

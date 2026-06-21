@@ -7,19 +7,21 @@ import { mainnet, sepolia, base } from "wagmi/chains"
 const rpcToken = process.env.CF_RPC_SERVICE_AUTH_TOKEN
 const rpcEndpoint = process.env.NEXT_PUBLIC_CF_RPC_ENDPOINT
 
-// Use public fallback if custom RPC is not available or CORS fails
-const rpcUrl =
+// RPC Proxy Worker (solves CORS issues)
+// Deployed at: https://rpc-proxy.cinagroup.workers.dev
+// Custom domain: rpc.cinachain.com (configure in Cloudflare Dashboard)
+const workerRpcUrl = "https://rpc-proxy.cinagroup.workers.dev"
+
+// Custom RPC Gateway (if configured in Cloudflare Dashboard)
+const customRpcUrl =
   rpcEndpoint && rpcToken
     ? `${rpcEndpoint}?token=${rpcToken}`
     : undefined
 
-// Public fallback RPCs (no CORS issues)
-const publicRpcUrl = "https://eth.llamarpc.com"
-
 export const chains = [mainnet, sepolia, base] as const
 
 export const transports = {
-  [mainnet.id]: http(rpcUrl || publicRpcUrl, {
+  [mainnet.id]: http(customRpcUrl || workerRpcUrl, {
     batch: false, // Disable batching to avoid CORS preflight issues
     timeout: 30000,
   }),
