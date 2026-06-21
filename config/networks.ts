@@ -7,12 +7,14 @@ import { mainnet, sepolia, base } from "wagmi/chains"
 const rpcToken = process.env.CF_RPC_SERVICE_AUTH_TOKEN
 const baseRpcToken = process.env.CF_BASE_RPC_SERVICE_AUTH_TOKEN
 
+// Cloudflare Web3 Ethereum Gateways (when auth tokens are configured)
+// Free tier alternative: direct public RPCs
 export const chains = [mainnet, sepolia, base] as const
 
 export const transports = {
   [mainnet.id]: http(
     rpcToken
-      ? `https://mainnet-rpc.cinachain.com?token=${rpcToken}`
+      ? `https://rpc.cinachain.com?token=${rpcToken}`
       : "https://ethereum.publicnode.com",
     { batch: false, timeout: 30000 }
   ),
