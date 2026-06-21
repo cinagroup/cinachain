@@ -1,6 +1,6 @@
 export const integrationCategories = ["general", "protocols"] as const
 
-interface TurboIntegration {
+interface CinaIntegration {
   name: string
   href: string
   url: string
@@ -10,7 +10,7 @@ interface TurboIntegration {
   category: (typeof integrationCategories)[number]
 }
 
-export const turboIntegrations = {
+export const cinaIntegrations = {
   siwe: {
     name: "SIWE",
     href: "/integration/sign-in-with-ethereum",

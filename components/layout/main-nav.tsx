@@ -4,8 +4,8 @@ import React from "react"
 import Link from "next/link"
 import {
   integrationCategories,
-  turboIntegrations,
-} from "@/data/turbo-integrations"
+  cinaIntegrations,
+} from "@/data/cina-integrations"
 
 import {
   NavigationMenu,
@@ -38,7 +38,7 @@ export function MainNav() {
                       {category}
                     </h4>
                     <Separator className="md:col-span-2 lg:col-span-3" />
-                    {Object.values(turboIntegrations)
+                    {Object.values(cinaIntegrations)
                       .filter((integration) => integration.category === category)
                       .map(({ name, href, description, imgDark, imgLight }) => (
                         <NavMenuListItem

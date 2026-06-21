@@ -27,8 +27,8 @@ export const siteConfig: SiteConfig = {
   links: {
     docs: "https://docs.cinachain.com",
     discord: "https://discord.gg/cinachain",
-    twitter: "https://twitter.com/cinachain",
-    github: "https://github.com/cinagroup/cinachain",
+    twitter: "https://x.com/cinachain",
+    github: "https://github.com/cinagroup",
   },
 }
 

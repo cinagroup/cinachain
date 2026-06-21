@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { turboIntegrations } from "@/data/turbo-integrations"
+import { cinaIntegrations } from "@/data/cina-integrations"
 import { LuBook } from "react-icons/lu"
 
 import { cn } from "@/lib/utils"
@@ -35,8 +35,8 @@ export default function IntegrationPage() {
     <div className="container relative mt-20">
       <PageHeader className="pb-8">
         <LightDarkImage
-          LightImage={turboIntegrations.starter.imgDark}
-          DarkImage={turboIntegrations.starter.imgLight}
+          LightImage={cinaIntegrations.starter.imgDark}
+          DarkImage={cinaIntegrations.starter.imgLight}
           alt="CinaChain Logo"
           width={100}
           height={100}
@@ -48,7 +48,7 @@ export default function IntegrationPage() {
         </PageHeaderDescription>
         <PageHeaderCTA>
           <Link
-            href={turboIntegrations.starter.url}
+            href={cinaIntegrations.starter.url}
             target="_blank"
             rel="noreferrer noopener"
             className={cn(buttonVariants({ variant: "outline" }))}

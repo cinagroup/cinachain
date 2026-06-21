@@ -5,8 +5,8 @@ import Link, { LinkProps } from "next/link"
 import { useRouter } from "next/navigation"
 import {
   integrationCategories,
-  turboIntegrations,
-} from "@/data/turbo-integrations"
+  cinaIntegrations,
+} from "@/data/cina-integrations"
 import { LuMenu } from "react-icons/lu"
 
 import { menuDashboard } from "@/config/menu-dashboard"
@@ -87,7 +87,7 @@ export function MobileNav() {
                           {category.charAt(0).toUpperCase() + category.slice(1)}
                         </h4>
                         <Separator className="col-span-3" />
-                        {Object.values(turboIntegrations)
+                        {Object.values(cinaIntegrations)
                           .filter(
                             (integration) => integration.category === category
                           )

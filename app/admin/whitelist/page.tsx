@@ -75,28 +75,32 @@ export default function WhitelistManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-display">Whitelist Management</h1>
-        <p className="text-muted-foreground mt-1">
-          Upload and manage whitelist addresses for the minting process
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-[1200px] px-6 py-12">
+        <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
+          Administration
+        </span>
+        <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
+          Whitelist Management<span className="text-foreground">.</span>
+        </h1>
+        <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+          Upload and manage whitelist addresses for the minting process.
         </p>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Upload Whitelist CSV
-          </CardTitle>
-          <CardDescription>
-            Upload a CSV file with addresses and mint limits
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="border-2 border-dashed rounded-lg p-8 text-center">
-            <Input
-              type="file"
+        <Card className="mt-8 shadow-vercel-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Upload Whitelist CSV
+            </CardTitle>
+            <CardDescription>
+              Upload a CSV file with addresses and mint limits
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+              <Input
+                type="file"
               accept=".csv"
               onChange={handleFileUpload}
               disabled={isProcessing}
@@ -218,6 +222,7 @@ export default function WhitelistManagementPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }
