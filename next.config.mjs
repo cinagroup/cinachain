@@ -8,6 +8,8 @@ const nextConfig = {
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "ipfs.cinachain.com" },
+      { protocol: "https", hostname: "cdn.cinachain.com" },
+      { protocol: "https", hostname: "meta.cinachain.com" },
       { protocol: "https", hostname: "cloudflare-ipfs.com" },
       { protocol: "https", hostname: "ipfs.io" },
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
