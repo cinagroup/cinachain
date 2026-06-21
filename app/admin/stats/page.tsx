@@ -61,7 +61,7 @@ export default function StatsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Minting Statistics</h1>
+        <h1 className="text-3xl font-display">Minting Statistics</h1>
         <p className="text-muted-foreground mt-1">
           Detailed analytics and revenue tracking for your NFT collection
         </p>
@@ -74,7 +74,7 @@ export default function StatsPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-display">
               {supplyLoading ? "..." : minted.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -89,7 +89,7 @@ export default function StatsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{price} ETH</div>
+            <div className="text-2xl font-display">{price} ETH</div>
             <p className="text-xs text-muted-foreground mt-1">
               per NFT
             </p>
@@ -102,7 +102,7 @@ export default function StatsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{revenue.toFixed(2)} ETH</div>
+            <div className="text-2xl font-display">{revenue.toFixed(2)} ETH</div>
             <p className="text-xs text-muted-foreground mt-1">
               collected from minting
             </p>
@@ -115,7 +115,7 @@ export default function StatsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{progress.toFixed(1)}%</div>
+            <div className="text-2xl font-display">{progress.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               collection completed
             </p>

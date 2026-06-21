@@ -69,7 +69,7 @@ export function ERC20ContractTransferTokens({
       <label>Amount</label>
       <input placeholder="10" {...register("amount")} className="input" />
       <label>To</label>
-      <input placeholder="kames.eth" {...register("to")} className="input" />
+      <input placeholder="0x..." {...register("to")} className="input" />
       <ContractWriteButton
         isLoadingTx={isLoadingTx}
         isLoadingWrite={isLoadingWrite}

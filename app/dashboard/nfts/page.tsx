@@ -13,16 +13,22 @@ export default function MyNftsPage() {
   const { data: nftBalance, isLoading } = useNftBalance(address)
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-[1200px] px-6 py-12">
       <IsWalletConnected>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">My NFTs</h1>
-          <p className="text-muted-foreground mt-2">
-            Your CinaChain NFT collection
+          <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
+            Dashboard
+          </span>
+          <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
+            My NFTs<span className="text-foreground">.</span>
+          </h1>
+          <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+            Your CinaChain NFT collection.
           </p>
         </div>
 
-        <Card className="mb-6">
+        <Card className="mb-6 shadow-vercel-card">
           <CardHeader>
             <CardTitle>Collection Summary</CardTitle>
             <CardDescription>
@@ -30,7 +36,7 @@ export default function MyNftsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">
+            <div className="text-4xl font-display">
               {isLoading ? "..." : nftBalance?.toString() || "0"}
             </div>
           </CardContent>
@@ -38,7 +44,7 @@ export default function MyNftsPage() {
 
         {nftBalance && nftBalance > BigInt(0) ? (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Your NFTs</h2>
+            <h2 className="font-display text-xl mb-4">Your NFTs</h2>
             <p className="text-muted-foreground mb-4">
               Detailed NFT listing with images and metadata will be available in Phase 3.
               For now, you can view your NFTs on external explorers.
@@ -72,12 +78,13 @@ export default function MyNftsPage() {
 
       <IsWalletDisconnected>
         <div className="text-center py-12">
-          <h2 className="text-xl font-semibold mb-2">Connect Your Wallet</h2>
+          <h2 className="font-display text-xl mb-2">Connect Your Wallet</h2>
           <p className="text-muted-foreground">
             Connect your wallet to view your NFT collection.
           </p>
         </div>
       </IsWalletDisconnected>
+      </div>
     </div>
   )
 }

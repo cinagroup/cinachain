@@ -77,7 +77,7 @@ export default function WhitelistManagementPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Whitelist Management</h1>
+        <h1 className="text-3xl font-display">Whitelist Management</h1>
         <p className="text-muted-foreground mt-1">
           Upload and manage whitelist addresses for the minting process
         </p>

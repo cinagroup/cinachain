@@ -72,8 +72,8 @@ export default function IntegrationPage() {
                   <SelectValue placeholder="Select Team" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="turbo">Turbo</SelectItem>
-                  <SelectItem value="district">District</SelectItem>
+                  <SelectItem value="cinachain">CinaChain</SelectItem>
+                  <SelectItem value="cinagroup">CinaGroup</SelectItem>
                 </SelectContent>
               </Select>
             </div>

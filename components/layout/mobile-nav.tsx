@@ -41,7 +41,7 @@ export function MobileNav() {
             height={32}
             width={32}
           />
-          <span className="inline-block bg-gradient-to-br from-black to-stone-500 bg-clip-text text-xl font-bold text-transparent dark:from-stone-100 dark:to-yellow-200 sm:text-2xl">
+          <span className="inline-block bg-gradient-to-br from-black to-stone-500 bg-clip-text text-xl font-display text-transparent dark:from-stone-100 dark:to-yellow-200 sm:text-2xl">
             {siteConfig.name}
           </span>
         </Link>

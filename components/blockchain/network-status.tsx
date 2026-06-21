@@ -26,11 +26,11 @@ export function NetworkStatus() {
   return (
     <Link
       href={blockExplorerUrl}
-      className="fixed bottom-6 left-6 z-10 flex items-center overflow-hidden rounded-full bg-muted text-muted-foreground shadow-md"
+      className="fixed bottom-6 left-6 z-10 flex items-center overflow-hidden rounded-full bg-muted text-muted-foreground shadow-vercel-md"
     >
       <Badge
         className={cn(
-          "rounded-full py-2 text-xs font-bold uppercase leading-none tracking-wider",
+          "rounded-full py-2 text-xs font-display uppercase leading-none tracking-wider",
           badgeVariants[GetNetworkColor(chain.name)]
         )}
       >
