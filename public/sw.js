@@ -4,23 +4,30 @@
 const CACHE_NAME = "cinachain-v1"
 const OFFLINE_URL = "/offline"
 
-// 需要缓存的资源
+// 需要缓存的静态资源
 const PRECACHE_RESOURCES = [
   "/",
   "/explore",
   "/mint",
+  "/mint-batch",
   "/dashboard",
+  "/dashboard/account",
+  "/dashboard/nfts",
+  "/dashboard/favorites",
   "/manifest.json",
   "/favicon.ico",
   "/icon-192x192.png",
   "/icon-512x512.png",
 ]
 
-// IPFS 网关域名（需要缓存）
-const IPFS_DOMAINS = [
+// 不缓存的域名和路径模式
+const NO_CACHE_PATTERNS = [
+  "rpc.cinachain.com",
   "ipfs.cinachain.com",
-  "cloudflare-ipfs.com",
-  "ipfs.io",
+  "/api/",
+  "eth.llamarpc.com",
+  "mainnet.base.org",
+  "rpc.sepolia.org",
 ]
 
 // 安装事件：预缓存关键资源
@@ -28,7 +35,10 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log("[Service Worker] Precaching resources")
-      return cache.addAll(PRECACHE_RESOURCES)
+      return cache.addAll(PRECACHE_RESOURCES).catch(() => {
+        // Ignore precache failures
+        return null
+      })
     })
   )
   self.skipWaiting()
@@ -51,25 +61,50 @@ self.addEventListener("activate", (event) => {
   self.clients.claim()
 })
 
-// Fetch 事件：缓存优先策略
+// 检查 URL 是否应该被缓存
+function shouldCache(url) {
+  try {
+    const urlObj = new URL(url)
+    return !NO_CACHE_PATTERNS.some((pattern) =>
+      urlObj.hostname.includes(pattern) || urlObj.pathname.includes(pattern)
+    )
+  } catch {
+    return false
+  }
+}
+
+// Fetch 事件：智能缓存策略
 self.addEventListener("fetch", (event) => {
+  // POST 请求永不缓存
+  if (event.request.method !== "GET") return
+
   const url = new URL(event.request.url)
 
-  // IPFS 资源：缓存优先
-  if (IPFS_DOMAINS.some((domain) => url.hostname.includes(domain))) {
+  // RPC/API 请求：直接网络请求，不缓存
+  if (!shouldCache(event.request.url)) return
+
+  // 静态资源：缓存优先
+  if (
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".svg") ||
+    url.pathname.endsWith(".ico")
+  ) {
     event.respondWith(
-      caches.match(event.request).then((response) => {
-        if (response) {
-          return response
-        }
-        return fetch(event.request).then((fetchResponse) => {
-          if (fetchResponse && fetchResponse.status === 200) {
-            const responseClone = fetchResponse.clone()
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached
+        return fetch(event.request).then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone()
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone)
+              cache.put(event.request, clone).catch(() => {})
             })
           }
-          return fetchResponse
+          return response
+        }).catch(() => {
+          // Return empty response on network failure
+          return new Response("", { status: 408 })
         })
       })
     )
@@ -80,26 +115,28 @@ self.addEventListener("fetch", (event) => {
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return caches.match(OFFLINE_URL)
+        return caches.match(OFFLINE_URL).catch(() => {
+          return new Response("Offline", { status: 503 })
+        })
       })
     )
     return
   }
 
-  // 其他资源：缓存优先
+  // 其他 GET 请求：缓存优先
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response
-      }
-      return fetch(event.request).then((fetchResponse) => {
-        if (fetchResponse && fetchResponse.status === 200) {
-          const responseClone = fetchResponse.clone()
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached
+      return fetch(event.request).then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone()
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone)
+            cache.put(event.request, clone).catch(() => {})
           })
         }
-        return fetchResponse
+        return response
+      }).catch(() => {
+        return new Response("", { status: 408 })
       })
     })
   )
