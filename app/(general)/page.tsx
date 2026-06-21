@@ -71,6 +71,15 @@ export default function HomePage() {
               Mint NFT
             </Link>
             <Link
+              href={siteConfig.links.discord}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-[#7289da] px-6 text-base font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <FaDiscord className="h-4 w-4" />
+              Discord
+            </Link>
+            <Link
               href={siteConfig.links.github}
               target="_blank"
               rel="noreferrer noopener"
