@@ -36,7 +36,7 @@ export function MobileNav() {
           <LightDarkImage
             LightImage="/logo-dark.png"
             DarkImage="/logo-light.png"
-            alt="TurboETH"
+            alt="CinaChain"
             className="rounded-full"
             height={32}
             width={32}
@@ -65,7 +65,7 @@ export function MobileNav() {
             <LightDarkImage
               LightImage="/logo-dark.png"
               DarkImage="/logo-light.png"
-              alt="TurboETH"
+              alt="CinaChain"
               height={32}
               width={32}
             />
@@ -135,7 +135,7 @@ export function MobileNav() {
               </AccordionItem>
             </Accordion>
             <Link
-              href="https://docs.turboeth.xyz/overview"
+              href="https://docs.cinachain.com"
               className="font-medium"
             >
               Documentation

@@ -1,6 +1,6 @@
-# Starter TurboETH Integration
+# Starter CinaChain Integration
 
-Welcome to the Starter TurboETH Integration! This folder serves as a blueprint for creating new integrations in TurboETH. If you're looking to contribute a new integration, simply copy this directory, and also the starter page located at `app/integration/starter`, to begin your development.
+Welcome to the Starter CinaChain Integration! This folder serves as a blueprint for creating new integrations in CinaChain. If you're looking to contribute a new integration, simply copy this directory, and also the starter page located at `app/integration/starter`, to begin your development.
 
 ## Creating a new integration
 
@@ -18,7 +18,7 @@ Below are the steps to create a new integration.
 
 ## Understanding the Starter template
 
-Each component of the Starter TurboETH template is designed to help streamline your development process:
+Each component of the Starter CinaChain template is designed to help streamline your development process:
 
 - **abis/**: Put your contract's ABI here. Each ABI should be in its own TypeScript file.
 

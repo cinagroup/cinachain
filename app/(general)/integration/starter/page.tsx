@@ -37,14 +37,14 @@ export default function IntegrationPage() {
         <LightDarkImage
           LightImage={turboIntegrations.starter.imgDark}
           DarkImage={turboIntegrations.starter.imgLight}
-          alt="TurboETH Logo"
+          alt="CinaChain Logo"
           width={100}
           height={100}
           className="h-20 w-20 rounded-2xl"
         />
         <PageHeaderHeading>Starter Template</PageHeaderHeading>
         <PageHeaderDescription>
-          Use this template to get started building integrations with TurboETH.
+          Use this template to get started building integrations with CinaChain.
         </PageHeaderDescription>
         <PageHeaderCTA>
           <Link

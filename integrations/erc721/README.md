@@ -1,6 +1,6 @@
-# ERC721 TurboETH Integration
+# ERC721 CinaChain Integration
 
-This TurboETH integration provides a suite of hooks and components to facilitate interaction with ERC721 contracts. In consideration of the numerous extensions and features offered by ERC721, this integration is based in a contract from [OpenZeppelin's Wizard](https://docs.openzeppelin.com/contracts/4.x/wizard), incorporating the following features and access controls:
+This CinaChain integration provides a suite of hooks and components to facilitate interaction with ERC721 contracts. In consideration of the numerous extensions and features offered by ERC721, this integration is based in a contract from [OpenZeppelin's Wizard](https://docs.openzeppelin.com/contracts/4.x/wizard), incorporating the following features and access controls:
 
 **Features:**
 

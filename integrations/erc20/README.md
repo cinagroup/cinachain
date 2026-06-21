@@ -1,6 +1,6 @@
-# ERC20 TurboETH Integration
+# ERC20 CinaChain Integration
 
-This TurboETH integration provides a suite of hooks and components to facilitate interaction with ERC20 contracts.
+This CinaChain integration provides a suite of hooks and components to facilitate interaction with ERC20 contracts.
 
 ## ABI and Bytecode
 

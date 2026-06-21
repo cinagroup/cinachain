@@ -1,6 +1,6 @@
-# ERC1155 TurboETH Integration
+# ERC1155 CinaChain Integration
 
-This TurboETH integration provides a suite of hooks and components to facilitate interaction with ERC1155 contracts. In consideration of the numerous extensions and features offered by ERC1155, this integration is based on a contract from [solidstate](https://github.com/solidstate-network/solidstate-solidity), incorporating the following features and access controls:
+This CinaChain integration provides a suite of hooks and components to facilitate interaction with ERC1155 contracts. In consideration of the numerous extensions and features offered by ERC1155, this integration is based on a contract from [solidstate](https://github.com/solidstate-network/solidstate-solidity), incorporating the following features and access controls:
 
 **Features:**
 

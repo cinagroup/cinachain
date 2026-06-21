@@ -26,13 +26,13 @@ export default function IntegrationLayout({
         <LightDarkImage
           LightImage={turboIntegrations.starter.imgDark}
           DarkImage={turboIntegrations.starter.imgLight}
-          alt="TurboETH Logo"
+          alt="CinaChain Logo"
           width={100}
           height={100}
         />
         <PageHeaderHeading>Starter Template</PageHeaderHeading>
         <PageHeaderDescription>
-          Use this template to get started building integrations with TurboETH.
+          Use this template to get started building integrations with CinaChain.
         </PageHeaderDescription>
         <PageHeaderCTA>
           <Link
