@@ -15,7 +15,7 @@ const url = env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
 export const metadata = {
   metadataBase: new URL(url),
-  title: `${siteConfig.name} - ${siteConfig.description}`,
+  title: siteConfig.title,
   description: siteConfig.description,
   manifest: "/manifest.json",
   icons: {

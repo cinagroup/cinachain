@@ -34,33 +34,39 @@ export default async function Image() {
             "../public/logo-gradient.png",
             import.meta.url
           ).toString()}
-          tw="w-20 h-20 mb-4 opacity-95"
+          style={{ width: "80px", height: "80px", marginBottom: "16px", opacity: 0.95 }}
         />
         <h1
           style={{
-            fontSize: "100px",
-            fontFamily: "SF Pro",
-            fontWeight: 900,
+            fontSize: "72px",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            fontWeight: 800,
             background:
               "linear-gradient(to bottom right, #000000 21.66%, #78716c 86.47%)",
             backgroundClip: "text",
             color: "transparent",
             lineHeight: "5rem",
             letterSpacing: "-0.02em",
+            margin: 0,
+            padding: 0,
           }}
         >
           {siteConfig.name}
         </h1>
         <h3
           style={{
-            fontSize: "22px",
-            fontFamily: "SF Pro",
+            fontSize: "24px",
+            fontFamily: "system-ui, -apple-system, sans-serif",
             background:
               "linear-gradient(to bottom right, #000000 21.66%, #78716c 86.47%)",
             backgroundClip: "text",
             color: "transparent",
             lineHeight: "5rem",
             letterSpacing: "-0.02em",
+            margin: 0,
+            padding: 0,
+            textAlign: "center",
+            maxWidth: "800px",
           }}
         >
           {siteConfig.description}
@@ -68,17 +74,7 @@ export default async function Image() {
       </div>
     ),
     {
-      fonts: [
-        {
-          name: "SF Pro",
-          data: await fetch(
-            new URL(
-              "../assets/fonts/SF-Pro-Display-Medium.otf",
-              import.meta.url
-            )
-          ).then((res) => res.arrayBuffer()),
-        },
-      ],
+      ...size,
     }
   )
 }
