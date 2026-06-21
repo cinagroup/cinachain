@@ -1,7 +1,3 @@
 name = "rpc-proxy"
 main = "src/index.ts"
 compatibility_date = "2026-06-01"
-
-[vars]
-UPSTREAM_RPC = "https://ethereum.publicnode.com"
-ALLOWED_ORIGIN = "https://nft.cinachain.com"
