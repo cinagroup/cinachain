@@ -2,49 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
-  Use HSL values for theming with format `X X% X%`
-  Note: do not include opacity value.
- */
 @layer base {
   :root {
-    /* Default background color of <body />...etc */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* Vercel-inspired design tokens */
+    --background: 0 0% 98%; /* #fafafa canvas-soft */
+    --foreground: 0 0% 9%; /* #171717 ink */
 
-    /* <Card /> */
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 3.9%;
+    --card: 0 0% 100%; /* #ffffff canvas */
+    --card-foreground: 0 0% 9%;
 
-    /* <Dropdown />, <HoverCard />, <Popover /> */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover-foreground: 0 0% 9%;
 
-    /* Primary colors for <Button /> and <CTA /> */
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 0 0% 9%; /* #171717 */
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary colors for <Button /> and <CTA /> */
-    --secondary: 0 0% 96.1%;
+    --secondary: 0 0% 96%; /* #f5f5f5 canvas-soft-2 */
     --secondary-foreground: 0 0% 9%;
 
-    /* <TabsList />, <Skeleton /> and <Switch /> */
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 53%; /* #888888 mute */
 
-    /* For accents such as hover effects on <Dropdown />, <SelectItem />...etc */
-    --accent: 0 0% 96.1%;
+    --accent: 0 0% 96%;
     --accent-foreground: 0 0% 9%;
 
-    /* For destructive actions such as delete on <Button variant="destructive" /> */
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 93% 50%; /* #ee0000 */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 89.8%; /* Default border color */
-    --input: 0 0% 89.8%; /* Border color for inputs. <Input />, <Select /> and <Textarea /> */
-    --ring: 0 0% 3.9%; /* For focus ring */
+    --border: 0 0% 92%; /* #ebebeb hairline */
+    --input: 0 0% 92%;
+    --ring: 0 0% 9%;
 
-    --radius: 0.5rem; /* Border radius for <Card />, <Input />, <Button />...etc */
+    --radius: 0.5rem;
+
+    /* Vercel brand colors */
+    --color-link: #0070f3;
+    --color-link-deep: #0761d1;
+    --color-link-bg-soft: #d3e5ff;
+    --color-warning: #f5a623;
+    --color-warning-soft: #ffefcf;
+    --color-warning-deep: #ab570a;
+    --color-violet: #7928ca;
+    --color-violet-soft: #d8ccf1;
+    --color-cyan: #50e3c2;
+    --color-cyan-soft: #aaffec;
+    --color-highlight-pink: #ff0080;
+
+    /* Vercel spacing */
+    --spacing-xxs: 4px;
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 40px;
+    --spacing-3xl: 48px;
+    --spacing-4xl: 64px;
+    --spacing-5xl: 96px;
+    --spacing-6xl: 128px;
   }
 
   .dark {
@@ -83,7 +98,58 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss02", "rlig" 1, "calt" 1;
+  }
+}
+
+/* Vercel-inspired typography overrides */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.05em;
+  }
+
+  .font-mono-tech {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+    font-weight: 400;
+  }
+}
+
+/* Stacked shadow system (Vercel elevation levels) */
+@layer utilities {
+  .shadow-vercel-sm {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04), 0 2px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-vercel-md {
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08), 0 8px 8px -8px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-vercel-lg {
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+  }
+
+  .shadow-vercel-card {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 1px rgba(0, 0, 0, 0.04), 0 2px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Vercel pill button */
+  .btn-pill {
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  /* Vercel mesh gradient */
+  .mesh-gradient {
+    background: linear-gradient(
+      135deg,
+      #007cf0 0%,
+      #00dfd8 25%,
+      #7928ca 50%,
+      #ff0080 75%,
+      #ff4d4d 100%
+    );
   }
 }

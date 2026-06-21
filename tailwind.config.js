@@ -51,14 +51,36 @@ module.exports = {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
+        // Vercel brand colors
+        link: "var(--color-link)",
+        "link-deep": "var(--color-link-deep)",
+        "link-bg-soft": "var(--color-link-bg-soft)",
+        warning: "var(--color-warning)",
+        "warning-soft": "var(--color-warning-soft)",
+        violet: "var(--color-violet)",
+        cyan: "var(--color-cyan)",
+        "highlight-pink": "var(--color-highlight-pink)",
       },
       borderRadius: {
         lg: `var(--radius)`,
         md: `calc(var(--radius) - 2px)`,
         sm: "calc(var(--radius) - 4px)",
+        pill: "100px",
       },
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
+      },
+      spacing: {
+        "xxs": "var(--spacing-xxs)",
+        "nav": "var(--spacing-sm)",
+        "section": "var(--spacing-5xl)",
+      },
+      boxShadow: {
+        "vercel-sm": "0 1px 1px rgba(0,0,0,0.04), 0 2px 2px rgba(0,0,0,0.08)",
+        "vercel-md": "0 2px 2px rgba(0,0,0,0.08), 0 8px 8px -8px rgba(0,0,0,0.08)",
+        "vercel-lg": "0 2px 2px rgba(0,0,0,0.08), 0 8px 16px -4px rgba(0,0,0,0.08)",
+        "vercel-card": "0 0 0 1px rgba(0,0,0,0.08), 0 1px 1px rgba(0,0,0,0.04), 0 2px 2px rgba(0,0,0,0.08)",
+        "vercel-modal": "0 1px 1px rgba(0,0,0,0.04), 0 8px 16px -4px rgba(0,0,0,0.08), 0 24px 32px -8px rgba(0,0,0,0.12)",
       },
       keyframes: {
         "accordion-down": {
