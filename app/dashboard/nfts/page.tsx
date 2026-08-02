@@ -2,19 +2,24 @@
 
 import { useAccount } from "wagmi"
 import { useNftBalance } from "@/lib/hooks/use-nft-balance"
+import { useTokensOfOwner } from "@/lib/hooks/use-tokens-of-owner"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
+import { PackageOpen } from "lucide-react"
 import Link from "next/link"
 
 export default function MyNftsPage() {
   const { address } = useAccount()
-  const { data: nftBalance, isLoading } = useNftBalance(address)
+  const { data: nftBalance, isLoading: balanceLoading } = useNftBalance(address)
+  const { tokenIds, isLoading: tokensLoading } = useTokensOfOwner(address)
+
+  const isLoading = balanceLoading || tokensLoading
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1200px] px-6 py-12">
       <IsWalletConnected>
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
@@ -28,48 +33,48 @@ export default function MyNftsPage() {
           </p>
         </div>
 
+        {/* Summary */}
         <Card className="mb-6 shadow-vercel-card">
           <CardHeader>
             <CardTitle>Collection Summary</CardTitle>
-            <CardDescription>
-              Total NFTs owned
-            </CardDescription>
+            <CardDescription>Total NFTs owned</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-display">
-              {isLoading ? "..." : nftBalance?.toString() || "0"}
+            <div className="font-display text-4xl">
+              {balanceLoading ? "..." : nftBalance?.toString() || "0"}
             </div>
           </CardContent>
         </Card>
 
-        {nftBalance && nftBalance > BigInt(0) ? (
+        {/* Loading */}
+        {isLoading && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <NftCardSkeleton key={i} />
+            ))}
+          </div>
+        )}
+
+        {/* Owned NFTs grid */}
+        {!isLoading && tokenIds.length > 0 && (
           <div>
-            <h2 className="font-display text-xl mb-4">Your NFTs</h2>
-            <p className="text-muted-foreground mb-4">
-              Detailed NFT listing with images and metadata will be available in Phase 3.
-              For now, you can view your NFTs on external explorers.
-            </p>
-            <div className="flex gap-3">
-              <Button asChild>
-                <Link href="/explore">Explore All NFTs</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link
-                  href={`https://etherscan.io/token/${process.env.NEXT_PUBLIC_CINA_NFT_CONTRACT}?a=${address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View on Etherscan
-                </Link>
-              </Button>
+            <h2 className="font-display mb-4 text-xl">Your NFTs</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {tokenIds.map((tokenId) => (
+                <NftCard key={tokenId} tokenId={tokenId} />
+              ))}
             </div>
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">
-              You don't own any CinaChain NFTs yet.
+        )}
+
+        {/* Empty state */}
+        {!isLoading && (!nftBalance || nftBalance === BigInt(0)) && (
+          <div className="rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
+            <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/40" />
+            <p className="mt-4 text-base text-muted-foreground">
+              You don&apos;t own any CinaChain NFTs yet.
             </p>
-            <Button asChild>
+            <Button asChild className="mt-4">
               <Link href="/mint">Mint Your First NFT</Link>
             </Button>
           </div>
@@ -77,14 +82,13 @@ export default function MyNftsPage() {
       </IsWalletConnected>
 
       <IsWalletDisconnected>
-        <div className="text-center py-12">
-          <h2 className="font-display text-xl mb-2">Connect Your Wallet</h2>
+        <div className="py-12 text-center">
+          <h2 className="font-display mb-2 text-xl">Connect Your Wallet</h2>
           <p className="text-muted-foreground">
             Connect your wallet to view your NFT collection.
           </p>
         </div>
       </IsWalletDisconnected>
-      </div>
     </div>
   )
 }

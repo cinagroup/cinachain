@@ -1,127 +1,95 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useReadContract } from "wagmi"
-import { parseAbiItem } from "viem"
-import CinaNftImage from "@/components/CinaNftImage"
-import Link from "next/link"
+import { useMemo } from "react"
+import { Loader2, PackageOpen } from "lucide-react"
+import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
+import { hasNftContract } from "@/lib/contracts/addresses"
 
-const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CINA_NFT_CONTRACT ||
-  "0x0000000000000000000000000000000000000000") as `0x${string}`
-
-const ABI = [
-  parseAbiItem("function totalSupply() view returns (uint256)"),
-  parseAbiItem("function tokenURI(uint256 tokenId) view returns (string)"),
-] as const
+const PAGE_SIZE = 24
 
 export default function ExplorePage() {
-  const [nfts, setNfts] = useState<Array<{ tokenId: string; tokenURI: string }>>([])
-  const [loading, setLoading] = useState(true)
+  const { mintedCount, isLoading } = useContractStats()
 
-  const { data: totalSupply } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: ABI,
-    functionName: "totalSupply",
-  })
-
-  useEffect(() => {
-    if (totalSupply === undefined) return
-    const count = Math.min(20, Number(totalSupply))
-    if (count === 0) { setLoading(false); return }
-
-    const fetchNFTs = async () => {
-      try {
-        const nftList = await Promise.all(
-          Array.from({ length: count }, async (_, i) => {
-            const tokenId = BigInt(i + 1)
-            return {
-              tokenId: tokenId.toString(),
-              tokenURI: `ipfs://placeholder-${tokenId}`,
-            }
-          })
-        )
-        setNfts(nftList)
-      } catch (error) {
-        console.error("Failed to fetch NFTs:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchNFTs()
-  }, [totalSupply])
+  // Show token IDs from 1 to mintedCount (capped at 100 for performance)
+  const tokenIds = useMemo(() => {
+    const limit = Math.min(mintedCount, 100)
+    return Array.from({ length: limit }, (_, i) => String(i + 1))
+  }, [mintedCount])
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1200px] px-6 py-12">
-        {/* Eyebrow */}
-        <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-          Collection
-        </span>
+      {/* Eyebrow */}
+      <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
+        Collection
+      </span>
 
-        {/* Heading */}
-        <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-          CinaChain NFT Gallery<span className="text-foreground">.</span>
-        </h1>
+      {/* Heading */}
+      <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
+        CinaChain NFT Gallery<span className="text-foreground">.</span>
+      </h1>
 
-        <p className="mt-3 max-w-[560px] text-base leading-7 text-foreground/60">
-          Browse the full collection. Each NFT is stored on IPFS with multi-gateway fallback.
-        </p>
+      <p className="mt-3 max-w-[560px] text-base leading-7 text-muted-foreground">
+        Browse the full collection. Each NFT is stored on IPFS with multi-gateway fallback.
+      </p>
 
-        {/* Stats Bar */}
-        {totalSupply !== undefined && (
-          <div className="mt-8 flex items-center gap-6">
-            <div className="rounded-md border border-border bg-card px-4 py-2 shadow-vercel-sm">
-              <span className="text-xs text-muted-foreground">Total Supply</span>
-              <p className="font-display text-lg text-foreground">{totalSupply.toString()}</p>
-            </div>
+      {/* Stats Bar */}
+      {mintedCount > 0 && (
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="rounded-md border border-border bg-card px-4 py-2 shadow-vercel-sm">
+            <span className="text-xs text-muted-foreground">Total Minted</span>
+            <p className="font-display text-lg text-foreground">{mintedCount.toLocaleString()}</p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Grid */}
-        {loading && (
-          <p className="mt-12 text-sm text-muted-foreground">Loading...</p>
-        )}
+      {/* Contract not configured */}
+      {!hasNftContract && (
+        <div className="mt-12 rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
+          <p className="text-base text-muted-foreground">
+            NFT contract not configured. Set NEXT_PUBLIC_CINA_NFT_CONTRACT to view the collection.
+          </p>
+        </div>
+      )}
 
-        {totalSupply === 0n && !loading && (
-          <div className="mt-12 rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
-            <p className="text-base text-foreground/60">No NFTs minted yet. Check back soon!</p>
-          </div>
-        )}
+      {/* Loading state */}
+      {hasNftContract && isLoading && (
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <NftCardSkeleton key={i} />
+          ))}
+        </div>
+      )}
 
-        {nfts.length > 0 && (
+      {/* Empty state */}
+      {hasNftContract && !isLoading && mintedCount === 0 && (
+        <div className="mt-12 rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
+          <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/40" />
+          <p className="mt-4 text-base text-muted-foreground">
+            No NFTs minted yet.
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground/60">
+            Be the first to mint a CinaChain NFT!
+          </p>
+        </div>
+      )}
+
+      {/* NFT Grid */}
+      {hasNftContract && !isLoading && tokenIds.length > 0 && (
+        <>
           <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {nfts.map((nft) => (
-              <NftCard key={nft.tokenId} tokenId={nft.tokenId} tokenURI={nft.tokenURI} />
+            {tokenIds.map((tokenId) => (
+              <NftCard key={tokenId} tokenId={tokenId} />
             ))}
           </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
-function NftCard({ tokenId, tokenURI }: { tokenId: string; tokenURI: string }) {
-  return (
-    <Link href={`/collection/${tokenId}`}>
-      <div className="group overflow-hidden rounded-lg border border-border bg-card shadow-vercel-card transition-all hover:shadow-vercel-md hover:-translate-y-0.5">
-        <div className="aspect-square relative bg-secondary">
-          {!tokenURI.includes("placeholder") ? (
-            <CinaNftImage ipfsCidUrl={tokenURI} alt={`NFT #${tokenId}`} />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <span className="font-display text-4xl text-muted-foreground/30">#{tokenId}</span>
-            </div>
+          {mintedCount > 100 && (
+            <p className="mt-8 text-center text-sm text-muted-foreground">
+              Showing first 100 of {mintedCount.toLocaleString()} minted NFTs.
+            </p>
           )}
-        </div>
-        <div className="p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">#{tokenId}</span>
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              ERC-721
-            </span>
-          </div>
-        </div>
-      </div>
-    </Link>
+        </>
+      )}
+    </div>
   )
 }

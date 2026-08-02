@@ -36,7 +36,7 @@ export function SiteHeader() {
           <MainNav />
         </div>
         <MobileNav />
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/dashboard"
             className="inline-flex items-center justify-center rounded-sm px-2 text-sm font-medium text-foreground/70 hover:text-foreground transition-colors"

@@ -13,7 +13,7 @@ function corsHeaders(request) {
   const allowed = ALLOWED_ORIGINS.has(origin) ? origin : "null"
   return {
     "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
@@ -53,7 +53,63 @@ export default {
       })
     }
 
-    // Only allow GET
+    // Only allow GET and POST
+    if (request.method !== "GET" && request.method !== "POST") {
+      return jsonResponse(request, { error: "Method not allowed" }, 405)
+    }
+
+    // POST /admin/whitelist — upload whitelist data (admin only)
+    if (request.method === "POST" && url.pathname === "/admin/whitelist") {
+      const kv = env && env.CINA_WHITELIST_KV
+      if (!kv) {
+        return jsonResponse(
+          request,
+          { error: "KV not configured. Bind CINA_WHITELIST_KV namespace." },
+          503
+        )
+      }
+
+      try {
+        const body = await request.json()
+        const addresses = Array.isArray(body.addresses) ? body.addresses : []
+        const mintLimit = typeof body.mintLimit === "number" ? body.mintLimit : 3
+
+        // Validate all addresses
+        for (const addr of addresses) {
+          if (!isValidAddress(addr)) {
+            return jsonResponse(
+              request,
+              { error: `Invalid address: ${addr}` },
+              400
+            )
+          }
+        }
+
+        const data = {
+          addresses: addresses.map((a) => a.toLowerCase()),
+          mintLimit,
+          updatedAt: Date.now(),
+          count: addresses.length,
+        }
+
+        await kv.put("whitelist:current", JSON.stringify(data))
+
+        return jsonResponse(request, {
+          ok: true,
+          message: `Whitelist updated with ${addresses.length} addresses`,
+          count: addresses.length,
+          mintLimit,
+        })
+      } catch (err) {
+        return jsonResponse(
+          request,
+          { error: "Failed to parse request body" },
+          400
+        )
+      }
+    }
+
+    // All remaining routes require GET
     if (request.method !== "GET") {
       return jsonResponse(request, { error: "Method not allowed" }, 405)
     }

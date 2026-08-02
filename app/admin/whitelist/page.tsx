@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react"
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
 interface WhitelistEntry {
   address: string
@@ -16,7 +16,9 @@ interface WhitelistEntry {
 export default function WhitelistManagementPage() {
   const [entries, setEntries] = useState<WhitelistEntry[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isDeploying, setIsDeploying] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle")
+  const [deployStatus, setDeployStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,8 +72,39 @@ export default function WhitelistManagementPage() {
   }
 
   const handleDeployWhitelist = async () => {
-    // TODO: Implement actual deployment to Cloudflare Workers KV
-    alert(`Deploying ${entries.length} addresses to whitelist...\n\nThis would upload to Cloudflare Workers KV and update the Merkle root on the contract.`)
+    if (entries.length === 0) return
+
+    setIsDeploying(true)
+    setDeployStatus("idle")
+    setErrorMessage("")
+
+    try {
+      const apiUrl =
+        process.env.NEXT_PUBLIC_WHITELIST_API_URL ||
+        "https://cinachain-whitelist-api.cinagroup.workers.dev"
+
+      const response = await fetch(`${apiUrl}/admin/whitelist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          addresses: entries.map((e) => e.address),
+          mintLimit: entries[0]?.mintLimit || 3,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Deploy failed: ${response.status}`)
+      }
+
+      setDeployStatus("success")
+    } catch (err) {
+      setDeployStatus("error")
+      setErrorMessage(
+        err instanceof Error ? err.message : "Failed to deploy whitelist"
+      )
+    } finally {
+      setIsDeploying(false)
+    }
   }
 
   return (
@@ -132,7 +165,7 @@ export default function WhitelistManagementPage() {
       </Card>
 
       {entries.length > 0 && (
-        <Card>
+        <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -143,13 +176,28 @@ export default function WhitelistManagementPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="max-h-96 overflow-y-auto border rounded-lg">
+            {deployStatus === "success" && (
+              <Alert className="mb-4 border-[#50e3c2]/30 bg-[#50e3c2]/10">
+                <CheckCircle className="h-4 w-4 text-[#29bc9b]" />
+                <AlertDescription className="text-sm text-[#29bc9b]">
+                  Whitelist deployed successfully! {entries.length} addresses are now active.
+                </AlertDescription>
+              </Alert>
+            )}
+            {deployStatus === "error" && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="max-h-96 overflow-auto rounded-lg border">
               <table className="w-full text-sm">
-                <thead className="bg-muted sticky top-0">
+                <thead className="sticky top-0 bg-muted">
                   <tr>
-                    <th className="text-left p-2 font-medium">#</th>
-                    <th className="text-left p-2 font-medium">Address</th>
-                    <th className="text-left p-2 font-medium">Mint Limit</th>
+                    <th className="p-2 text-left font-medium">#</th>
+                    <th className="p-2 text-left font-medium">Address</th>
+                    <th className="p-2 text-left font-medium">Mint Limit</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -172,9 +220,17 @@ export default function WhitelistManagementPage() {
             <div className="mt-6 flex gap-3">
               <Button
                 onClick={handleDeployWhitelist}
+                disabled={isDeploying}
                 className="flex-1"
               >
-                Deploy Whitelist ({entries.length} addresses)
+                {isDeploying ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deploying...
+                  </>
+                ) : (
+                  `Deploy Whitelist (${entries.length} addresses)`
+                )}
               </Button>
               <Button
                 variant="outline"

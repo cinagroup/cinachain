@@ -23,7 +23,21 @@ import { LinkComponent } from "../shared/link-component"
 
 export function MainNav() {
   return (
-    <nav className="hidden md:flex items-center gap-1">
+    <nav className="hidden items-center gap-1 md:flex">
+      {/* Core product links */}
+      <Link
+        href="/explore"
+        className="rounded-sm px-3 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+      >
+        Explore
+      </Link>
+      <Link
+        href="/mint"
+        className="rounded-sm px-3 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+      >
+        Mint
+      </Link>
+
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>

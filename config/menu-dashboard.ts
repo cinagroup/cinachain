@@ -11,6 +11,10 @@ export const menuDashboard = [
     href: "/dashboard/nfts",
   },
   {
+    label: "Favorites",
+    href: "/dashboard/favorites",
+  },
+  {
     label: "Account",
     href: "/dashboard/account",
   },
