@@ -1,12 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import Link, { LinkProps } from "next/link"
+import Link, { type LinkProps } from "next/link"
 import { useRouter } from "next/navigation"
-import {
-  integrationCategories,
-  cinaIntegrations,
-} from "@/data/cina-integrations"
 import { LuMenu } from "react-icons/lu"
 
 import { menuDashboard } from "@/config/menu-dashboard"
@@ -22,7 +18,6 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { LightDarkImage } from "@/components/shared/light-dark-image"
 
 import { ModeToggle } from "../shared/mode-toggle"
 
@@ -31,24 +26,11 @@ export function MobileNav() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <div className="flex w-full items-center justify-between md:hidden">
-        <Link href="/" className="mr-6 flex items-center space-x-2">
-          <LightDarkImage
-            LightImage="/logo-dark.png"
-            DarkImage="/logo-light.png"
-            alt="CinaChain"
-            className="rounded-full"
-            height={32}
-            width={32}
-          />
-          <span className="inline-block bg-gradient-to-br from-black to-stone-500 bg-clip-text text-xl font-display text-transparent dark:from-stone-100 dark:to-yellow-200 sm:text-2xl">
-            {siteConfig.name}
-          </span>
-        </Link>
+      <div className="flex items-center justify-end md:hidden">
         <SheetTrigger asChild>
           <Button
             variant="ghost"
-            className="ml-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
+            className="px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
           >
             <LuMenu className="h-5 w-5" />
             <span className="sr-only">Toggle Menu</span>
@@ -56,91 +38,56 @@ export function MobileNav() {
         </SheetTrigger>
       </div>
       <SheetContent side="right" className="pr-0">
-        <div className="flex items-center gap-x-4">
-          <MobileLink
-            href="/"
-            className="flex items-center"
-            onOpenChange={setOpen}
-          >
-            <LightDarkImage
-              LightImage="/logo-dark.png"
-              DarkImage="/logo-light.png"
-              alt="CinaChain"
-              height={32}
-              width={32}
-            />
+        <div className="flex items-center justify-between">
+          <MobileLink href="/" className="font-display text-lg" onOpenChange={setOpen}>
+            {siteConfig.name}
           </MobileLink>
           <ModeToggle />
         </div>
         <ScrollArea className="my-4 mr-4 h-[calc(100vh-8rem)] pb-10">
-          <div className="flex flex-col space-y-4">
-            <Accordion type="single" collapsible className="mx-auto w-full">
-              <AccordionItem value="integrations">
-                <AccordionTrigger className="text-base font-medium">
-                  Integrations
-                </AccordionTrigger>
-                <AccordionContent>
-                  <ul className="flex flex-col gap-2">
-                    {integrationCategories.map((category) => (
-                      <>
-                        <h4 className="text-sm font-medium leading-none">
-                          {category.charAt(0).toUpperCase() + category.slice(1)}
-                        </h4>
-                        <Separator className="col-span-3" />
-                        {Object.values(cinaIntegrations)
-                          .filter(
-                            (integration) => integration.category === category
-                          )
-                          .map(({ name, href, imgDark, imgLight }) => (
-                            <NavMenuListItem
-                              key={name}
-                              name={name}
-                              href={href}
-                              lightImage={imgDark}
-                              darkImage={imgLight}
-                              onOpenChange={setOpen}
-                            />
-                          ))}
-                      </>
-                    ))}
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="dashboard">
+          <div className="flex flex-col space-y-3">
+            {/* Core navigation */}
+            <MobileLink href="/explore" className="text-base font-medium" onOpenChange={setOpen}>
+              Explore
+            </MobileLink>
+            <MobileLink href="/mint" className="text-base font-medium" onOpenChange={setOpen}>
+              Mint
+            </MobileLink>
+
+            <Separator />
+
+            {/* Dashboard accordion */}
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="dashboard" className="border-b-0">
                 <AccordionTrigger className="text-base font-medium">
                   Dashboard
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="flex flex-col space-y-2">
-                    {menuDashboard?.map((item, index) =>
-                      item.href ? (
-                        <Link
-                          key={index}
-                          href={item.href}
-                          onClick={() => setOpen(false)}
-                        >
-                          {item.label}
-                        </Link>
-                      ) : (
-                        <div
-                          key={index}
-                          className="text-muted-foreground/70 transition-colors"
-                        >
-                          {item.label}
-                        </div>
-                      )
-                    )}
+                  <div className="flex flex-col space-y-2 pt-2">
+                    {menuDashboard?.map((item, index) => (
+                      <MobileLink
+                        key={index}
+                        href={item.href}
+                        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        onOpenChange={setOpen}
+                      >
+                        {item.label}
+                      </MobileLink>
+                    ))}
                   </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
-            <Link
-              href="https://docs.cinachain.com"
-              className="font-medium"
+
+            <Separator />
+
+            <MobileLink
+              href={siteConfig.links.docs}
+              className="text-base font-medium"
+              onOpenChange={setOpen}
             >
               Documentation
-            </Link>
-            <Separator />
+            </MobileLink>
           </div>
         </ScrollArea>
       </SheetContent>
@@ -174,43 +121,5 @@ function MobileLink({
     >
       {children}
     </Link>
-  )
-}
-
-interface NavMenuListItemProps {
-  name: string
-  href: string
-  lightImage: string
-  darkImage: string
-  onOpenChange?: (open: boolean) => void
-}
-
-const NavMenuListItem = ({
-  name,
-  href,
-  lightImage,
-  darkImage,
-  onOpenChange,
-}: NavMenuListItemProps) => {
-  return (
-    <li key={name}>
-      <MobileLink
-        onOpenChange={onOpenChange}
-        href={href}
-        className="block select-none space-y-1 rounded-md py-3 pl-2 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-      >
-        <div className="flex items-center space-x-2">
-          <LightDarkImage
-            LightImage={lightImage}
-            DarkImage={darkImage}
-            alt="icon"
-            height={16}
-            width={16}
-            className="h-4 w-4"
-          />
-          <span className="text-sm font-medium leading-none">{name}</span>
-        </div>
-      </MobileLink>
-    </li>
   )
 }
