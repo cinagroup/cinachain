@@ -1,88 +1,64 @@
 "use client"
 
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useReadContract } from "wagmi"
-import { getCinaNftContract } from "@/lib/contracts/cina-nft"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { TrendingUp, Users, Package, DollarSign } from "lucide-react"
+import { TrendingUp, Package, DollarSign, PauseCircle, PlayCircle, FileText, Settings, BarChart3, ArrowRight } from "lucide-react"
+import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { hasNftContract } from "@/lib/contracts/addresses"
+import { AlertCircle } from "lucide-react"
 
 export default function AdminOverviewPage() {
-  const contract = getCinaNftContract()
+  const {
+    mintedCount,
+    maxCount,
+    mintPrice,
+    paused,
+    isLoading,
+  } = useContractStats()
 
-  const { data: totalSupply, isLoading: supplyLoading } = useReadContract({
-    address: contract.address,
-    abi: contract.abi,
-    functionName: "totalSupply",
-  })
-
-  const { data: maxSupply } = useReadContract({
-    address: contract.address,
-    abi: [
-      {
-        name: "maxSupply",
-        type: "function",
-        stateMutability: "view",
-        inputs: [],
-        outputs: [{ name: "", type: "uint256" }],
-      },
-    ] as const,
-    functionName: "maxSupply",
-  })
-
-  const { data: mintPrice } = useReadContract({
-    address: contract.address,
-    abi: [
-      {
-        name: "mintPrice",
-        type: "function",
-        stateMutability: "view",
-        inputs: [],
-        outputs: [{ name: "", type: "uint256" }],
-      },
-    ] as const,
-    functionName: "mintPrice",
-  })
-
-  const { data: isPaused } = useReadContract({
-    address: contract.address,
-    abi: [
-      {
-        name: "paused",
-        type: "function",
-        stateMutability: "view",
-        inputs: [],
-        outputs: [{ name: "", type: "bool" }],
-      },
-    ] as const,
-    functionName: "paused",
-  })
+  const priceEth = mintPrice.data ? `${Number(mintPrice.data) / 1e18} ETH` : "—"
 
   const stats = [
     {
       title: "Total Minted",
-      value: supplyLoading ? "..." : totalSupply?.toString() || "0",
+      value: isLoading ? "..." : mintedCount.toLocaleString(),
       description: "NFTs minted so far",
       icon: Package,
     },
     {
       title: "Max Supply",
-      value: maxSupply?.toString() || "10,000",
-      description: "Total NFT collection size",
+      value: maxCount.toLocaleString(),
+      description: "Total collection size",
       icon: TrendingUp,
     },
     {
       title: "Mint Price",
-      value: mintPrice ? `${Number(mintPrice) / 1e18} ETH` : "0.05 ETH",
+      value: priceEth,
       description: "Price per NFT",
       icon: DollarSign,
     },
     {
       title: "Status",
-      value: isPaused ? "Paused" : "Active",
-      description: isPaused ? "Minting is paused" : "Minting is active",
-      icon: Users,
+      value: paused.data === true ? "Paused" : "Active",
+      description:
+        paused.data === true ? "Minting is paused" : "Minting is active",
+      icon: paused.data === true ? PauseCircle : PlayCircle,
     },
   ]
+
+  if (!hasNftContract) {
+    return (
+      <div className="container max-w-[1200px] px-6 py-12">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            NFT contract address not configured. Set NEXT_PUBLIC_CINA_NFT_CONTRACT in environment variables.
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -100,11 +76,11 @@ export default function AdminOverviewPage() {
           </p>
         </div>
 
-        {/* Alert */}
-        {isPaused && (
+        {/* Paused alert */}
+        {paused.data === true && (
           <Alert variant="destructive" className="mb-8 shadow-vercel-sm">
             <AlertDescription>
-              ⚠️ Minting is currently paused. Users cannot mint new NFTs.
+              Minting is currently paused. Users cannot mint new NFTs.
             </AlertDescription>
           </Alert>
         )}
@@ -122,7 +98,9 @@ export default function AdminOverviewPage() {
                   <Icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="font-display text-2xl text-foreground">{stat.value}</div>
+                  <div className="font-display text-2xl text-foreground">
+                    {stat.value}
+                  </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {stat.description}
                   </p>
@@ -136,32 +114,61 @@ export default function AdminOverviewPage() {
         <Card className="mt-8 shadow-vercel-card">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Common administrative tasks
-            </CardDescription>
+            <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-3">
-            <div className="space-y-2">
-              <h3 className="font-medium text-foreground">Manage Whitelist</h3>
-              <p className="text-sm text-muted-foreground leading-6">
-                Upload CSV files and manage whitelist addresses
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-medium text-foreground">View Statistics</h3>
-              <p className="text-sm text-muted-foreground leading-6">
-                Detailed minting analytics and revenue tracking
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-medium text-foreground">Contract Settings</h3>
-              <p className="text-sm text-muted-foreground leading-6">
-                Pause/unpause minting, update prices, withdraw funds
-              </p>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <QuickAction
+                href="/admin/whitelist"
+                icon={<FileText className="h-5 w-5" />}
+                title="Manage Whitelist"
+                description="Upload CSV files and manage whitelist addresses"
+              />
+              <QuickAction
+                href="/admin/stats"
+                icon={<BarChart3 className="h-5 w-5" />}
+                title="View Statistics"
+                description="Detailed minting analytics and revenue tracking"
+              />
+              <QuickAction
+                href="/admin/contract"
+                icon={<Settings className="h-5 w-5" />}
+                title="Contract Settings"
+                description="Pause, update prices, withdraw funds"
+              />
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
+  )
+}
+
+function QuickAction({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string
+  icon: React.ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-lg border border-border bg-card p-4 transition-all hover:shadow-vercel-md hover:-translate-y-0.5"
+    >
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-foreground">
+        {icon}
+      </div>
+      <h3 className="text-sm font-medium text-foreground">{title}</h3>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+      <span className="mt-2 inline-flex items-center gap-1 text-xs text-link">
+        Open
+        <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+      </span>
+    </Link>
   )
 }

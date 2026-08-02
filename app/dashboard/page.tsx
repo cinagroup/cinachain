@@ -1,23 +1,76 @@
 "use client"
 
 import Link from "next/link"
+import { useAccount, useBalance, useEnsName } from "wagmi"
+import { Loader2 } from "lucide-react"
 
 import { WalletAddress } from "@/components/blockchain/wallet-address"
-import { WalletBalance } from "@/components/blockchain/wallet-balance"
 import { WalletEnsName } from "@/components/blockchain/wallet-ens-name"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useAccount } from "wagmi"
-import { useNftBalance } from "@/lib/hooks/use-nft-balance"
 import { SignInButton } from "@/components/blockchain/sign-in-button"
 import { PWAInstallPrompt } from "@/components/pwa/install-prompt"
-import { GitcoinPassport } from "@/components/blockchain/gitcoin-passport"
+import { useNftBalance } from "@/lib/hooks/use-nft-balance"
+import { useWhitelist } from "@/lib/hooks/use-whitelist"
+import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { trimFormattedBalance } from "@/lib/utils"
+
+function StatCard({
+  label,
+  value,
+  sublabel,
+  isLoading,
+}: {
+  label: string
+  value: string
+  sublabel?: string
+  isLoading?: boolean
+}) {
+  return (
+    <Card className="shadow-vercel-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {label}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="font-display text-2xl text-foreground">
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          ) : (
+            value
+          )}
+        </div>
+        {sublabel && (
+          <p className="mt-1 text-xs text-muted-foreground">{sublabel}</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function PageDashboard() {
   const { address } = useAccount()
   const { data: nftBalance, isLoading: nftLoading } = useNftBalance(address)
+  const { data: balance, isLoading: balanceLoading } = useBalance({ address })
+  const { data: whitelistData, isLoading: whitelistLoading } = useWhitelist(address)
+  const { mintedCount, maxCount } = useContractStats()
+
+  const balanceStr = balance
+    ? trimFormattedBalance(balance.formatted, 4)
+    : "0"
+
+  const whitelistStatus = whitelistLoading
+    ? null
+    : whitelistData?.eligible
+      ? whitelistData.phase === "whitelist"
+        ? { text: "Eligible", sub: "Whitelist mint active" }
+        : { text: "Public", sub: "Public mint active" }
+      : whitelistData?.phase === "whitelist"
+        ? { text: "Not Listed", sub: "Check back later" }
+        : { text: "Public", sub: "Public mint active" }
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,45 +88,29 @@ export default function PageDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="shadow-vercel-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  ETH Balance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="font-display text-2xl text-foreground">
-                  <WalletBalance decimals={4} /> ETH
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-vercel-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  NFTs Owned
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="font-display text-2xl text-foreground">
-                  {nftLoading ? "..." : nftBalance?.toString() || "0"}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">CinaChain NFTs</p>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-vercel-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Whitelist Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="font-display text-2xl text-foreground">-</div>
-                <p className="mt-1 text-xs text-muted-foreground">Check mint page</p>
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="ETH Balance"
+              value={`${balanceStr} ETH`}
+              isLoading={balanceLoading}
+            />
+            <StatCard
+              label="NFTs Owned"
+              value={nftBalance?.toString() || "0"}
+              sublabel="CinaChain NFTs"
+              isLoading={nftLoading}
+            />
+            <StatCard
+              label="Whitelist"
+              value={whitelistStatus?.text ?? "..."}
+              sublabel={whitelistStatus?.sub}
+              isLoading={whitelistLoading}
+            />
+            <StatCard
+              label="Collection Progress"
+              value={`${mintedCount.toLocaleString()} / ${maxCount.toLocaleString()}`}
+              sublabel="Total minted"
+            />
           </div>
 
           {/* Quick Actions */}
@@ -92,10 +129,9 @@ export default function PageDashboard() {
             </div>
           </div>
 
-          {/* PWA Install & Gitcoin Passport */}
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {/* PWA Install */}
+          <div className="mt-8">
             <PWAInstallPrompt />
-            <GitcoinPassport />
           </div>
         </IsWalletConnected>
 
