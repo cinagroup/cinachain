@@ -46,9 +46,12 @@ export function useTokensOfOwner(address?: `0x${string}`) {
     .filter((r) => r.status === "success" && r.result !== undefined)
     .map((r) => (r.result as bigint).toString())
 
+  const isTruncated = count > tokenIds.length
+
   return {
     tokenIds,
     count,
+    isTruncated,
     isLoading: balanceQuery.isLoading || contractsQuery.isLoading,
     isError: balanceQuery.isError || contractsQuery.isError,
   }

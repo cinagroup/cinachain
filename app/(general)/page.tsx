@@ -1,13 +1,18 @@
+"use client"
+
 import Link from "next/link"
 import { FaDiscord, FaGithub } from "react-icons/fa"
-import { LuBook } from "react-icons/lu"
+import { Shield, Zap, Globe, Layers } from "lucide-react"
 
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
-import { ExampleDemos } from "@/components/shared/example-demos"
+import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { hasNftContract } from "@/lib/contracts/addresses"
 
 export default function HomePage() {
+  const { mintedCount, maxCount, remaining, paused } = useContractStats()
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -37,7 +42,7 @@ export default function HomePage() {
               NFT Platform on Ethereum
             </span>
             <span className="inline-flex h-4 items-center rounded-full bg-violet/10 px-2 text-[10px] font-semibold text-violet">
-              Live
+              {paused ? "Paused" : "Live"}
             </span>
           </div>
 
@@ -89,6 +94,17 @@ export default function HomePage() {
               GitHub
             </Link>
           </div>
+
+          {/* Live Stats */}
+          {hasNftContract && mintedCount > 0 && (
+            <div className="mx-auto mt-12 flex max-w-[640px] items-center justify-center gap-8 rounded-lg border border-border bg-card px-6 py-4 shadow-vercel-sm">
+              <Stat label="Minted" value={mintedCount.toLocaleString()} />
+              <Divider />
+              <Stat label="Total Supply" value={maxCount.toLocaleString()} />
+              <Divider />
+              <Stat label="Remaining" value={remaining.toLocaleString()} />
+            </div>
+          )}
         </div>
       </section>
 
@@ -96,44 +112,110 @@ export default function HomePage() {
       <section className="container max-w-[1200px] px-6 pb-24">
         <div className="grid gap-4 md:grid-cols-3">
           <FeatureCard
+            icon={<Globe className="h-5 w-5" />}
             eyebrow="COLLECT"
             title="Browse the gallery."
-            description="Explore the full CinaChain NFT collection with multi-gateway IPFS fallback."
+            description="Explore the full CinaChain NFT collection with multi-gateway IPFS fallback for reliable image loading."
             href="/explore"
             cta="View Gallery"
           />
           <FeatureCard
+            icon={<Zap className="h-5 w-5" />}
             eyebrow="MINT"
             title="Mint your NFT."
-            description="Whitelist and public mint phases with Merkle proof verification."
+            description="Whitelist and public mint phases with Merkle proof verification. Real-time transaction feedback."
             href="/mint"
             cta="Start Minting"
           />
           <FeatureCard
+            icon={<Layers className="h-5 w-5" />}
             eyebrow="MANAGE"
             title="Track your holdings."
-            description="Dashboard with balance, favorites, and collection statistics."
+            description="Dashboard with live balance, owned NFTs, favorites, and collection statistics."
             href="/dashboard"
             cta="Open Dashboard"
           />
         </div>
       </section>
 
-      {/* Demo Section */}
-      <section className="container max-w-[1200px] px-6 pb-24">
-        <ExampleDemos />
+      {/* How It Works */}
+      <section className="border-t border-border bg-card/50">
+        <div className="container max-w-[1200px] px-6 py-20">
+          <div className="mb-12 text-center">
+            <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
+              How It Works
+            </span>
+            <h2 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
+              Three steps to own a CinaChain NFT<span className="text-muted-foreground">.</span>
+            </h2>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            <StepCard
+              step="01"
+              title="Connect Wallet"
+              description="Connect your Ethereum wallet via MetaMask, WalletConnect, or Coinbase Wallet."
+            />
+            <StepCard
+              step="02"
+              title="Check Eligibility"
+              description="The DApp checks your whitelist status automatically and shows your mint phase."
+            />
+            <StepCard
+              step="03"
+              title="Mint & Collect"
+              description="Mint your NFT. Metadata is stored on IPFS with multi-gateway fallback."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Tech Stack */}
+      <section className="container max-w-[1200px] px-6 py-20">
+        <div className="mb-12 text-center">
+          <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
+            Built With
+          </span>
+          <h2 className="font-display mt-3 text-3xl tracking-tight text-foreground">
+            Production-grade infrastructure<span className="text-muted-foreground">.</span>
+          </h2>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <TechCard icon={<Shield className="h-5 w-5" />} title="ERC-721" description="Standard-compliant NFT contract with enumerable support" />
+          <TechCard icon={<Globe className="h-5 w-5" />} title="IPFS" description="Decentralized metadata storage with 3-gateway fallback" />
+          <TechCard icon={<Layers className="h-5 w-5" />} title="Cloudflare" description="Edge-deployed on Cloudflare Pages with Workers API" />
+          <TechCard icon={<Zap className="h-5 w-5" />} title="Multi-chain RPC" description="Resilient RPC with automatic failover" />
+        </div>
       </section>
     </div>
   )
 }
 
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center">
+      <p className="font-display text-2xl text-foreground">{value}</p>
+      <p className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+    </div>
+  )
+}
+
+function Divider() {
+  return <div className="h-8 w-px bg-border" />
+}
+
 function FeatureCard({
+  icon,
   eyebrow,
   title,
   description,
   href,
   cta,
 }: {
+  icon: React.ReactNode
   eyebrow: string
   title: string
   description: string
@@ -142,13 +224,18 @@ function FeatureCard({
 }) {
   return (
     <div className="group rounded-lg border border-border bg-card p-6 shadow-vercel-card transition-shadow hover:shadow-vercel-md">
-      <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-        {eyebrow}
-      </span>
-      <h3 className="mt-3 font-display text-xl tracking-tight text-foreground">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary text-foreground">
+          {icon}
+        </div>
+        <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
+          {eyebrow}
+        </span>
+      </div>
+      <h3 className="mt-4 font-display text-xl tracking-tight text-foreground">
         {title}
       </h3>
-      <p className="mt-2 text-sm leading-6 text-foreground/60">{description}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
       <Link
         href={href}
         className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-link transition-colors hover:text-link-deep"
@@ -158,6 +245,50 @@ function FeatureCard({
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </Link>
+    </div>
+  )
+}
+
+function StepCard({
+  step,
+  title,
+  description,
+}: {
+  step: string
+  title: string
+  description: string
+}) {
+  return (
+    <div className="relative rounded-lg border border-border bg-card p-6 shadow-vercel-card">
+      <span className="font-display absolute right-4 top-4 text-3xl text-muted-foreground/20">
+        {step}
+      </span>
+      <h3 className="font-display text-lg tracking-tight text-foreground">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        {description}
+      </p>
+    </div>
+  )
+}
+
+function TechCard({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-5 shadow-vercel-sm">
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-foreground">
+        {icon}
+      </div>
+      <h3 className="text-sm font-medium text-foreground">{title}</h3>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
     </div>
   )
 }

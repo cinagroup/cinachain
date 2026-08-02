@@ -48,14 +48,4 @@ export const cinaIntegrations = {
     imgDark: "/integrations/erc1155-icon.png",
     category: "protocols",
   },
-  starter: {
-    name: "Starter Template",
-    href: "/integration/starter",
-    url: "https://docs.cinachain.com",
-    description:
-      "Use this template to get started building integrations with CinaChain.",
-    imgLight: "/logo-gradient.png",
-    category: "general",
-    imgDark: "/logo-gradient.png",
-  },
 } as const

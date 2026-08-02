@@ -4,6 +4,22 @@ const FAVORITES_KEY = "cinachain-nft-favorites"
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<string[]>([])
+  const [mounted, setMounted] = useState(false)
+
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(FAVORITES_KEY)
+      if (stored) {
+        try {
+          setFavorites(JSON.parse(stored))
+        } catch (error) {
+          console.error("Failed to parse favorites:", error)
+        }
+      }
+      setMounted(true)
+    }
+  }, [])
 
   // Load favorites from localStorage on mount
   useEffect(() => {
@@ -48,5 +64,6 @@ export function useFavorites() {
     toggleFavorite,
     isFavorite,
     clearFavorites,
+    mounted,
   }
 }

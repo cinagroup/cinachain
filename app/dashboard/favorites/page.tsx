@@ -8,7 +8,7 @@ import { NftCard } from "@/components/nft/nft-card"
 import { Heart } from "lucide-react"
 
 export default function FavoritesPage() {
-  const { favorites, clearFavorites } = useFavorites()
+  const { favorites, clearFavorites, mounted } = useFavorites()
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,7 +31,16 @@ export default function FavoritesPage() {
         )}
       </div>
 
-      {favorites.length === 0 ? (
+      {/* Loading state (avoid hydration flash) */}
+      {!mounted && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="aspect-square animate-pulse rounded-lg bg-secondary" />
+          ))}
+        </div>
+      )}
+
+      {mounted && favorites.length === 0 ? (
         <Card className="shadow-vercel-card">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Heart className="mb-4 h-12 w-12 text-muted-foreground" />

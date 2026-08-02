@@ -2,6 +2,7 @@ import "@/styles/app.css"
 import "@/styles/globals.css"
 
 import { ReactNode } from "react"
+import type { Metadata, Viewport } from "next"
 import { env } from "@/env.mjs"
 
 import { siteConfig } from "@/config/site"
@@ -13,16 +14,24 @@ import { PWARegister } from "@/components/pwa/pwa-register"
 
 const url = env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
-export const metadata = {
+export const viewport: Viewport = {
+  themeColor: "#171717",
+  width: "device-width",
+  initialScale: 1,
+}
+
+export const metadata: Metadata = {
   metadataBase: new URL(url),
-  title: siteConfig.title,
+  title: {
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
+  },
   description: siteConfig.description,
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
     apple: "/icon-192x192.png",
   },
-  themeColor: "#171717",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -37,11 +46,20 @@ export const metadata = {
     url: url?.toString(),
     siteName: siteConfig.name,
     type: "website",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: siteConfig.name,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: siteConfig.name,
     description: siteConfig.description,
+    images: ["/opengraph-image.png"],
   },
 }
 

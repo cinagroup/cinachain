@@ -14,7 +14,7 @@ import Link from "next/link"
 export default function MyNftsPage() {
   const { address } = useAccount()
   const { data: nftBalance, isLoading: balanceLoading } = useNftBalance(address)
-  const { tokenIds, isLoading: tokensLoading } = useTokensOfOwner(address)
+  const { tokenIds, count, isTruncated, isLoading: tokensLoading } = useTokensOfOwner(address)
 
   const isLoading = balanceLoading || tokensLoading
 
@@ -64,11 +64,16 @@ export default function MyNftsPage() {
                 <NftCard key={tokenId} tokenId={tokenId} />
               ))}
             </div>
+            {isTruncated && (
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                Showing first {tokenIds.length} of {count} owned NFTs.
+              </p>
+            )}
           </div>
         )}
 
-        {/* Empty state */}
-        {!isLoading && (!nftBalance || nftBalance === BigInt(0)) && (
+        {/* Empty state — also catches enumeration failure */}
+        {!isLoading && tokenIds.length === 0 && (
           <div className="rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
             <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/40" />
             <p className="mt-4 text-base text-muted-foreground">

@@ -62,13 +62,18 @@ export function useSiwe() {
     }
   }, [])
 
-  // Invalidate session when wallet account changes
+  // Invalidate session when wallet disconnects or account changes
   useEffect(() => {
     if (!address) {
+      // Wallet disconnected — clear session from state AND localStorage
       setSession(null)
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(SESSION_KEY)
+      }
       return
     }
     if (session && session.address.toLowerCase() !== address.toLowerCase()) {
+      // Account changed — clear stale session
       setSession(null)
       if (typeof window !== "undefined") {
         localStorage.removeItem(SESSION_KEY)
