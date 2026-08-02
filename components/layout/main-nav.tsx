@@ -1,14 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { BookOpen, Compass, Sparkles, LayoutDashboard, Layers } from "lucide-react"
 
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu"
 import { siteConfig } from "@/config/site"
 
