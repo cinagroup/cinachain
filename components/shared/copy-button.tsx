@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 
 interface CopyButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
   value: string
-  children: React.ReactNode
+  children?: React.ReactNode
   src?: string
 }
 

@@ -81,7 +81,8 @@ export function useGitcoinPassport(options: UseGitcoinPassportOptions = {}): Use
 
   return {
     score,
-    isEligible: score?.score !== null && score?.score >= threshold,
+    isEligible:
+      typeof score?.score === "number" && score.score >= threshold,
     isLoading,
     error,
     refreshScore: fetchScore,

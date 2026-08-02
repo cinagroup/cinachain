@@ -1,9 +1,7 @@
-import { createPublicClient, http } from "viem"
+import { createPublicClient, http, type PublicClient } from "viem"
+import { mainnet } from "wagmi/chains"
 import { parseAbiItem } from "viem"
-import { mainnet } from "viem/chains"
-
-const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CINA_NFT_CONTRACT ||
-  "0x0000000000000000000000000000000000000000") as `0x${string}`
+import { CINA_NFT_CONTRACT } from "@/lib/contracts/addresses"
 
 const ABI = [
   parseAbiItem("function totalSupply() view returns (uint256)"),
@@ -12,64 +10,83 @@ const ABI = [
   parseAbiItem("function balanceOf(address owner) view returns (uint256)"),
   parseAbiItem("function name() view returns (string)"),
   parseAbiItem("function symbol() view returns (string)"),
+  parseAbiItem("function mintPrice() view returns (uint256)"),
+  parseAbiItem("function paused() view returns (bool)"),
 ] as const
 
-function getPublicClient() {
-  const rpcUrl = process.env.NEXT_PUBLIC_CF_RPC_ENDPOINT
-    ? `${process.env.NEXT_PUBLIC_CF_RPC_ENDPOINT}?token=${process.env.CF_RPC_SERVICE_AUTH_TOKEN}`
-    : undefined
-
-  return createPublicClient({
-    chain: mainnet,
-    transport: http(rpcUrl),
-  })
+// Singleton public client — avoids rebuilding the client on every call.
+let _client: PublicClient | null = null
+function getPublicClient(): PublicClient {
+  if (!_client) {
+    _client = createPublicClient({
+      chain: mainnet,
+      // Use a reliable public RPC; for authenticated reads, point this at
+      // the rpc-proxy Worker (no secret tokens in client code).
+      transport: http("https://ethereum.publicnode.com"),
+    })
+  }
+  return _client
 }
+
+export const cinaNftAbi = ABI
+export const CINA_NFT_ADDRESS = CINA_NFT_CONTRACT
 
 export function getCinaNftContract() {
   const client = getPublicClient()
-
   return {
-    address: CONTRACT_ADDRESS,
+    address: CINA_NFT_CONTRACT,
     abi: ABI,
     read: {
       totalSupply: () =>
         client.readContract({
-          address: CONTRACT_ADDRESS,
+          address: CINA_NFT_CONTRACT,
           abi: ABI,
           functionName: "totalSupply",
         }),
       tokenURI: (args: [bigint]) =>
         client.readContract({
-          address: CONTRACT_ADDRESS,
+          address: CINA_NFT_CONTRACT,
           abi: ABI,
           functionName: "tokenURI",
           args,
         }),
       ownerOf: (args: [bigint]) =>
         client.readContract({
-          address: CONTRACT_ADDRESS,
+          address: CINA_NFT_CONTRACT,
           abi: ABI,
           functionName: "ownerOf",
           args,
         }),
       balanceOf: (args: [`0x${string}`]) =>
         client.readContract({
-          address: CONTRACT_ADDRESS,
+          address: CINA_NFT_CONTRACT,
           abi: ABI,
           functionName: "balanceOf",
           args,
         }),
       name: () =>
         client.readContract({
-          address: CONTRACT_ADDRESS,
+          address: CINA_NFT_CONTRACT,
           abi: ABI,
           functionName: "name",
         }),
       symbol: () =>
         client.readContract({
-          address: CONTRACT_ADDRESS,
+          address: CINA_NFT_CONTRACT,
           abi: ABI,
           functionName: "symbol",
+        }),
+      mintPrice: () =>
+        client.readContract({
+          address: CINA_NFT_CONTRACT,
+          abi: ABI,
+          functionName: "mintPrice",
+        }),
+      paused: () =>
+        client.readContract({
+          address: CINA_NFT_CONTRACT,
+          abi: ABI,
+          functionName: "paused",
         }),
     },
   }

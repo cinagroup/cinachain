@@ -1,101 +1,140 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useAccount, useSignMessage } from "wagmi"
+import { useAccount, useSignMessage, useChainId } from "wagmi"
 import { SiweMessage } from "siwe"
 
 const SESSION_KEY = "cinachain-siwe-session"
 
 interface SiweSession {
   address: string
+  chainId: number
   nonce: string
   message: string
   signature: string
   expirationTime: string
 }
 
+/**
+ * Generate a cryptographically-secure nonce (32 hex chars).
+ */
+function generateNonce(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+}
+
+/**
+ * Client-side SIWE authentication.
+ *
+ * NOTE: This is a UX-only sign-in. It does NOT provide server-side
+ * authentication. For any privileged operation, rely on the smart
+ * contract's own access control (e.g., onlyOwner modifier), not on
+ * this client-side session.
+ *
+ * The signed message proves wallet ownership at sign-in time and the
+ * session expires after 24 hours. Anyone with access to the browser
+ * can clear localStorage, so this must not gate anything sensitive.
+ */
 export function useSiwe() {
-  const { address, isConnected } = useAccount()
+  const { address } = useAccount()
+  const chainId = useChainId()
   const { signMessageAsync } = useSignMessage()
   const [session, setSession] = useState<SiweSession | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // 从 localStorage 加载会话
+  // Load session from localStorage on mount
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return
+    try {
       const stored = localStorage.getItem(SESSION_KEY)
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          // 检查是否过期
-          if (new Date(parsed.expirationTime) > new Date()) {
-            setSession(parsed)
-          } else {
-            localStorage.removeItem(SESSION_KEY)
-          }
-        } catch {
-          localStorage.removeItem(SESSION_KEY)
-        }
+      if (!stored) return
+      const parsed = JSON.parse(stored) as SiweSession
+      if (new Date(parsed.expirationTime) > new Date()) {
+        setSession(parsed)
+      } else {
+        localStorage.removeItem(SESSION_KEY)
       }
+    } catch {
+      localStorage.removeItem(SESSION_KEY)
     }
   }, [])
 
-  // 登录
-  const signIn = useCallback(async () => {
-    if (!address) return
+  // Invalidate session when wallet account changes
+  useEffect(() => {
+    if (!address) {
+      setSession(null)
+      return
+    }
+    if (session && session.address.toLowerCase() !== address.toLowerCase()) {
+      setSession(null)
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(SESSION_KEY)
+      }
+    }
+  }, [address, session])
+
+  const signIn = useCallback(async (): Promise<boolean> => {
+    if (!address) return false
 
     setLoading(true)
     try {
-      // 生成 nonce
-      const nonce = Math.random().toString(36).substring(2, 15)
-
-      // 创建 SIWE 消息
+      const nonce = generateNonce()
       const message = new SiweMessage({
         domain: window.location.host,
         address,
         statement: "Sign in to CinaChain",
         uri: window.location.origin,
         version: "1",
-        chainId: 1,
+        chainId,
         nonce,
-        expirationTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 小时
+        expirationTime: new Date(
+          Date.now() + 24 * 60 * 60 * 1000
+        ).toISOString(),
       })
 
-      // 签名
       const signature = await signMessageAsync({
         message: message.prepareMessage(),
       })
 
-      // 保存会话
       const sessionData: SiweSession = {
         address,
+        chainId,
         nonce,
         message: message.prepareMessage(),
         signature,
-        expirationTime: message.expirationTime || "",
+        expirationTime: message.expirationTime ?? "",
       }
 
       localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))
       setSession(sessionData)
-
       return true
     } catch (error) {
-      console.error("SIWE sign in failed:", error)
+      console.error("[cinachain] SIWE sign-in failed:", error)
       return false
     } finally {
       setLoading(false)
     }
-  }, [address, signMessageAsync])
+  }, [address, chainId, signMessageAsync])
 
-  // 登出
   const signOut = useCallback(() => {
-    localStorage.removeItem(SESSION_KEY)
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(SESSION_KEY)
+    }
     setSession(null)
   }, [])
 
+  const isAuthenticated =
+    !!session &&
+    !!address &&
+    session.address.toLowerCase() === address.toLowerCase() &&
+    new Date(session.expirationTime) > new Date()
+
   return {
     session,
-    isAuthenticated: !!session && session.address === address,
+    isAuthenticated,
     isLoading: loading,
     signIn,
     signOut,

@@ -1,7 +1,6 @@
 import { useReadContract } from "wagmi"
-import { Address } from "viem"
-
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CINA_NFT_CONTRACT as Address
+import type { Address } from "viem"
+import { CINA_NFT_CONTRACT } from "@/lib/contracts/addresses"
 
 const BALANCE_OF_ABI = [
   {
@@ -19,12 +18,12 @@ const BALANCE_OF_ABI = [
  */
 export function useNftBalance(address?: Address) {
   return useReadContract({
-    address: CONTRACT_ADDRESS,
+    address: CINA_NFT_CONTRACT,
     abi: BALANCE_OF_ABI,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!address && CINA_NFT_CONTRACT !== "0x0000000000000000000000000000000000000000",
     },
   })
 }

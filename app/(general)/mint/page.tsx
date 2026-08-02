@@ -10,36 +10,65 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { CheckCircle2, ExternalLink, AlertCircle, Loader2 } from "lucide-react"
+import { MINT_PRICE_ETH } from "@/lib/contracts/addresses"
 
 export default function MintPage() {
   const { address, isConnected } = useAccount()
-  const { data: whitelistData, isLoading: whitelistLoading } = useWhitelist(address)
+  const {
+    data: whitelistData,
+    isLoading: whitelistLoading,
+    isError: whitelistError,
+  } = useWhitelist(address)
   const [quantity, setQuantity] = useState(1)
   const [mintPhase, setMintPhase] = useState<"whitelist" | "public" | "inactive">("inactive")
 
-  const { mintWhitelist, mintWhitelistLoading, mintPublic, mintPublicLoading } = useMintContract()
+  const {
+    mintWhitelist,
+    mintPublic,
+    status,
+    isPending,
+    isConfirmed,
+    error,
+    txHash,
+    reset,
+  } = useMintContract()
 
   useEffect(() => {
     if (!whitelistData) return
-    
     if (whitelistData.eligible) {
       setMintPhase("whitelist")
-    } else if (whitelistData.mintLimit === 0) {
+    } else if (whitelistData.phase === "public") {
       setMintPhase("public")
     } else {
       setMintPhase("inactive")
     }
   }, [whitelistData])
 
-  const handleMint = () => {
+  // 交易完成后，刷新数量输入
+  useEffect(() => {
+    if (isConfirmed) {
+      // 用户可以继续铸造
+    }
+  }, [isConfirmed])
+
+  const handleMint = async () => {
+    if (quantity < 1) return
+    reset()
+
     if (mintPhase === "whitelist" && whitelistData?.proof) {
-      mintWhitelist(whitelistData.proof, quantity)
+      await mintWhitelist(whitelistData.proof, quantity)
     } else if (mintPhase === "public") {
-      mintPublic(quantity)
+      await mintPublic(quantity)
     }
   }
 
-  const isMinting = mintWhitelistLoading || mintPublicLoading
+  const buttonLabel = (() => {
+    if (status === "awaiting-wallet") return "Confirm in wallet..."
+    if (status === "submitted") return "Confirming..."
+    if (isPending) return "Minting..."
+    return `Mint ${quantity} NFT${quantity > 1 ? "s" : ""}`
+  })()
 
   // Not connected state
   if (!isConnected) {
@@ -76,9 +105,30 @@ export default function MintPage() {
         <div className="container max-w-[1200px] px-6 py-12">
           <Card className="max-w-md shadow-vercel-card">
             <CardContent className="pt-6">
-              <p className="text-center text-sm text-muted-foreground">
-                Checking whitelist status...
-              </p>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking mint status...
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Error fetching whitelist
+  if (whitelistError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-[1200px] px-6 py-12">
+          <Card className="max-w-md shadow-vercel-card">
+            <CardContent className="pt-6">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load mint status. The whitelist service may be temporarily unavailable.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </div>
@@ -129,7 +179,8 @@ export default function MintPage() {
               {mintPhase === "public" && (
                 <Alert className="bg-[#aaffec] border-[#50e3c2]/20">
                   <AlertDescription className="text-sm text-[#29bc9b]">
-                    Public mint active. Price: <span className="font-semibold">0.05 ETH</span> per NFT.
+                    Public mint active. Price:{" "}
+                    <span className="font-semibold">{MINT_PRICE_ETH} ETH</span> per NFT.
                   </AlertDescription>
                 </Alert>
               )}
@@ -138,6 +189,31 @@ export default function MintPage() {
                 <Alert variant="destructive">
                   <AlertDescription>
                     Minting is not currently active. Please check back later.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Transaction feedback */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm break-all">{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {isConfirmed && txHash && (
+                <Alert className="bg-[#aaffec] border-[#50e3c2]/20">
+                  <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
+                  <AlertDescription className="text-sm text-[#29bc9b]">
+                    Mint successful!{" "}
+                    <a
+                      href={`https://etherscan.io/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 underline"
+                    >
+                      View on Etherscan <ExternalLink className="h-3 w-3" />
+                    </a>
                   </AlertDescription>
                 </Alert>
               )}
@@ -153,10 +229,15 @@ export default function MintPage() {
                       id="quantity"
                       type="number"
                       min={1}
-                      max={mintPhase === "whitelist" ? whitelistData?.mintLimit || 1 : 10}
+                      max={
+                        mintPhase === "whitelist"
+                          ? whitelistData?.mintLimit || 1
+                          : 10
+                      }
                       value={quantity}
                       onChange={(e) => setQuantity(Number(e.target.value))}
                       className="h-10"
+                      disabled={isPending}
                     />
                   </div>
 
@@ -164,7 +245,9 @@ export default function MintPage() {
                   <div className="rounded-md border border-border bg-secondary p-4 space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Price per NFT</span>
-                      <span className="font-medium text-foreground">0.05 ETH</span>
+                      <span className="font-medium text-foreground">
+                        {MINT_PRICE_ETH} ETH
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Quantity</span>
@@ -173,7 +256,7 @@ export default function MintPage() {
                     <div className="border-t border-border pt-3 flex justify-between">
                       <span className="font-medium text-foreground">Total</span>
                       <span className="font-display text-lg text-foreground">
-                        {(0.05 * quantity).toFixed(2)} ETH
+                        {(MINT_PRICE_ETH * quantity).toFixed(2)} ETH
                       </span>
                     </div>
                   </div>
@@ -183,9 +266,21 @@ export default function MintPage() {
                     size="lg"
                     className="w-full"
                     onClick={handleMint}
-                    disabled={isMinting || quantity < 1}
+                    disabled={isPending || quantity < 1 || status === "awaiting-wallet"}
                   >
-                    {isMinting ? "Minting..." : `Mint ${quantity} NFT${quantity > 1 ? "s" : ""}`}
+                    {isPending && status === "awaiting-wallet" ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {buttonLabel}
+                      </>
+                    ) : isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {buttonLabel}
+                      </>
+                    ) : (
+                      buttonLabel
+                    )}
                   </Button>
                 </>
               )}

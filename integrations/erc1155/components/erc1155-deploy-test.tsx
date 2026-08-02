@@ -21,12 +21,11 @@ export function Erc1155DeployTest() {
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!walletClient) return
+    if (!walletClient || !walletClient.chain) return
     setIsSigning(true)
 
     let hash: `0x${string}` | undefined
     try {
-      // @ts-ignore
       hash = await walletClient.deployContract({
         abi: erc1155ABI,
         bytecode: erc1155ByteCode,
@@ -38,7 +37,7 @@ export function Erc1155DeployTest() {
     setIsSigning(false)
     setIsWaitingTransaction(true)
     try {
-      // @ts-ignore
+      if (!hash || !publicClient) return
       const receipt = await publicClient.waitForTransactionReceipt({ hash })
       if (!receipt.contractAddress) return
 

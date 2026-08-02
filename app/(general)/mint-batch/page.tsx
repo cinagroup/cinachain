@@ -1,18 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { useAccount } from "wagmi"
-import { writeContract } from "@wagmi/core"
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import type { Hash } from "viem"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { Plus, Trash2, Loader2 } from "lucide-react"
-
-const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT ||
-  "0x0000000000000000000000000000000000000000") as `0x${string}`
+import { Plus, Trash2, Loader2, CheckCircle2, ExternalLink } from "lucide-react"
+import { CINA_ERC1155_CONTRACT } from "@/lib/contracts/addresses"
 
 const MINT_BATCH_ABI = [
   {
@@ -36,10 +34,18 @@ interface MintItem {
 
 export default function BatchMintPage() {
   const { address, isConnected } = useAccount()
+  const { writeContractAsync, isPending: writePending } = useWriteContract()
   const [items, setItems] = useState<MintItem[]>([{ id: "1", amount: "1" }])
-  const [isMinting, setIsMinting] = useState(false)
+  const [txHash, setTxHash] = useState<Hash | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+
+  const { isSuccess: confirmed, isError: reverted } =
+    useWaitForTransactionReceipt({
+      hash: txHash ?? undefined,
+      query: { enabled: !!txHash },
+    })
+
+  const isMinting = writePending || (!!txHash && !confirmed && !reverted)
 
   const addItem = () => {
     setItems([...items, { id: "", amount: "1" }])
@@ -56,7 +62,18 @@ export default function BatchMintPage() {
   }
 
   const handleBatchMint = async () => {
-    if (!address) return
+    if (!address) {
+      setError("Wallet not connected")
+      return
+    }
+
+    if (
+      !CINA_ERC1155_CONTRACT ||
+      CINA_ERC1155_CONTRACT === "0x0000000000000000000000000000000000000000"
+    ) {
+      setError("ERC1155 contract address not configured")
+      return
+    }
 
     // 验证输入
     const validItems = items.filter((item) => item.id && item.amount)
@@ -65,26 +82,37 @@ export default function BatchMintPage() {
       return
     }
 
-    setIsMinting(true)
+    for (const item of validItems) {
+      const id = Number(item.id)
+      const amount = Number(item.amount)
+      if (!Number.isInteger(id) || id < 0) {
+        setError(`Token ID "${item.id}" is invalid`)
+        return
+      }
+      if (!Number.isInteger(amount) || amount < 1) {
+        setError(`Amount "${item.amount}" must be a positive integer`)
+        return
+      }
+    }
+
     setError(null)
-    setSuccess(false)
+    setTxHash(null)
 
     try {
       const ids = validItems.map((item) => BigInt(item.id))
       const amounts = validItems.map((item) => BigInt(item.amount))
 
-      await writeContract({
-        address: CONTRACT_ADDRESS,
+      const hash = await writeContractAsync({
+        address: CINA_ERC1155_CONTRACT,
         abi: MINT_BATCH_ABI,
         functionName: "mintBatch",
         args: [address, ids, amounts, "0x"],
       })
 
-      setSuccess(true)
+      setTxHash(hash)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to mint batch")
-    } finally {
-      setIsMinting(false)
+      const anyErr = err as unknown as { shortMessage?: string; message?: string }
+      setError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint batch")
     }
   }
 
@@ -132,18 +160,44 @@ export default function BatchMintPage() {
         </div>
 
         <div className="max-w-2xl space-y-6">
-          {/* Alert Messages */}
+          {/* Error Message */}
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          {success && (
+          {/* Success Message */}
+          {confirmed && txHash && (
             <Alert className="bg-[#aaffec] border-[#50e3c2]/20">
+              <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
               <AlertDescription className="text-sm text-[#29bc9b]">
-                Batch mint successful!
+                Batch mint confirmed!{" "}
+                <a
+                  href={`https://etherscan.io/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 underline"
+                >
+                  View on Etherscan <ExternalLink className="h-3 w-3" />
+                </a>
               </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Pending Message */}
+          {isMinting && txHash && !confirmed && !reverted && (
+            <Alert className="bg-[#d3e5ff] border-[#0070f3]/20">
+              <Loader2 className="h-4 w-4 animate-spin text-[#0761d1]" />
+              <AlertDescription className="text-sm text-[#0761d1]">
+                Transaction submitted. Waiting for confirmation...
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {reverted && (
+            <Alert variant="destructive">
+              <AlertDescription>Transaction reverted on-chain.</AlertDescription>
             </Alert>
           )}
 

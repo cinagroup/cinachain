@@ -31,7 +31,6 @@ export function ERC721Deploy() {
 
     let hash: `0x${string}` | undefined
     try {
-      // @ts-ignore
       hash = await deployContract(walletClient, {
         abi: erc721ABI,
         bytecode: erc721ByteCode,

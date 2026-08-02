@@ -16,8 +16,7 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/actions/*": ["integrations/*"]
+      "@/*": ["./*"]
     },
     "plugins": [
       {
@@ -34,5 +33,5 @@
     "**/*.js",
     "*.cjs"
   ],
-  "exclude": ["node_modules", ".next", ".vscode", "generated"]
+  "exclude": ["node_modules", ".next", ".vscode", "generated", "workers"]
 }

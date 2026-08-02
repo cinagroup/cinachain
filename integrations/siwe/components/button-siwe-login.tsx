@@ -1,17 +1,25 @@
 "use client"
 
-import { HTMLAttributes } from "react"
-import { useAccount, useSignMessage } from "wagmi"
+import { type HTMLAttributes } from "react"
+import { useAccount } from "wagmi"
 
-import { useUser } from "@/lib/hooks/use-user"
+import { useSiwe } from "@/lib/hooks/use-siwe"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { siweLogin } from "@/integrations/siwe/actions/siwe-login"
+import { Loader2 } from "lucide-react"
 
 interface ButtonSIWELoginProps extends HTMLAttributes<HTMLButtonElement> {
   label?: string
   disabled?: boolean
 }
+
+/**
+ * Client-side SIWE login button.
+ * Signs an EIP-4361 message and stores the session in localStorage.
+ *
+ * NOTE: This is UX-only authentication. The authoritative access control
+ * for privileged operations lives in the smart contract.
+ */
 export const ButtonSIWELogin = ({
   className,
   label = "Sign-In With Ethereum",
@@ -19,38 +27,23 @@ export const ButtonSIWELogin = ({
   children,
   ...props
 }: ButtonSIWELoginProps) => {
-  const { mutateUser } = useUser()
-  const { isPending, signMessageAsync } = useSignMessage()
-  const { address, chain } = useAccount()
+  const { address } = useAccount()
+  const { signIn, isLoading } = useSiwe()
 
-  const handleCreateMessage = async () => {
-    try {
-      if (!address || !chain?.id) return
-      await siweLogin({ address, chainId: chain?.id, signMessageAsync })
-      await mutateUser()
-    } catch (error) {
-      console.error(error)
-    }
-  }
   const classes = cn("relative", className)
-  const labelClasses = cn({
-    "opacity-0": isPending,
-  })
 
   return (
     <Button
       variant="emerald"
       size="lg"
       className={classes}
-      disabled={disabled}
+      disabled={disabled || isLoading || !address}
       type="button"
-      onClick={() => void handleCreateMessage()}
+      onClick={() => void signIn()}
       {...props}
     >
-      {isPending && (
-        <span className="absolute left-1/2 top-1/2 inline-block h-5 w-5 -translate-x-1/2 -translate-y-1/2" />
-      )}
-      <span className={labelClasses}>{children || label || "Logout"}</span>
+      {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+      {children || label}
     </Button>
   )
 }

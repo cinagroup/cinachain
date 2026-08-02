@@ -2,7 +2,7 @@
 
 import "@rainbow-me/rainbowkit/styles.css"
 
-import { type ReactNode } from "react"
+import { useMemo, type ReactNode } from "react"
 import { env } from "@/env.mjs"
 import {
   darkTheme,
@@ -17,18 +17,42 @@ import { chains, transports } from "@/config/networks"
 import { siteConfig } from "@/config/site"
 import { useColorMode } from "@/lib/state/color-mode"
 
+const PROJECT_ID =
+  env.NEXT_PUBLIC_WC_PROJECT_ID && env.NEXT_PUBLIC_WC_PROJECT_ID !== "placeholder"
+    ? env.NEXT_PUBLIC_WC_PROJECT_ID
+    : process.env.NEXT_PUBLIC_WC_PROJECT_ID ?? ""
+
+if (!PROJECT_ID && process.env.NODE_ENV === "development") {
+  console.warn(
+    "[cinachain] NEXT_PUBLIC_WC_PROJECT_ID is not set. WalletConnect (mobile wallets) will not work."
+  )
+}
+
 const wagmiConfig = getDefaultConfig({
   appName: siteConfig.title,
-  projectId: env.NEXT_PUBLIC_WC_PROJECT_ID,
+  projectId: PROJECT_ID,
   chains,
   transports,
-  ssr: true,
+  // Static export (output: "export") has no server runtime.
+  // ssr must be false to avoid hydration mismatches.
+  ssr: false,
 })
-
-const queryClient = new QueryClient()
 
 export function RainbowKit({ children }: { children: ReactNode }) {
   const [colorMode] = useColorMode()
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            // Avoid aggressive refetching of contract reads
+            staleTime: 10_000,
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+    []
+  )
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>

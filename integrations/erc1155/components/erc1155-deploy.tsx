@@ -29,7 +29,6 @@ export function Erc1155Deploy() {
 
     let hash: `0x${string}` | undefined
     try {
-      // @ts-ignore
       hash = await deployContract(walletClient, {
         abi: erc1155ABI,
         bytecode: erc1155ByteCode,
