@@ -44,6 +44,8 @@ export const env = createEnv({
     NEXT_PUBLIC_MINT_PRICE_ETH: z.string().default("0.05"),
     // Whitelist API (Cloudflare Worker)
     NEXT_PUBLIC_WHITELIST_API_URL: z.string().url().optional(),
+    // Paymaster proxy URL for gasless minting (empty = disabled)
+    NEXT_PUBLIC_PAYMASTER_PROXY_URL: z.string().optional(),
     NEXT_PUBLIC_APP_ADMINS: z.string().optional(),
   },
   runtimeEnv: {
@@ -64,6 +66,7 @@ export const env = createEnv({
     NEXT_PUBLIC_CINA_ERC1155_CONTRACT: process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT,
     NEXT_PUBLIC_MINT_PRICE_ETH: process.env.NEXT_PUBLIC_MINT_PRICE_ETH,
     NEXT_PUBLIC_WHITELIST_API_URL: process.env.NEXT_PUBLIC_WHITELIST_API_URL,
+    NEXT_PUBLIC_PAYMASTER_PROXY_URL: process.env.NEXT_PUBLIC_PAYMASTER_PROXY_URL,
     NEXT_PUBLIC_APP_ADMINS: process.env.NEXT_PUBLIC_APP_ADMINS,
   },
 })

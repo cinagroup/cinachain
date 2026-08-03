@@ -28,6 +28,19 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+  webpack: (config) => {
+    // Ignore optional peer deps from @base-org/account (x402 protocol).
+    // These are only used for HTTP 402 payment flows which we don't use.
+    config.externals = config.externals || []
+    config.externals.push({
+      "@x402/evm/upto/client": "commonjs @x402/evm/upto/client",
+      "@x402/evm/exact/client": "commonjs @x402/evm/exact/client",
+      "@x402/core/client": "commonjs @x402/core/client",
+      "@x402/svm/exact/client": "commonjs @x402/svm/exact/client",
+      "@x402/evm": "commonjs @x402/evm",
+    })
+    return config
+  },
 }
 
 export default nextConfig

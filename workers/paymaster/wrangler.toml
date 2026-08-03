@@ -1,0 +1,8 @@
+name = "cinachain-paymaster"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# CDP Paymaster URL — set via wrangler secret:
+# npx wrangler secret put CDP_PAYMASTER_URL
+# Value format: https://api.developer.coinbase.com/rpc/v1/base/<YOUR_KEY>
+# Get from: https://portal.cdp.coinbase.com → Paymaster → Configuration

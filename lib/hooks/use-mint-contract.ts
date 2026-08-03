@@ -2,6 +2,7 @@ import { useState, useCallback } from "react"
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import { parseEther, type Hash } from "viem"
 import { CINA_NFT_CONTRACT, MINT_PRICE_ETH } from "@/lib/contracts/addresses"
+import { usePaymasterCapabilities } from "@/lib/hooks/use-paymaster"
 
 const MINT_ABI = [
   {
@@ -41,6 +42,7 @@ export interface UseMintContractResult {
   error: string | null
   txHash: Hash | null
   reset: () => void
+  isGasless: boolean
 }
 
 /**
@@ -52,6 +54,7 @@ export interface UseMintContractResult {
 export function useMintContract(): UseMintContractResult {
   const { writeContractAsync, isPending: writePending, error: writeError } =
     useWriteContract()
+  const { capabilities, isPaymasterSupported } = usePaymasterCapabilities()
 
   const [txHash, setTxHash] = useState<Hash | null>(null)
   const [status, setStatus] = useState<MintStatus>("idle")
@@ -104,6 +107,8 @@ export function useMintContract(): UseMintContractResult {
           abi: MINT_ABI,
           functionName: "mintWhitelist",
           args: [proof as readonly `0x${string}`[], BigInt(quantity)],
+          // capabilities is empty for EOA wallets, paymaster-tagged for Smart Wallets
+          capabilities,
         })
         setTxHash(hash)
         setStatus("submitted")
@@ -114,7 +119,7 @@ export function useMintContract(): UseMintContractResult {
         return undefined
       }
     },
-    [writeContractAsync]
+    [writeContractAsync, capabilities]
   )
 
   const doMintPublic = useCallback(
@@ -138,6 +143,7 @@ export function useMintContract(): UseMintContractResult {
           functionName: "mintPublic",
           args: [BigInt(quantity)],
           value: parseEther(String(MINT_PRICE_ETH)) * BigInt(quantity),
+          capabilities,
         })
         setTxHash(hash)
         setStatus("submitted")
@@ -172,5 +178,6 @@ export function useMintContract(): UseMintContractResult {
     error: error ?? (writeError ? extractError(writeError) : null),
     txHash,
     reset,
+    isGasless: isPaymasterSupported,
   }
 }

@@ -32,6 +32,7 @@ export default function MintPage() {
     error,
     txHash,
     reset,
+    isGasless,
   } = useMintContract()
 
   useEffect(() => {
@@ -158,7 +159,14 @@ export default function MintPage() {
         <div className="max-w-md">
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Mint Details</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Mint Details
+                {isGasless && (
+                  <span className="rounded-full bg-[#50e3c2]/20 px-2 py-0.5 text-[10px] font-semibold text-[#29bc9b]">
+                    ⚡ Gasless
+                  </span>
+                )}
+              </CardTitle>
               <CardDescription>
                 {mintPhase === "whitelist" && "Whitelist mint active"}
                 {mintPhase === "public" && "Public mint active"}

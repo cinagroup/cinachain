@@ -28,6 +28,10 @@ if (!PROJECT_ID && process.env.NODE_ENV === "development") {
   )
 }
 
+// getDefaultConfig already includes coinbaseWallet() with preference: 'all'.
+// This means users get both Smart Wallet (passkey) and EOA options automatically.
+// No explicit connectors array needed — keeping defaults preserves MetaMask,
+// WalletConnect, and Coinbase Smart Wallet all at once.
 const wagmiConfig = getDefaultConfig({
   appName: siteConfig.title,
   projectId: PROJECT_ID,
@@ -36,6 +40,9 @@ const wagmiConfig = getDefaultConfig({
   // Static export (output: "export") has no server runtime.
   // ssr must be false to avoid hydration mismatches.
   ssr: false,
+  // Coinbase Smart Wallet is enabled by default via getDefaultConfig.
+  // Users will see "Coinbase Wallet" in the modal and can create
+  // a passkey-based smart wallet without leaving the page.
 })
 
 export function RainbowKit({ children }: { children: ReactNode }) {
@@ -45,7 +52,6 @@ export function RainbowKit({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Avoid aggressive refetching of contract reads
             staleTime: 10_000,
             refetchOnWindowFocus: false,
           },
@@ -58,6 +64,8 @@ export function RainbowKit({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
           theme={colorMode == "dark" ? darkTheme() : lightTheme()}
+          // Enable Smart Wallet features (EIP-5792 capabilities)
+          showRecentTransactions
         >
           {children}
         </RainbowKitProvider>
