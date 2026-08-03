@@ -1,0 +1,15 @@
+# Foundry
+out/
+cache/
+lib/
+
+# Environment
+.env
+
+# Compiled artifacts
+*.abi.json
+*.bin
+
+# OS
+.DS_Store
+Thumbs.db

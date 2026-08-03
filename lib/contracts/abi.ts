@@ -23,8 +23,9 @@ export const CINA_NFT_ABI = [
   parseAbiItem(
     "function mintPublic(uint256 quantity) payable"
   ),
+  // Whitelist mint is FREE (nonpayable) — contract design decision
   parseAbiItem(
-    "function mintWhitelist(bytes32[] proof, uint256 quantity) payable"
+    "function mintWhitelist(bytes32[] proof, uint256 quantity)"
   ),
 
   // Config reads
