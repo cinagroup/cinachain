@@ -68,18 +68,37 @@ function isAllowedUri(uri: string): boolean {
   return ALLOWED_SCHEMES.some((s) => uri.startsWith(s))
 }
 
+/** Prefix for on-chain base64-encoded JSON metadata (CinaNFT default) */
+const DATA_JSON_PREFIX = "data:application/json;base64,"
+
 /**
  * Fetch NFT metadata from a tokenURI.
- * - Validates the URI scheme to prevent SSRF.
- * - Tries the metadata gateway first, then falls back to public gateways.
- * - 8-second timeout per attempt.
- * @param tokenUri ipfs:// or https:// URI returned by the contract
+ * - Handles on-chain base64 JSON (data: URI) by decoding directly
+ * - Validates the URI scheme to prevent SSRF for external fetches
+ * - Tries the metadata gateway first, then falls back to public gateways
+ * - 8-second timeout per attempt
+ * @param tokenUri ipfs://, https://, or data:application/json;base64,... URI
  */
 export async function fetchNftMetadata(
   tokenUri: string
 ): Promise<NftMetadata | null> {
-  if (!tokenUri || !isAllowedUri(tokenUri)) {
-    console.warn("[cinachain] Rejected tokenURI scheme:", tokenUri?.slice(0, 40))
+  if (!tokenUri) return null
+
+  // On-chain base64 JSON (CinaNFT default when baseURI is not set)
+  if (tokenUri.startsWith(DATA_JSON_PREFIX)) {
+    try {
+      const b64 = tokenUri.slice(DATA_JSON_PREFIX.length)
+      const json = atob(b64)
+      return JSON.parse(json) as NftMetadata
+    } catch {
+      console.warn("[cinachain] Failed to decode on-chain metadata")
+      return null
+    }
+  }
+
+  // Reject non-allowed schemes (SSRF protection)
+  if (!isAllowedUri(tokenUri)) {
+    console.warn("[cinachain] Rejected tokenURI scheme:", tokenUri.slice(0, 40))
     return null
   }
 

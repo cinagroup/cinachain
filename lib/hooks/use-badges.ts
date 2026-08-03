@@ -114,27 +114,3 @@ export function useUserBadges(address?: Address) {
     isError,
   }
 }
-
-/**
- * Get details about a specific badge type from the contract.
- */
-export function useBadgeType(tokenId: bigint | number) {
-  const { data, isLoading } = useReadContract({
-    address: CINA_ERC1155_CONTRACT,
-    abi: BADGE_ABI,
-    functionName: "getBadgeType",
-    args: [BigInt(tokenId)],
-    query: { enabled: hasErc1155Contract },
-  })
-
-  return {
-    data,
-    isLoading,
-    name: (data?.[0] as string) ?? "",
-    description: (data?.[1] as string) ?? "",
-    soulbound: data?.[2] ?? false,
-    maxSupply: data?.[3] ?? 0n,
-    totalMinted: data?.[4] ?? 0n,
-    exists: data?.[5] ?? false,
-  }
-}
