@@ -44,7 +44,7 @@ function loadArtifact(name) {
 // ─── Deploy helper ───
 async function deploy(name, abi, bytecode, args) {
   console.log(`\n📦 Deploying ${name}...`)
-  console.log(`   Args: ${JSON.stringify(args).slice(0, 100)}`)
+  console.log(`   Args: ${args.map(a => typeof a === 'bigint' ? a.toString() : typeof a === 'string' && a.length > 20 ? a.slice(0,10)+'...' : a).join(', ')}`)
 
   const hash = await walletClient.deployContract({ abi, bytecode, args, chain })
 
