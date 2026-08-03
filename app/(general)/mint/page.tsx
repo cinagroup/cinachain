@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useAccount } from "wagmi"
+import { useQueryClient } from "@tanstack/react-query"
 import { useWhitelist } from "@/lib/hooks/use-whitelist"
 import { useMintContract } from "@/lib/hooks/use-mint-contract"
+import { useContractStats } from "@/lib/hooks/use-contract-stats"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,11 +17,15 @@ import { MINT_PRICE_ETH } from "@/lib/contracts/addresses"
 
 export default function MintPage() {
   const { address, isConnected } = useAccount()
+  const queryClient = useQueryClient()
   const {
     data: whitelistData,
     isLoading: whitelistLoading,
     isError: whitelistError,
   } = useWhitelist(address)
+  const { paused } = useContractStats()
+  const isPaused = paused?.data === true
+
   const [quantity, setQuantity] = useState(1)
   const [mintPhase, setMintPhase] = useState<"whitelist" | "public" | "inactive">("inactive")
 
@@ -36,6 +42,11 @@ export default function MintPage() {
   } = useMintContract()
 
   useEffect(() => {
+    // Contract paused overrides everything
+    if (isPaused) {
+      setMintPhase("inactive")
+      return
+    }
     if (!whitelistData) return
     if (whitelistData.eligible) {
       setMintPhase("whitelist")
@@ -44,14 +55,17 @@ export default function MintPage() {
     } else {
       setMintPhase("inactive")
     }
-  }, [whitelistData])
+  }, [whitelistData, isPaused])
 
-  // 交易完成后，刷新数量输入
+  // After successful mint: reset quantity + invalidate queries
   useEffect(() => {
     if (isConfirmed) {
-      // 用户可以继续铸造
+      setQuantity(1)
+      queryClient.invalidateQueries({ queryKey: ["whitelist"] })
+      queryClient.invalidateQueries({ queryKey: ["nft-balance"] })
+      queryClient.invalidateQueries({ queryKey: ["contract-stats"] })
     }
-  }, [isConfirmed])
+  }, [isConfirmed, queryClient])
 
   const handleMint = async () => {
     if (quantity < 1) return

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import { parseEther, type Hash } from "viem"
 import { CINA_NFT_CONTRACT, MINT_PRICE_ETH } from "@/lib/contracts/addresses"
@@ -69,12 +69,14 @@ export function useMintContract(): UseMintContractResult {
     query: { enabled: !!txHash },
   })
 
-  // 同步交易回执状态
-  if (receiptConfirmed && status === "submitted") setStatus("confirmed")
-  if (receiptFailed && status === "submitted") {
-    setStatus("reverted")
-    setError(receiptError?.message ?? "Transaction reverted")
-  }
+  // Sync receipt state via useEffect (not during render)
+  useEffect(() => {
+    if (receiptConfirmed && status === "submitted") setStatus("confirmed")
+    if (receiptFailed && status === "submitted") {
+      setStatus("reverted")
+      setError(receiptError?.message ?? "Transaction reverted")
+    }
+  }, [receiptConfirmed, receiptFailed, receiptError, status])
 
   const extractError = (err: unknown): string => {
     if (err instanceof Error) {
@@ -154,7 +156,7 @@ export function useMintContract(): UseMintContractResult {
         return undefined
       }
     },
-    [writeContractAsync]
+    [writeContractAsync, capabilities]
   )
 
   const reset = useCallback(() => {

@@ -28,6 +28,10 @@ const NO_CACHE_PATTERNS = [
   "eth.llamarpc.com",
   "mainnet.base.org",
   "rpc.sepolia.org",
+  "sepolia.base.org",
+  "base-sepolia.publicnode.com",
+  "cinachain-whitelist-api.cinagroup.workers.dev",
+  "cinachain-paymaster.cinagroup.workers.dev",
 ]
 
 // 安装事件：预缓存关键资源

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
 import { useTokenMetadata } from "@/lib/hooks/use-token-metadata"
-import { useMintPrice } from "@/lib/hooks/use-mint-price"
 import CinaNftImage from "@/components/CinaNftImage"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
 import { hasNftContract } from "@/lib/contracts/addresses"

@@ -195,7 +195,11 @@ export default function ContractManagementPage() {
               </AlertDescription>
             </Alert>
             <Button
-              onClick={() => handleAction("withdraw", "Withdrawal")}
+              onClick={() => {
+                if (window.confirm("Withdraw ALL ETH from the contract to the owner address? This cannot be undone.")) {
+                  handleAction("withdraw", "Withdrawal")
+                }
+              }}
               disabled={isBusy}
               variant="outline"
               className="w-full"

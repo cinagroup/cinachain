@@ -12,6 +12,8 @@ export default function StatsPage() {
   const { mintedCount, maxCount, mintPrice, isLoading } = useContractStats()
 
   const price = mintPrice.data ? Number(mintPrice.data) / 1e18 : MINT_PRICE_ETH
+  // Note: this is an estimate. Actual revenue should be computed from Mint events.
+  // Whitelist mints are free, so this overstates revenue if any whitelist mints occurred.
   const revenue = mintedCount * price
   const progress = maxCount > 0 ? (mintedCount / maxCount) * 100 : 0
   const remaining = Math.max(0, maxCount - mintedCount)
@@ -79,7 +81,7 @@ export default function StatsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Revenue
+                Est. Revenue
               </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -88,7 +90,7 @@ export default function StatsPage() {
                 {revenue.toFixed(2)} ETH
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                collected from minting
+                estimate (public mints only)
               </p>
             </CardContent>
           </Card>

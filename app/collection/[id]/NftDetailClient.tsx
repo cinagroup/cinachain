@@ -34,7 +34,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
     !!address && !!owner && address.toLowerCase() === owner.toLowerCase()
 
   return (
-    <div className="min-h-screen bg-background">
+    <div>
       {/* Breadcrumb */}
       <nav className="mb-8">
         <ol className="flex items-center gap-2 text-sm">

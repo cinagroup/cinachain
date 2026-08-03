@@ -6,40 +6,30 @@ export function useFavorites() {
   const [favorites, setFavorites] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
 
-  // Load favorites from localStorage on mount
+  // Load favorites from localStorage on mount (single effect)
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return
+    try {
       const stored = localStorage.getItem(FAVORITES_KEY)
       if (stored) {
-        try {
-          setFavorites(JSON.parse(stored))
-        } catch (error) {
-          console.error("Failed to parse favorites:", error)
-        }
+        setFavorites(JSON.parse(stored))
       }
-      setMounted(true)
+    } catch {
+      // Corrupted data — reset
+      localStorage.removeItem(FAVORITES_KEY)
     }
+    setMounted(true)
   }, [])
 
-  // Load favorites from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(FAVORITES_KEY)
-      if (stored) {
-        try {
-          setFavorites(JSON.parse(stored))
-        } catch (error) {
-          console.error("Failed to parse favorites:", error)
-        }
-      }
-    }
-  }, [])
-
-  // Save to localStorage whenever favorites change
+  // Save to localStorage with error handling
   const updateFavorites = (newFavorites: string[]) => {
     setFavorites(newFavorites)
-    if (typeof window !== "undefined") {
+    if (typeof window === "undefined") return
+    try {
       localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites))
+    } catch {
+      // Quota exceeded or private mode — keep in-memory state only
+      console.warn("[cinachain] Failed to persist favorites")
     }
   }
 
@@ -51,13 +41,9 @@ export function useFavorites() {
     }
   }
 
-  const isFavorite = (tokenId: string) => {
-    return favorites.includes(tokenId)
-  }
+  const isFavorite = (tokenId: string) => favorites.includes(tokenId)
 
-  const clearFavorites = () => {
-    updateFavorites([])
-  }
+  const clearFavorites = () => updateFavorites([])
 
   return {
     favorites,
