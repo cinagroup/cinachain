@@ -22,7 +22,7 @@ export default function AccountPage() {
   const { data: ensName, isLoading: ensLoading } = useEnsName({ address })
 
   // Chain-aware explorer URL
-  const explorerBase = chain?.blockExplorers?.default?.url || "https://etherscan.io"
+  const explorerBase = chain?.blockExplorers?.default?.url || "https://basescan.org"
 
   return (
     <div className="min-h-screen bg-background">

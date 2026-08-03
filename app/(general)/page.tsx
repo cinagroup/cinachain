@@ -39,7 +39,7 @@ export default function HomePage() {
           {/* Eyebrow */}
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 shadow-vercel-sm">
             <span className="text-xs font-medium text-foreground/60">
-              NFT Platform on Ethereum
+              NFT Platform on Base
             </span>
             <span className="inline-flex h-4 items-center rounded-full bg-violet/10 px-2 text-[10px] font-semibold text-violet">
               {paused ? "Paused" : "Live"}

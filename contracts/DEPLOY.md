@@ -1,36 +1,41 @@
-# CinaNFT 合约部署指南
+# CinaNFT 合约部署指南 — Base L2
+
+## 网络
+
+CinaChain DApp 运行在 **Base L2**（Coinbase 的以太坊 L2）上，具有极低的 gas 费用（比以太坊主网低 100-500 倍）。
+
+| 网络 | Chain ID | RPC | 浏览器 |
+|------|---------|-----|--------|
+| **Base Mainnet** | 8453 | `https://mainnet.base.org` | [basescan.org](https://basescan.org) |
+| **Base Sepolia** (测试网) | 84532 | `https://sepolia.base.org` | [sepolia.basescan.org](https://sepolia.basescan.org) |
+
+---
 
 ## 前置要求
 
 ### 1. 安装 Foundry
 
 ```bash
-# macOS / Linux
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-
-# Windows (在 Git Bash 中运行)
+# macOS / Linux / Windows(Git Bash)
 curl -L https://foundry.paradigm.xyz | bash
 foundryup
 ```
 
-验证安装：
-```bash
-forge --version
-```
+验证：`forge --version`
 
-### 2. 获取测试 ETH
+### 2. 获取测试 ETH（Base Sepolia）
 
-前往 Sepolia Faucet 获取测试 ETH：
-- https://sepoliafaucet.com/
-- https://www.alchemy.com/faucets/ethereum-sepolia
-- https://infura.io/faucet/sepolia
+你需要 **Base 上的 ETH**（不是以太坊主网 ETH）。获取方式：
 
-需要至少 **0.1 ETH** 用于部署 gas。
+- **从 Coinbase 交易所提取**：直接提现到 Base 网络（免费）
+- **跨链桥**：使用 [bridge.base.org](https://bridge.base.org)
+- **Base Sepolia Faucet**：[faucet.quicknode.com/base/sepolia](https://faucet.quicknode.com/base/sepolia)
 
-### 3. 获取 Etherscan API Key
+至少需要 **0.01 ETH** 用于部署 gas。
 
-前往 https://etherscan.io/myapikey 创建免费 API Key（用于合约验证）。
+### 3. 获取 Basescan API Key
+
+前往 [basescan.org/myapikey](https://basescan.org/myapikey) 创建免费 API Key。
 
 ---
 
@@ -40,148 +45,118 @@ forge --version
 
 ```bash
 cd contracts
-
-# 安装 OpenZeppelin 合约
 forge install OpenZeppelin/openzeppelin-contracts --no-commit
-
-# 安装 forge-std（测试库，通常已自动包含）
 forge install foundry-rs/forge-std --no-commit
 ```
 
-### Step 2: 配置环境变量
+### Step 2: 配置环境
 
 ```bash
-# 复制环境变量模板
 cp .env.example .env
-
-# 编辑 .env，填入你的私钥和 RPC URL
-# PRIVATE_KEY=0x...（你的钱包私钥）
-# SEPOLIA_RPC_URL=https://ethereum-sepolia.publicnode.com
-# ETHERSCAN_API_KEY=...
+# 编辑 .env：
+#   PRIVATE_KEY=0x你的私钥
+#   BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+#   BASESCAN_API_KEY=你的key
 ```
 
-### Step 3: 编译合约
+### Step 3: 编译 + 测试
 
 ```bash
 forge build
-```
-
-### Step 4: 运行测试
-
-```bash
 forge test -vvv
 ```
 
-所有测试应该通过 ✅
-
-### Step 5: 部署到 Sepolia
+### Step 4: 部署到 Base Sepolia（测试网）
 
 ```bash
-# 加载环境变量
 source .env
 
-# 部署合约
 forge script script/DeployCinaNFT.s.sol \
-  --rpc-url $SEPOLIA_RPC_URL \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
   --private-key $PRIVATE_KEY \
   --broadcast \
   --verify \
-  --etherscan-api-key $ETHERSCAN_API_KEY \
+  --etherscan-api-key $BASESCAN_API_KEY \
   -vvv
 ```
 
-部署成功后，终端会输出合约地址，例如：
+部署成功后输出：
 ```
-CinaNFT deployed at: 0x1234...abcd
+CinaNFT deployed at: 0x...
 
 === Add to .env.local ===
-NEXT_PUBLIC_CINA_NFT_CONTRACT=0x1234...abcd
+NEXT_PUBLIC_CINA_NFT_CONTRACT=0x...
 ==========================
+```
+
+### Step 5: 部署到 Base Mainnet（生产环境）
+
+测试验证通过后，部署到主网：
+
+```bash
+source .env
+
+forge script script/DeployCinaNFT.s.sol \
+  --rpc-url $BASE_RPC_URL \
+  --private-key $PRIVATE_KEY \
+  --broadcast \
+  --verify \
+  --etherscan-api-key $BASESCAN_API_KEY \
+  -vvv
 ```
 
 ### Step 6: 更新 DApp 配置
 
-将合约地址添加到项目根目录的 `.env.local`：
-
+将合约地址写入项目根目录的 `.env.local`：
 ```bash
-# 在项目根目录 (E:\cinagroup\cinachain)
 NEXT_PUBLIC_CINA_NFT_CONTRACT=0x你的合约地址
 ```
 
-重新构建并部署：
+重新构建并部署 DApp：
 ```bash
 npm run build
-npx wrangler pages deploy out --project-name=cinachain-nft-dapp --commit-dirty=true
+CLOUDFLARE_API_TOKEN=your_token npx wrangler pages deploy out --project-name=cinachain-nft-dapp --commit-dirty=true
 ```
 
 ---
 
-## 部署后配置
+## 合约功能
 
-### 设置白名单 Merkle Root（可选）
+| 功能 | 函数 | 费用 | 上限 |
+|------|------|------|------|
+| 公共铸造 | `mintPublic(quantity)` | 0.001 ETH/个 | 10 个/地址 |
+| 白名单铸造 | `mintWhitelist(proof, qty)` | **免费** | 3 个/地址 |
+| 最大供应 | — | — | 10,000 |
 
-如果需要白名单铸造功能：
-
-1. 生成 Merkle Root（使用 JavaScript）：
-```javascript
-const { MerkleTree } = require("merkletreejs")
-const { keccak256, abi } = require("viem")
-
-const addresses = [
-  "0xAddress1",
-  "0xAddress2",
-  // ...
-]
-
-const leaves = addresses.map(addr => keccak256(abi.encodePacked(addr)))
-const tree = new MerkleTree(leaves, keccak256)
-const root = tree.getHexRoot()
-
-console.log("Merkle Root:", root)
-```
-
-2. 通过 Admin 面板或 Etherscan 设置：
-   - 前往 `https://sepolia.etherscan.io/address/你的合约#writeContract`
-   - 连接 Owner 钱包
-   - 调用 `setMerkleRoot` 函数
-
-### 设置 IPFS BaseURI（可选）
-
-如果要使用 IPFS 元数据替代链上生成的元数据：
-
-1. 上传 NFT 图片和元数据 JSON 到 IPFS（Pinata / NFT.Storage）
-2. 获取 CID（如 `QmXYZ...`）
-3. 通过 Admin 面板调用 `setBaseURI("ipfs://QmXYZ.../")`
+### 管理员功能（仅 Owner）
+- `pause()` / `unpause()` — 紧急暂停/恢复
+- `withdraw()` — 提取合约内所有 ETH
+- `setMintPrice(wei)` — 更新铸造价格
+- `setBaseURI(uri)` — 设置 IPFS 元数据 URI
+- `setMerkleRoot(root)` — 设置白名单 Merkle Root
 
 ---
 
-## 合约功能总结
+## Base L2 优势
 
-| 功能 | 函数 | 访问控制 | 费用 |
-|------|------|---------|------|
-| 公共铸造 | `mintPublic(quantity)` | 所有人（未暂停时） | 0.05 ETH/个 |
-| 白名单铸造 | `mintWhitelist(proof, quantity)` | 白名单地址 | **免费** |
-| 暂停 | `pause()` | Owner | - |
-| 恢复 | `unpause()` | Owner | - |
-| 提现 | `withdraw()` | Owner | - |
-| 改价 | `setMintPrice(wei)` | Owner | - |
-| 改 URI | `setBaseURI(uri)` | Owner | - |
-| 改白名单 | `setMerkleRoot(root)` | Owner | - |
-
-### 限制
-- 最大供应量: **10,000**
-- 每地址公共铸造上限: **10 个**
-- 每地址白名单铸造上限: **3 个**
+| 对比项 | Ethereum 主网 | Base L2 |
+|--------|-------------|---------|
+| 单次铸造 Gas | $15-50 | **$0.01-0.10** |
+| 批量铸造 10 个 | $50-200 | **$0.05-0.50** |
+| 区块时间 | 12 秒 | **2 秒** |
+| 最终确认 | 即时 | ~7 天（提现到 L1） |
+| WalletConnect | ✅ | ✅ |
+| OpenSea 支持 | ✅ | ✅ |
 
 ---
 
 ## 验证部署
 
-部署完成后，在 DApp 上验证：
+部署完成后验证端到端流程：
 
-1. **Mint 页面** (`/mint`)：连接钱包 → 公共铸造 1 个 NFT（需要 0.05 测试 ETH）
-2. **Dashboard** (`/dashboard`)：查看持有的 NFT 数量
-3. **My NFTs** (`/dashboard/nfts`)：查看 NFT 卡片和元数据
-4. **Explore** (`/explore`)：浏览已铸造的 NFT
-5. **Admin** (`/admin/contract`)：Owner 可暂停/提现/改价
-6. **Etherscan**：在 `https://sepolia.etherscan.io/address/你的合约` 查看交易记录
+1. **Mint** (`/mint`)：连接钱包 → 铸造 1 个 NFT（0.001 ETH）
+2. **Dashboard** (`/dashboard`)：查看持有数量
+3. **My NFTs** (`/dashboard/nfts`)：查看 NFT 卡片
+4. **Explore** (`/explore`)：浏览已铸造 NFT
+5. **Admin** (`/admin/contract`)：暂停/提现/改价
+6. **Basescan**：`https://basescan.org/address/你的合约`

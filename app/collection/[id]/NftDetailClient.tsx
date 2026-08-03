@@ -82,7 +82,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
           <div className="flex gap-3">
             <Button asChild variant="outline" className="flex-1">
               <Link
-                href={`https://etherscan.io/token/${CINA_NFT_CONTRACT}?a=${tokenId}`}
+                href={`https://basescan.org/token/${CINA_NFT_CONTRACT}?a=${tokenId}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -126,7 +126,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
               </CardHeader>
               <CardContent>
                 <Link
-                  href={`https://etherscan.io/address/${owner}`}
+                  href={`https://basescan.org/address/${owner}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="break-all font-mono-tech text-sm text-link transition-colors hover:text-link-deep"
@@ -192,7 +192,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                   <dt className="text-muted-foreground">Contract Address</dt>
                   <dd>
                     <Link
-                      href={`https://etherscan.io/address/${CINA_NFT_CONTRACT}`}
+                      href={`https://basescan.org/address/${CINA_NFT_CONTRACT}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono-tech text-link transition-colors hover:text-link-deep"
@@ -207,7 +207,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Blockchain</dt>
-                  <dd className="font-medium text-foreground">Ethereum</dd>
+                  <dd className="font-medium text-foreground">Base</dd>
                 </div>
               </dl>
             </CardContent>

@@ -124,7 +124,7 @@ export default function ContractManagementPage() {
           <AlertDescription className="text-sm text-[#29bc9b]">
             {successAction} successful!{" "}
             <a
-              href={`https://etherscan.io/tx/${txHash}`}
+              href={`https://basescan.org/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
@@ -297,7 +297,7 @@ export default function ContractManagementPage() {
             </div>
             <div className="flex justify-between py-2 border-b border-border">
               <dt className="text-muted-foreground">Network</dt>
-              <dd className="font-medium">Ethereum Mainnet</dd>
+              <dd className="font-medium">Base</dd>
             </div>
             <div className="flex justify-between py-2 border-b border-border">
               <dt className="text-muted-foreground">Token Standard</dt>
