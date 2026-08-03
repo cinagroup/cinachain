@@ -13,3 +13,5 @@ lib/
 # OS
 .DS_Store
 Thumbs.db
+contracts/openzeppelin/
+contracts/out/

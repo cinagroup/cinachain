@@ -100,6 +100,7 @@
     "postcss": "^8.4.19",
     "prettier": "^2.8.1",
     "prettier-plugin-tailwindcss": "^0.2.0",
+    "solc": "^0.8.36",
     "typescript": "^5.4.5"
   }
 }

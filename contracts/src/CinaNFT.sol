@@ -195,7 +195,7 @@ contract CinaNFT is
     /// @dev Generates base64-encoded JSON metadata on-chain
     function _generateOnChainMetadata(uint256 tokenId) internal pure returns (string memory) {
         string memory name = string(abi.encodePacked("CinaChain NFT #", tokenId.toString()));
-        string memory description = "CinaChain NFT — a collectible on the Ethereum blockchain.";
+        string memory description = "CinaChain NFT - a collectible on the Ethereum blockchain.";
 
         string memory json = string(
             abi.encodePacked(
