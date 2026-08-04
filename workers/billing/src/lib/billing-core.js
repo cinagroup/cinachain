@@ -18,6 +18,19 @@ export function applyConsumption(ledger, costMicro) {
 /** Micro-credit unit: 1 credit = 1_000_000 micro-credit (per-token pricing) */
 export const MICRO = 1_000_000n
 
+/** Unit bridge: 1 micro-credit = 1e12 wei (credit = 1e18 wei = 1e6 micro) */
+export const WEI_PER_MICRO = 1_000_000_000_000n
+
+/** Convert a micro-credit cost to wei (ledger unit) */
+export function costToWei(costMicro) {
+  return costMicro * WEI_PER_MICRO
+}
+
+/** Convert micro-credit to whole credits (display only) */
+export function microToCredit(micro) {
+  return micro / MICRO
+}
+
 // Model pricing in micro-credit per token (server-configurable)
 export const pricingTable = {
   demo: { perTokenMicroCredit: 2000n }, // 1000 tokens = 2 credit

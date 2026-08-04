@@ -5,6 +5,8 @@ import {
   getTier,
   pricingTable,
   estimateCost,
+  costToWei,
+  microToCredit,
 } from "./billing-core.js"
 
 describe("computeUsable", () => {
@@ -45,6 +47,16 @@ describe("getTier / pricing", () => {
 describe("pricingTable", () => {
   it("demo model price present", () => {
     expect(pricingTable.demo.perTokenMicroCredit).toBeGreaterThan(0n)
+  })
+})
+
+describe("unit bridge", () => {
+  it("costToWei converts micro to wei", () => {
+    // 2000 micro × 1e12 wei/micro = 2e15 wei
+    expect(costToWei(2000n)).toBe(2_000_000_000_000_000n)
+  })
+  it("microToCredit converts", () => {
+    expect(microToCredit(2_000_000n)).toBe(2n)
   })
 })
 

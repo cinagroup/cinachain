@@ -6,7 +6,7 @@ import {
   estimateCost,
   getTier,
   checkQuota,
-  MICRO,
+  costToWei,
 } from "./lib/billing-core.js"
 
 const ALLOWED_ORIGINS = new Set([
@@ -47,19 +47,73 @@ function withLedgerLock(address, fn) {
   return next
 }
 
+// Lazy on-chain balance sync: per-address in-memory cache (30s TTL) so
+// ledger reads don't hit the RPC on every request. We refresh inside the
+// ledger lock, so the snapshot a request charges against is not stale
+// relative to concurrent writes for the same address.
+const snapshotCache = new Map()
+const SNAPSHOT_TTL = 30_000
+
+// Returns the fresh on-chain balance in wei, or null when the RPC is
+// unreachable — callers then fall back to the ledger-stored snapshot.
+async function refreshSnapshot(env, address) {
+  const cached = snapshotCache.get(address)
+  if (cached && Date.now() - cached.ts < SNAPSHOT_TTL) return cached.value
+  try {
+    const balance = await fetchBalance(env, address)
+    snapshotCache.set(address, { value: balance, ts: Date.now() })
+    return balance
+  } catch {
+    return null
+  }
+}
+
+// No viem in the Worker — raw eth_call against balanceOf(address).
+async function fetchBalance(env, address) {
+  const rpc = env.BASE_SEPOLIA_RPC || "https://sepolia.base.org"
+  const selector = "0x70a08231" // balanceOf(address)
+  const data = selector + address.slice(2).toLowerCase().padStart(64, "0")
+  const res = await fetch(rpc, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "eth_call",
+      params: [{ to: env.CINA_CREDIT_ADDRESS, data }],
+      id: 1,
+    }),
+  })
+  const j = await res.json()
+  if (!j.result) throw new Error("balanceOf failed")
+  return BigInt(j.result)
+}
+
+// Ledger is wei-unit throughout (matches the ERC-20 on-chain balance):
+// onchainSnapshot / committedUsage / cumulativeSpend are all wei.
+// Pricing stays in micro-credit; the worker boundary converts via costToWei.
 export async function handleUsage(body, ledger) {
   try {
     const tokens = BigInt(body.tokens ?? 0)
     if (tokens <= 0n) return { status: 400, body: { error: "tokens must be > 0" } }
     const tier = getTier(ledger.cumulativeSpend ?? 0n)
-    const cost = estimateCost(body.model ?? "demo", tokens, tier)
+    const costMicro = estimateCost(body.model ?? "demo", tokens, tier)
+    const costWei = costToWei(costMicro)
     const usable = computeUsable(ledger.onchainSnapshot, ledger.committedUsage)
-    if (!checkQuota(usable, cost)) {
-      return { status: 429, body: { error: "Credit Insufficient", usableMicro: usable.toString() } }
+    if (!checkQuota(usable, costWei)) {
+      return { status: 429, body: { error: "Credit Insufficient", usableWei: usable.toString() } }
     }
-    const updated = applyConsumption(ledger, cost)
+    const updated = applyConsumption(ledger, costWei)
     const remaining = computeUsable(ledger.onchainSnapshot, updated.committedUsage)
-    return { status: 200, body: { tier, chargedMicro: cost.toString(), remainingMicro: remaining.toString(), remaining: Number(remaining) / Number(MICRO) } }
+    return {
+      status: 200,
+      body: {
+        tier,
+        chargedWei: costWei.toString(),
+        chargedMicro: costMicro.toString(),
+        remainingWei: remaining.toString(),
+        remaining: Number(remaining) / 1e18,
+      },
+    }
   } catch (err) {
     return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
   }
@@ -112,18 +166,19 @@ export default {
         try {
           const ledgerRaw = await env.CINA_BILLING_KV.get(`ledger:${keyRow.address}`)
           const stored = ledgerRaw ? JSON.parse(ledgerRaw) : {}
+          const snapshot = (await refreshSnapshot(env, keyRow.address)) ?? BigInt(stored.onchainSnapshot ?? 0)
           const ledger = {
-            onchainSnapshot: BigInt(stored.onchainSnapshot ?? 0),
+            onchainSnapshot: snapshot,
             committedUsage: BigInt(stored.committedUsage ?? 0),
             cumulativeSpend: BigInt(stored.cumulativeSpend ?? 0),
           }
           const res = await handleUsage({ model, tokens }, ledger)
           if (res.status === 200) {
-            const updated = applyConsumption(ledger, BigInt(res.body.chargedMicro))
+            const updated = applyConsumption(ledger, BigInt(res.body.chargedWei))
             await env.CINA_BILLING_KV.put(
               `ledger:${keyRow.address}`,
               JSON.stringify({
-                onchainSnapshot: stored.onchainSnapshot ?? "0",
+                onchainSnapshot: snapshot.toString(),
                 committedUsage: updated.committedUsage.toString(),
                 cumulativeSpend: updated.cumulativeSpend.toString(),
               })
@@ -139,17 +194,26 @@ export default {
 
     if (url.pathname.startsWith("/v1/credits/") && request.method === "GET") {
       const address = url.pathname.split("/").pop().toLowerCase()
-      const raw = await env.CINA_BILLING_KV.get(`ledger:${address}`)
-      const ledger = raw ? JSON.parse(raw) : null
-      const onchain = ledger ? BigInt(ledger.onchainSnapshot ?? 0) : 0n
-      const committed = ledger ? BigInt(ledger.committedUsage ?? 0) : 0n
-      return json(request, {
-        address,
-        onchainSnapshot: onchain.toString(),
-        committedUsage: committed.toString(),
-        usable: computeUsable(onchain, committed).toString(),
-        cumulativeSpend: ledger?.cumulativeSpend ?? "0",
+      const res = await withLedgerLock(address, async () => {
+        try {
+          const raw = await env.CINA_BILLING_KV.get(`ledger:${address}`)
+          const ledger = raw ? JSON.parse(raw) : null
+          const onchain = (await refreshSnapshot(env, address)) ?? (ledger ? BigInt(ledger.onchainSnapshot ?? 0) : 0n)
+          const committed = ledger ? BigInt(ledger.committedUsage ?? 0) : 0n
+          const usable = computeUsable(onchain, committed)
+          return {
+            address,
+            onchainSnapshot: onchain.toString(),
+            committedUsage: committed.toString(),
+            usable: usable.toString(),
+            cumulativeSpend: ledger?.cumulativeSpend ?? "0",
+            usableCredit: Number(usable) / 1e18,
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : "Invalid request" }
+        }
       })
+      return json(request, res)
     }
 
     // POST /v1/keys — register an API key for an address (demo provisioning;
