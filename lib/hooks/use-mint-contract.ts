@@ -1,6 +1,11 @@
-import { useState, useCallback, useEffect } from "react"
-import { useSendCalls, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { useCallback, useEffect, useState } from "react"
 import { parseEther, type Hash } from "viem"
+import {
+  useSendCalls,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi"
+
 import { CINA_NFT_CONTRACT, MINT_PRICE_ETH } from "@/lib/contracts/addresses"
 import { usePaymasterCapabilities } from "@/lib/hooks/use-paymaster"
 
@@ -34,8 +39,14 @@ export type MintStatus =
   | "error"
 
 export interface UseMintContractResult {
-  mintWhitelist: (proof: string[], quantity: number) => Promise<Hash | undefined>
-  mintPublic: (quantity: number, pricePerNftWei?: bigint) => Promise<Hash | undefined>
+  mintWhitelist: (
+    proof: string[],
+    quantity: number
+  ) => Promise<Hash | undefined>
+  mintPublic: (
+    quantity: number,
+    pricePerNftWei?: bigint
+  ) => Promise<Hash | undefined>
   status: MintStatus
   isPending: boolean
   isConfirmed: boolean
@@ -54,19 +65,31 @@ const MAX_PUBLIC_PER_TX = 10
  * - 自动等待交易回执
  * - 捕获 revert 原因
  *
- * Gasless path: when the wallet advertises paymasterService capabilities
- * (Coinbase Smart Wallet), the mint goes through EIP-5792 sendCalls with
- * the paymaster URL. Plain writeContract does NOT forward `capabilities`
- * to the wallet (viem types confirm it only exists on sendCalls), so a
- * separate sendCalls path is required — otherwise the paymaster URL is
- * silently dropped and the user pays gas normally.
+ * Gasless paths (routed by usePaymasterCapabilities):
+ * - Coinbase Smart Wallet: EIP-5792 sendCalls with the paymaster URL.
+ *   Plain writeContract does NOT forward `capabilities` to the wallet
+ *   (viem types confirm it only exists on sendCalls), so a separate
+ *   sendCalls path is required — otherwise the paymaster URL is silently
+ *   dropped and the user pays gas normally.
+ * - Reown smart account ("sa", viaSmartAccount): AppKit's cloud iframe
+ *   builds the UserOp and sponsors gas internally; manual capabilities are
+ *   empty, so the mint goes through plain writeContract (eth_sendTransaction)
+ *   which the iframe transparently converts into a UserOp.
+ * - EOA: plain writeContract — the user pays gas normally.
  */
 export function useMintContract(): UseMintContractResult {
-  const { writeContractAsync, isPending: writePending, error: writeError } =
-    useWriteContract()
-  const { sendCallsAsync, isPending: callsPending, error: callsError } =
-    useSendCalls()
-  const { capabilities, isPaymasterSupported } = usePaymasterCapabilities()
+  const {
+    writeContractAsync,
+    isPending: writePending,
+    error: writeError,
+  } = useWriteContract()
+  const {
+    sendCallsAsync,
+    isPending: callsPending,
+    error: callsError,
+  } = useSendCalls()
+  const { capabilities, isPaymasterSupported, viaSmartAccount } =
+    usePaymasterCapabilities()
 
   const [txHash, setTxHash] = useState<Hash | null>(null)
   const [status, setStatus] = useState<MintStatus>("idle")
@@ -93,7 +116,10 @@ export function useMintContract(): UseMintContractResult {
   const extractError = (err: unknown): string => {
     if (err instanceof Error) {
       // viem/wagmi 错误通常带 shortMessage
-      const anyErr = err as unknown as { shortMessage?: string; cause?: { reason?: string } }
+      const anyErr = err as unknown as {
+        shortMessage?: string
+        cause?: { reason?: string }
+      }
       if (anyErr.shortMessage) return anyErr.shortMessage
       if (anyErr.cause?.reason) return anyErr.cause.reason
       return err.message
@@ -102,7 +128,10 @@ export function useMintContract(): UseMintContractResult {
   }
 
   const assertConfigured = (): boolean => {
-    if (!CINA_NFT_CONTRACT || CINA_NFT_CONTRACT === "0x0000000000000000000000000000000000000000") {
+    if (
+      !CINA_NFT_CONTRACT ||
+      CINA_NFT_CONTRACT === "0x0000000000000000000000000000000000000000"
+    ) {
       setError("NFT contract address not configured")
       setStatus("error")
       return false
@@ -131,18 +160,21 @@ export function useMintContract(): UseMintContractResult {
           ],
         }
         // Gasless: sendCalls carries the paymaster capability; otherwise the
-        // plain write path (EOA pays gas normally).
-        const hash = isPaymasterSupported
-          ? await sendCallsAsync({
-              calls: [call],
-              capabilities,
-            })
-          : await writeContractAsync({
-              address: call.to,
-              abi: call.abi,
-              functionName: call.functionName,
-              args: call.args,
-            })
+        // plain write path (EOA pays gas normally; Reown smart accounts are
+        // routed through writeContract too — the iframe converts it to a
+        // UserOp with AppKit's internal paymaster).
+        const hash =
+          isPaymasterSupported && !viaSmartAccount
+            ? await sendCallsAsync({
+                calls: [call],
+                capabilities,
+              })
+            : await writeContractAsync({
+                address: call.to,
+                abi: call.abi,
+                functionName: call.functionName,
+                args: call.args,
+              })
         setTxHash(hash as Hash)
         setStatus("submitted")
         return hash as Hash | undefined
@@ -152,14 +184,29 @@ export function useMintContract(): UseMintContractResult {
         return undefined
       }
     },
-    [writeContractAsync, sendCallsAsync, capabilities, isPaymasterSupported]
+    [
+      writeContractAsync,
+      sendCallsAsync,
+      capabilities,
+      isPaymasterSupported,
+      viaSmartAccount,
+    ]
   )
 
   const doMintPublic = useCallback(
-    async (quantity: number, pricePerNftWei?: bigint): Promise<Hash | undefined> => {
+    async (
+      quantity: number,
+      pricePerNftWei?: bigint
+    ): Promise<Hash | undefined> => {
       if (!assertConfigured()) return undefined
-      if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_PUBLIC_PER_TX) {
-        setError(`Quantity must be an integer between 1 and ${MAX_PUBLIC_PER_TX}`)
+      if (
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > MAX_PUBLIC_PER_TX
+      ) {
+        setError(
+          `Quantity must be an integer between 1 and ${MAX_PUBLIC_PER_TX}`
+        )
         setStatus("error")
         return undefined
       }
@@ -176,18 +223,19 @@ export function useMintContract(): UseMintContractResult {
           args: [BigInt(quantity)] as [bigint],
           value: priceWei * BigInt(quantity),
         }
-        const hash = isPaymasterSupported
-          ? await sendCallsAsync({
-              calls: [call],
-              capabilities,
-            })
-          : await writeContractAsync({
-              address: call.to,
-              abi: call.abi,
-              functionName: call.functionName,
-              args: call.args,
-              value: call.value,
-            })
+        const hash =
+          isPaymasterSupported && !viaSmartAccount
+            ? await sendCallsAsync({
+                calls: [call],
+                capabilities,
+              })
+            : await writeContractAsync({
+                address: call.to,
+                abi: call.abi,
+                functionName: call.functionName,
+                args: call.args,
+                value: call.value,
+              })
         setTxHash(hash as Hash)
         setStatus("submitted")
         return hash as Hash | undefined
@@ -197,7 +245,13 @@ export function useMintContract(): UseMintContractResult {
         return undefined
       }
     },
-    [writeContractAsync, sendCallsAsync, capabilities, isPaymasterSupported]
+    [
+      writeContractAsync,
+      sendCallsAsync,
+      capabilities,
+      isPaymasterSupported,
+      viaSmartAccount,
+    ]
   )
 
   const reset = useCallback(() => {
@@ -219,7 +273,13 @@ export function useMintContract(): UseMintContractResult {
     status,
     isPending,
     isConfirmed: status === "confirmed",
-    error: error ?? (writeError ? extractError(writeError) : callsError ? extractError(callsError) : null),
+    error:
+      error ??
+      (writeError
+        ? extractError(writeError)
+        : callsError
+        ? extractError(callsError)
+        : null),
     txHash,
     reset,
     isGasless: isPaymasterSupported,
