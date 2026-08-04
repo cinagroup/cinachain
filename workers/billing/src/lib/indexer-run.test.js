@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseTransferLogs, nextCursorRange, selectAddressLogs } from "./indexer-run.js"
+import { parseTransferLogs, nextCursorRange, selectAddressLogs, applyLogsToSnapshot } from "./indexer-run.js"
 
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3f"
 
@@ -55,5 +55,27 @@ describe("selectAddressLogs", () => {
     ]
     expect(selectAddressLogs(logs, "0xaaa")).toHaveLength(2)
     expect(selectAddressLogs(logs, "0xddd")).toHaveLength(1)
+  })
+})
+
+describe("applyLogsToSnapshot", () => {
+  it("returns the same snapshot value when no logs touch the address", () => {
+    const logs = [{ from: "0xccc", to: "0xddd", value: 3n }]
+    expect(applyLogsToSnapshot(logs, "0xaaa", 100n)).toBe(100n)
+  })
+  it("adds to the snapshot on mint (from is the zero address)", () => {
+    const logs = [
+      { from: "0x0000000000000000000000000000000000000000", to: "0xaaa", value: 100n },
+    ]
+    expect(applyLogsToSnapshot(logs, "0xaaa", 50n)).toBe(150n)
+  })
+  it("subtracts on transfer-out and floors at 0 when value exceeds snapshot", () => {
+    const out = [{ from: "0xaaa", to: "0xbbb", value: 30n }]
+    expect(applyLogsToSnapshot(out, "0xaaa", 100n)).toBe(70n)
+    expect(applyLogsToSnapshot(out, "0xaaa", 10n)).toBe(0n)
+  })
+  it("leaves the snapshot unchanged on self-transfer", () => {
+    const logs = [{ from: "0xaaa", to: "0xaaa", value: 5n }]
+    expect(applyLogsToSnapshot(logs, "0xaaa", 100n)).toBe(100n)
   })
 })
