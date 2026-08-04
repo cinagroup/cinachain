@@ -23,7 +23,7 @@ contract CinaCredit is ERC20, Ownable, Pausable, ReentrancyGuard {
     /// @notice Cumulative minted per address (weak tier reference)
     mapping(address => uint256) public totalMintedOf;
 
-    /// @notice Cumulative burned per address (weak tier reference)
+    /// @notice Cumulative on-chain burned per address via redeem (weak tier reference; server-side metered consumption is NOT included)
     mapping(address => uint256) public totalBurnedOf;
 
     /// @notice Whether credit redemption is enabled (treasury-funded)
@@ -40,6 +40,7 @@ contract CinaCredit is ERC20, Ownable, Pausable, ReentrancyGuard {
     error ZeroTreasury();
     error FeeTooHigh();
     error NoEthSent();
+    error ZeroAmount();
     error RedeemDisabled();
     error InsufficientTreasury();
 
@@ -74,16 +75,17 @@ contract CinaCredit is ERC20, Ownable, Pausable, ReentrancyGuard {
         emit CreditMinted(msg.sender, net, 1);
     }
 
-    /// @notice Channel 2/3: platform-controlled issuance (key-confirmed
-    ///         minting, custodial top-ups, rewards). Minting is a liability
-    ///         confirmation — only call after service/credit is verified.
+    /// @notice Channel 2: platform-controlled issuance (key-confirmed minting, custodial top-ups, rewards).
     function mintTo(address to, uint256 amount) external onlyOwner whenNotPaused {
+        if (amount == 0) revert ZeroAmount();
         _mint(to, amount);
         totalMintedOf[to] += amount;
         emit CreditMinted(to, amount, 2);
     }
 
     /// @notice Redeem credit for ETH at the current rate (treasury-funded).
+    /// @dev Dust: credit amounts that don't divide evenly by the rate are burned
+    ///      in full but only refund floor(amount/rate) ETH.
     function redeem(uint256 creditAmount) external nonReentrant whenNotPaused {
         if (!redeemEnabled) revert RedeemDisabled();
         if (creditAmount == 0) revert NoEthSent();
