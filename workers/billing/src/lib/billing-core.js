@@ -10,7 +10,7 @@ export function computeUsable(onchainSnapshot, committedUsage) {
 /** Apply a metered consumption; returns updated ledger fields */
 export function applyConsumption(ledger, costMicro) {
   return {
-    committedUsage: ledger.committedUsage + costMicro,
+    committedUsage: (ledger.committedUsage ?? 0n) + costMicro,
     cumulativeSpend: (ledger.cumulativeSpend ?? 0n) + costMicro,
   }
 }
@@ -28,7 +28,8 @@ export function estimateCost(model, tokenCount, tier = "free") {
   const row = pricingTable[model]
   if (!row) throw new Error(`unknown model: ${model}`)
   const base = row.perTokenMicroCredit * BigInt(tokenCount)
-  const discountBps = TIER_DISCOUNT_BPS[tier] ?? 0n
+  const discountBps = TIER_DISCOUNT_BPS[tier]
+  if (discountBps === undefined) throw new Error(`unknown tier: ${tier}`)
   return (base * (10_000n - discountBps)) / 10_000n
 }
 
@@ -49,6 +50,7 @@ export const TIER_THRESHOLDS = [
 ]
 
 export function getTier(cumulativeSpend) {
+  if (cumulativeSpend < 0n) throw new Error("cumulativeSpend must be >= 0")
   return TIER_THRESHOLDS.find((t) => cumulativeSpend >= t.min).tier
 }
 

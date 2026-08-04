@@ -47,3 +47,23 @@ describe("pricingTable", () => {
     expect(pricingTable.demo.perTokenMicroCredit).toBeGreaterThan(0n)
   })
 })
+
+describe("edge cases", () => {
+  it("applyConsumption defaults missing fields", () => {
+    const res = applyConsumption({}, 50n)
+    expect(res.committedUsage).toBe(50n)
+    expect(res.cumulativeSpend).toBe(50n)
+  })
+  it("estimateCost throws on unknown tier", () => {
+    expect(() => estimateCost("demo", 100n, "platinum")).toThrow("unknown tier")
+  })
+  it("estimateCost throws on unknown model", () => {
+    expect(() => estimateCost("nope", 100n)).toThrow("unknown model")
+  })
+  it("getTier rejects negatives", () => {
+    expect(() => getTier(-1n)).toThrow()
+  })
+  it("estimateCost defaults to free tier", () => {
+    expect(estimateCost("demo", 1000n)).toBe(2_000_000n)
+  })
+})
