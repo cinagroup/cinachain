@@ -224,6 +224,22 @@ export default {
             hist.push({ ts: Date.now(), model: body.model ?? "demo", tokens: String(body.tokens ?? 0), chargedWei: res.body.chargedWei, tier: res.body.tier })
             const trimmed = hist.slice(-100)
             await env.CINA_BILLING_KV.put(histKey, JSON.stringify(trimmed))
+            // Key ingress confirmation (spec §6.3): attribute this charge to
+            // a pooled key; flip to minting once confirmed >= declared.
+            if (body.ingressId) {
+              const ingKey = `ing:${body.ingressId}`
+              const ingRaw = await env.CINA_BILLING_KV.get(ingKey)
+              if (ingRaw) {
+                const rec = JSON.parse(ingRaw)
+                if (rec.status === "pending") {
+                  rec.confirmedMicro = (BigInt(rec.confirmedMicro ?? 0) + BigInt(res.body.chargedMicro)).toString()
+                  if (BigInt(rec.confirmedMicro) >= BigInt(rec.declaredMicro)) {
+                    rec.status = "minting"
+                  }
+                  await env.CINA_BILLING_KV.put(ingKey, JSON.stringify(rec))
+                }
+              }
+            }
             if (keyRow.kind === "cust") {
               // balanceWei (DB) unchanged by consumption; usage is committed
               await env.CINA_BILLING_KV.put(ledgerKey, JSON.stringify(merged))
@@ -443,6 +459,57 @@ export default {
       await env.CINA_BILLING_KV.put(`ing:${id}`, JSON.stringify({ ...rec, encrypted }))
       await env.CINA_BILLING_KV.put(`keyhash:${keyHash}`, id)
       return json(request, { ok: true, id, status: rec.status, declaredMicro: rec.declaredMicro, model: rec.model })
+    }
+
+    // Admin: confirm an ingress mint (moves minting -> minted, records txHash)
+    const ingConfirmMatch = url.pathname.match(/^\/v1\/ingress\/([a-zA-Z0-9_]+)\/confirm$/)
+    if (ingConfirmMatch && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const [, id] = ingConfirmMatch
+      const body = await request.json().catch(() => ({}))
+      const key = `ing:${id}`
+      const raw = await env.CINA_BILLING_KV.get(key)
+      if (!raw) return json(request, { error: "Ingress record not found" }, 404)
+      const rec = JSON.parse(raw)
+      if (!ingressStatusTransitions(rec.status, "minted")) return json(request, { error: `Invalid transition from ${rec.status}` }, 400)
+      rec.status = "minted"
+      rec.txHash = body.txHash ?? null
+      await env.CINA_BILLING_KV.put(key, JSON.stringify(rec))
+      return json(request, { ok: true, id, status: rec.status })
+    }
+
+    // Admin: list ingress records (status filter optional)
+    if (url.pathname === "/v1/admin/ingress" && request.method === "GET") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const status = url.searchParams.get("status") ?? "minting"
+      const keys = await listAllKeys(env.CINA_BILLING_KV, "ing:")
+      const records = []
+      for (const { name } of keys) {
+        const raw = await env.CINA_BILLING_KV.get(name)
+        if (!raw) continue
+        let rec
+        try {
+          rec = JSON.parse(raw)
+        } catch {
+          continue
+        }
+        if (rec.status === status) {
+          records.push({
+            id: name.slice("ing:".length),
+            owner: rec.owner,
+            model: rec.model,
+            declaredMicro: rec.declaredMicro,
+            confirmedMicro: rec.confirmedMicro,
+            status: rec.status,
+            createdAt: rec.createdAt,
+          })
+        }
+      }
+      return json(request, { records })
     }
 
     // POST /v1/keys — register an API key bound to an address (self-managed)

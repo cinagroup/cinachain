@@ -513,4 +513,128 @@ describe("M3 ingress submit", () => {
     }))
     expect(five.status).toBe(500)
   })
+
+  it("refuses the zero placeholder INGRESS_ENC_KEY -> 500", async () => {
+    const env = makeEnv()
+    env.INGRESS_ENC_KEY = "0".repeat(64) // wrangler.toml placeholder — must not be used
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress", {
+      method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.4" },
+      body: JSON.stringify({ apiKey: "ingress_test_ph_abcdefghijklmnopqr", model: "demo", declaredMicro: "1000", owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }),
+    }))
+    expect(res.status).toBe(500)
+  })
+})
+
+describe("M3 ingress consumption", () => {
+  it("usage with ingressId accumulates confirmedMicro; flips to minting at declared", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", model: "demo",
+      declaredMicro: "2000000", confirmedMicro: "0", status: "pending",
+      keyHash: "0xabc", createdAt: 1, encrypted: { iv: "00", cipher: "00" },
+    }))
+    // self key flow with ingressId
+    const data = new TextEncoder().encode("ingresskey1")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "ingresskey1", model: "demo", tokens: "1000", ingressId: "ing1" }),
+      }))
+      expect(res.status).toBe(200)
+    } finally {
+      global.fetch = origFetch
+    }
+    const rec = JSON.parse(env.store.get("ing:ing1"))
+    // 1000 tokens demo @2000 micro = 2e6 micro = declared 2e6 -> minting
+    expect(rec.confirmedMicro).toBe("2000000")
+    expect(rec.status).toBe("minting")
+  })
+
+  it("usage with unknown ingressId is ignored (no crash)", async () => {
+    const env = makeEnv()
+    const data = new TextEncoder().encode("ingresskey2")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "ingresskey2", model: "demo", tokens: "100", ingressId: "nope" }),
+      }))
+      expect(res.status).toBe(200)
+    } finally {
+      global.fetch = origFetch
+    }
+  })
+
+  it("POST /v1/ingress/:id/confirm marks minted", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaa", model: "demo", declaredMicro: "2000000", confirmedMicro: "2000000",
+      status: "minting", keyHash: "0xabc", createdAt: 1,
+    }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress/ing1/confirm", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ txHash: "0xdef" }),
+    }))
+    expect(res.status).toBe(200)
+    const rec = JSON.parse(env.store.get("ing:ing1"))
+    expect(rec.status).toBe("minted")
+    expect(rec.txHash).toBe("0xdef")
+  })
+
+  it("confirm rejects bad transitions (pending -> minted)", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaa", model: "demo", declaredMicro: "2000000", confirmedMicro: "0",
+      status: "pending", keyHash: "0xabc", createdAt: 1,
+    }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress/ing1/confirm", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ txHash: "0xdef" }),
+    }))
+    expect(res.status).toBe(400)
+  })
+
+  it("confirm without admin key -> 401", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({ status: "minting" }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress/ing1/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ txHash: "0xdef" }),
+    }))
+    expect(res.status).toBe(401)
+  })
+
+  it("GET /v1/admin/ingress?status=minting lists minting records", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({ owner: "0xaaa", model: "demo", declaredMicro: "2000000", confirmedMicro: "2000000", status: "minting", createdAt: 1 }))
+    env.store.set("ing:ing2", JSON.stringify({ owner: "0xbbb", model: "demo", declaredMicro: "1000", confirmedMicro: "0", status: "pending", createdAt: 2 }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/admin/ingress?status=minting", {
+      headers: { "X-Admin-Key": "test-admin" },
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.records).toHaveLength(1)
+    expect(body.records[0].id).toBe("ing1")
+    expect(body.records[0].confirmedMicro).toBe("2000000")
+  })
 })
