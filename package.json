@@ -11,6 +11,7 @@
     "dev": "next dev",
     "build": "next build && node scripts/strip-nulls.mjs",
     "start": "next start",
+    "test": "vitest run",
     "lint": "eslint '**/*.{ts,tsx}'",
     "lint-fix": "eslint '**/*.{ts,tsx}' --fix",
     "format": "prettier . --list-different",
@@ -102,6 +103,7 @@
     "prettier": "^2.8.1",
     "prettier-plugin-tailwindcss": "^0.2.0",
     "solc": "^0.8.36",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.10"
   }
 }
