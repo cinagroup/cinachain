@@ -83,3 +83,70 @@ describe("M2 pending tier badges", () => {
     expect(res.body.pendingBadges).toEqual([])
   })
 })
+
+function makeEnv() {
+  const store = new Map()
+  return {
+    ADMIN_KEY: "test-admin",
+    CINA_BILLING_KV: {
+      async get(k) { return store.has(k) ? store.get(k) : null },
+      async put(k, v) { store.set(k, v) },
+      async list({ prefix } = {}) {
+        return { keys: [...store.keys()].filter((k) => !prefix || k.startsWith(prefix)).map((name) => ({ name })) }
+      },
+    },
+    store,
+  }
+}
+
+async function callWorker(env, req) {
+  return billingWorker.fetch(req, env)
+}
+
+describe("M2 admin endpoints", () => {
+  it("GET /v1/admin/pending-badges lists ledgers with pending tier badges", async () => {
+    const env = makeEnv()
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: "0", committedUsage: "0",
+      cumulativeSpend: (20_000n * 10n ** 18n).toString(),
+      pendingTierBadges: ["bronze"], mintedTierBadges: [],
+    }))
+    env.store.set("ledger:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", JSON.stringify({
+      onchainSnapshot: "0", committedUsage: "0", cumulativeSpend: "0",
+      pendingTierBadges: [], mintedTierBadges: [],
+    }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/admin/pending-badges", {
+      headers: { "X-Admin-Key": "test-admin" },
+    }))
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.pending).toHaveLength(1)
+    expect(body.pending[0].address).toBe("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(body.pending[0].badges).toEqual(["bronze"])
+  })
+
+  it("rejects pending-badges without admin key", async () => {
+    const res = await callWorker(makeEnv(), new Request("https://billing.test/v1/admin/pending-badges"))
+    expect(res.status).toBe(401)
+  })
+
+  it("POST /v1/admin/badges/:address/:tier confirms a minted badge", async () => {
+    const env = makeEnv()
+    const ADDR = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    env.store.set(`ledger:${ADDR}`, JSON.stringify({
+      onchainSnapshot: "0", committedUsage: "0",
+      cumulativeSpend: (20_000n * 10n ** 18n).toString(),
+      pendingTierBadges: ["bronze"], mintedTierBadges: [],
+    }))
+    const res = await callWorker(env, new Request(`https://billing.test/v1/admin/badges/${ADDR}/bronze/confirm`, {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ txHash: "0xabc" }),
+    }))
+    expect(res.status).toBe(200)
+    const ledger = JSON.parse(env.store.get(`ledger:${ADDR}`))
+    expect(ledger.pendingTierBadges).toEqual([])
+    expect(ledger.mintedTierBadges).toEqual(["bronze"])
+    expect(ledger.badgeTxHashes).toEqual({ bronze: "0xabc" })
+  })
+})

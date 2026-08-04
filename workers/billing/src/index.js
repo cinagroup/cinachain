@@ -11,7 +11,7 @@ import {
   tierProgress,
   tierBadgeId,
 } from "./lib/billing-core.js"
-import { runIndexer } from "./lib/indexer-run.js"
+import { runIndexer, listAllKeys } from "./lib/indexer-run.js"
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
@@ -273,6 +273,54 @@ export default {
       const hash = await hashKey(apiKey)
       await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ address: address.toLowerCase() }))
       return json(request, { ok: true, address: address.toLowerCase() })
+    }
+
+    // Admin: list addresses with pending tier badges (spec §5 minting flow)
+    if (url.pathname === "/v1/admin/pending-badges" && request.method === "GET") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const keys = await listAllKeys(env.CINA_BILLING_KV, "ledger:")
+      const pending = []
+      for (const { name } of keys) {
+        const raw = await env.CINA_BILLING_KV.get(name)
+        if (!raw) continue
+        const ledger = JSON.parse(raw)
+        const badges = (ledger.pendingTierBadges ?? []).filter((t) => tierBadgeId(t) !== null)
+        if (badges.length) {
+          pending.push({
+            address: name.slice("ledger:".length),
+            badges,
+            cumulativeSpend: ledger.cumulativeSpend ?? "0",
+          })
+        }
+      }
+      return json(request, { pending })
+    }
+
+    // Admin: confirm a badge was minted on-chain (moves pending -> minted)
+    const confirmMatch = url.pathname.match(/^\/v1\/admin\/badges\/(0x[a-fA-F0-9]{40})\/([a-z]+)\/confirm$/)
+    if (confirmMatch && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const [, address, tier] = confirmMatch
+      if (tierBadgeId(tier) === null) return json(request, { error: "Invalid tier" }, 400)
+      const body = await request.json().catch(() => ({}))
+      const key = `ledger:${address.toLowerCase()}`
+      const res = await withLedgerLock(address.toLowerCase(), async () => {
+        const raw = await env.CINA_BILLING_KV.get(key)
+        const ledger = raw ? JSON.parse(raw) : {}
+        const minted = [...new Set([...(ledger.mintedTierBadges ?? []), tier])]
+        await env.CINA_BILLING_KV.put(key, JSON.stringify({
+          ...ledger,
+          pendingTierBadges: (ledger.pendingTierBadges ?? []).filter((t) => t !== tier),
+          mintedTierBadges: minted,
+          badgeTxHashes: { ...(ledger.badgeTxHashes ?? {}), [tier]: body.txHash ?? null },
+        }))
+        return { ok: true, address, tier }
+      })
+      return json(request, res)
     }
 
     // Manual indexer trigger (admin key; also used by tests/E2E)
