@@ -18,6 +18,15 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
       ],
     },
     {
+      title: "Integrations",
+      links: [
+        { label: "ERC-20", href: "/integration/erc20" },
+        { label: "ERC-721", href: "/integration/erc721" },
+        { label: "ERC-1155", href: "/integration/erc1155" },
+        { label: "Sign-In With Ethereum", href: "/integration/sign-in-with-ethereum" },
+      ],
+    },
+    {
       title: "Resources",
       links: [
         { label: "Documentation", href: siteConfig.links.docs },

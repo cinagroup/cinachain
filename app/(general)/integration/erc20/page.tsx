@@ -71,9 +71,13 @@ export default function Erc20Page() {
                       className={cn(
                         buttonVariants({ variant: "emerald", size: "sm" })
                       )}
-                      href={`/integration/erc20/1/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`}
+                      // No dynamic token page exists on this static export —
+                      // link to Base USDC on Basescan instead of a dead route
+                      href={`https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      View Token Page
+                      View USDC on Basescan
                     </Link>
                   </CardContent>
                 </Card>

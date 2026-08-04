@@ -1,7 +1,7 @@
 // Service Worker for CinaChain PWA
 // 静态导出兼容方案
 
-const CACHE_NAME = "cinachain-v2"
+const CACHE_NAME = "cinachain-v3"
 const OFFLINE_URL = "/offline"
 
 // 需要缓存的静态资源
@@ -14,6 +14,7 @@ const PRECACHE_RESOURCES = [
   "/dashboard/account",
   "/dashboard/nfts",
   "/dashboard/favorites",
+  "/offline",
   "/manifest.json",
   "/favicon.ico",
   "/icon-192x192.png",
@@ -24,12 +25,16 @@ const PRECACHE_RESOURCES = [
 const NO_CACHE_PATTERNS = [
   "rpc.cinachain.com",
   "ipfs.cinachain.com",
+  "cdn.cinachain.com",
+  "meta.cinachain.com",
   "/api/",
   "eth.llamarpc.com",
   "mainnet.base.org",
   "rpc.sepolia.org",
   "sepolia.base.org",
   "base-sepolia.publicnode.com",
+  "cloudflare-ipfs.com",
+  "ipfs.io",
   "cinachain-whitelist-api.cinagroup.workers.dev",
   "cinachain-paymaster.cinagroup.workers.dev",
 ]

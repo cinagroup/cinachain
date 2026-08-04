@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react"
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { useSendCalls } from "wagmi/experimental"
 import { parseEther, type Hash } from "viem"
 import { CINA_NFT_CONTRACT, MINT_PRICE_ETH } from "@/lib/contracts/addresses"
 import { usePaymasterCapabilities } from "@/lib/hooks/use-paymaster"
@@ -53,10 +54,19 @@ const MAX_PUBLIC_PER_TX = 10
  * - 返回交易 hash，便于 UI 显示
  * - 自动等待交易回执
  * - 捕获 revert 原因
+ *
+ * Gasless path: when the wallet advertises paymasterService capabilities
+ * (Coinbase Smart Wallet), the mint goes through EIP-5792 sendCalls with
+ * the paymaster URL. Plain writeContract does NOT forward `capabilities`
+ * to the wallet (viem types confirm it only exists on sendCalls), so a
+ * separate sendCalls path is required — otherwise the paymaster URL is
+ * silently dropped and the user pays gas normally.
  */
 export function useMintContract(): UseMintContractResult {
   const { writeContractAsync, isPending: writePending, error: writeError } =
     useWriteContract()
+  const { sendCallsAsync, isPending: callsPending, error: callsError } =
+    useSendCalls()
   const { capabilities, isPaymasterSupported } = usePaymasterCapabilities()
 
   const [txHash, setTxHash] = useState<Hash | null>(null)
@@ -92,13 +102,18 @@ export function useMintContract(): UseMintContractResult {
     return "Unknown error"
   }
 
+  const assertConfigured = (): boolean => {
+    if (!CINA_NFT_CONTRACT || CINA_NFT_CONTRACT === "0x0000000000000000000000000000000000000000") {
+      setError("NFT contract address not configured")
+      setStatus("error")
+      return false
+    }
+    return true
+  }
+
   const doMintWhitelist = useCallback(
     async (proof: string[], quantity: number): Promise<Hash | undefined> => {
-      if (!CINA_NFT_CONTRACT || CINA_NFT_CONTRACT === "0x0000000000000000000000000000000000000000") {
-        setError("NFT contract address not configured")
-        setStatus("error")
-        return undefined
-      }
+      if (!assertConfigured()) return undefined
       if (!Number.isInteger(quantity) || quantity < 1) {
         setError("Quantity must be a positive integer")
         setStatus("error")
@@ -107,33 +122,38 @@ export function useMintContract(): UseMintContractResult {
       setStatus("awaiting-wallet")
       setError(null)
       try {
-        const hash = await writeContractAsync({
+        const request = {
           address: CINA_NFT_CONTRACT,
           abi: MINT_ABI,
-          functionName: "mintWhitelist",
-          args: [proof as readonly `0x${string}`[], BigInt(quantity)],
-          // capabilities is empty for EOA wallets, paymaster-tagged for Smart Wallets
-          capabilities,
-        })
-        setTxHash(hash)
+          functionName: "mintWhitelist" as const,
+          args: [proof as readonly `0x${string}`[], BigInt(quantity)] as [
+            readonly `0x${string}`[],
+            bigint
+          ],
+        }
+        // Gasless: sendCalls carries the paymaster capability; otherwise the
+        // plain write path (EOA pays gas normally).
+        const hash = isPaymasterSupported
+          ? await sendCallsAsync({
+              calls: [request],
+              capabilities,
+            })
+          : await writeContractAsync(request)
+        setTxHash(hash as Hash)
         setStatus("submitted")
-        return hash
+        return hash as Hash | undefined
       } catch (err) {
         setStatus("error")
         setError(extractError(err))
         return undefined
       }
     },
-    [writeContractAsync, capabilities]
+    [writeContractAsync, sendCallsAsync, capabilities, isPaymasterSupported]
   )
 
   const doMintPublic = useCallback(
     async (quantity: number, pricePerNftWei?: bigint): Promise<Hash | undefined> => {
-      if (!CINA_NFT_CONTRACT || CINA_NFT_CONTRACT === "0x0000000000000000000000000000000000000000") {
-        setError("NFT contract address not configured")
-        setStatus("error")
-        return undefined
-      }
+      if (!assertConfigured()) return undefined
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_PUBLIC_PER_TX) {
         setError(`Quantity must be an integer between 1 and ${MAX_PUBLIC_PER_TX}`)
         setStatus("error")
@@ -145,24 +165,29 @@ export function useMintContract(): UseMintContractResult {
         // Prefer the on-chain mintPrice (passed by the mint page); fall back
         // to the env constant so the sent value always matches the contract.
         const priceWei = pricePerNftWei ?? parseEther(String(MINT_PRICE_ETH))
-        const hash = await writeContractAsync({
+        const request = {
           address: CINA_NFT_CONTRACT,
           abi: MINT_ABI,
-          functionName: "mintPublic",
-          args: [BigInt(quantity)],
+          functionName: "mintPublic" as const,
+          args: [BigInt(quantity)] as [bigint],
           value: priceWei * BigInt(quantity),
-          capabilities,
-        })
-        setTxHash(hash)
+        }
+        const hash = isPaymasterSupported
+          ? await sendCallsAsync({
+              calls: [request],
+              capabilities,
+            })
+          : await writeContractAsync(request)
+        setTxHash(hash as Hash)
         setStatus("submitted")
-        return hash
+        return hash as Hash | undefined
       } catch (err) {
         setStatus("error")
         setError(extractError(err))
         return undefined
       }
     },
-    [writeContractAsync, capabilities]
+    [writeContractAsync, sendCallsAsync, capabilities, isPaymasterSupported]
   )
 
   const reset = useCallback(() => {
@@ -173,6 +198,7 @@ export function useMintContract(): UseMintContractResult {
 
   const isPending =
     writePending ||
+    callsPending ||
     status === "awaiting-wallet" ||
     status === "submitted" ||
     status === "preparing"
@@ -183,7 +209,7 @@ export function useMintContract(): UseMintContractResult {
     status,
     isPending,
     isConfirmed: status === "confirmed",
-    error: error ?? (writeError ? extractError(writeError) : null),
+    error: error ?? (writeError ? extractError(writeError) : callsError ? extractError(callsError) : null),
     txHash,
     reset,
     isGasless: isPaymasterSupported,

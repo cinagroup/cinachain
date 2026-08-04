@@ -92,7 +92,9 @@ function trimEth(formatted: string): string {
         ] as const,
         functionName,
         args: args as never,
-        value,
+        // The ABI is built dynamically (payable only when value is set) —
+        // viem can't correlate the two, so loosen the value type explicitly.
+        value: value as never,
       })
       setTxHash(hash)
       setSuccessAction(label)

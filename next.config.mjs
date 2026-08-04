@@ -19,7 +19,7 @@ const nextConfig = {
     mode: process.env.NODE_ENV,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // Type errors now fail the build (project is tsc-clean)
   },
   eslint: {
     ignoreDuringBuilds: false,

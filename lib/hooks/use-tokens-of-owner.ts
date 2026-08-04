@@ -16,29 +16,34 @@ const ENUM_ABI = [
   },
 ] as const
 
+const PAGE_SIZE = 50
+
 /**
- * Enumerate all token IDs owned by an address via ERC-721 Enumerable.
- * Requires the contract to implement `tokenOfOwnerByIndex`.
- *
- * Uses wagmi's multicall (useReadContracts) to batch all index reads
- * into a single RPC round-trip.
+ * Enumerate token IDs owned by an address via ERC-721 Enumerable,
+ * paged 50 at a time. Each page is a single multicall (one RPC round-trip).
+ * `hasMore` tells callers another page is available via `loadMore`.
  */
-export function useTokensOfOwner(address?: `0x${string}`) {
+export function useTokensOfOwner(
+  address?: `0x${string}`,
+  offset = 0,
+  limit = PAGE_SIZE
+) {
   const balanceQuery = useNftBalance(address)
   const count = balanceQuery.data !== undefined ? Number(balanceQuery.data) : 0
 
   const contractsQuery = useReadContracts({
     contracts:
-      address && hasNftContract && count > 0
-        ? Array.from({ length: Math.min(count, 50) }, (_, i) => ({
+      address && hasNftContract && count > offset
+        ? Array.from({ length: Math.min(limit, count - offset) }, (_, i) => ({
             address: CINA_NFT_CONTRACT,
             abi: ENUM_ABI,
             functionName: "tokenOfOwnerByIndex" as const,
-            args: [address, BigInt(i)] as const,
+            args: [address, BigInt(offset + i)] as const,
           }))
         : [],
     query: {
-      enabled: !!address && balanceQuery.isSuccess && count > 0,
+      enabled: !!address && balanceQuery.isSuccess && count > offset,
+      placeholderData: undefined,
     },
   })
 
@@ -46,13 +51,15 @@ export function useTokensOfOwner(address?: `0x${string}`) {
     .filter((r) => r.status === "success" && r.result !== undefined)
     .map((r) => (r.result as bigint).toString())
 
-  const isTruncated = count > tokenIds.length
+  const hasMore = count > offset + tokenIds.length
 
   return {
     tokenIds,
     count,
-    isTruncated,
+    hasMore,
     isLoading: balanceQuery.isLoading || contractsQuery.isLoading,
     isError: balanceQuery.isError || contractsQuery.isError,
   }
 }
+
+export { PAGE_SIZE as OWNED_PAGE_SIZE }

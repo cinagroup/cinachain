@@ -44,7 +44,7 @@ async function main() {
     address: account.address,
     network: "base-sepolia",
     transaction: {
-      to: TARGET,
+      to: TARGET as `0x${string}`,
       value: sendAmount,
     },
   })

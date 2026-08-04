@@ -1,22 +1,34 @@
 "use client"
 
+import { useState } from "react"
 import { useAccount } from "wagmi"
 import { useNftBalance } from "@/lib/hooks/use-nft-balance"
-import { useTokensOfOwner } from "@/lib/hooks/use-tokens-of-owner"
+import { useTokensOfOwner, OWNED_PAGE_SIZE } from "@/lib/hooks/use-tokens-of-owner"
+import { useBatchTokenUris } from "@/lib/hooks/use-batch-token-uris"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
-import { PackageOpen } from "lucide-react"
+import { PackageOpen, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 export default function MyNftsPage() {
   const { address } = useAccount()
   const { data: nftBalance, isLoading: balanceLoading } = useNftBalance(address)
-  const { tokenIds, count, isTruncated, isLoading: tokensLoading } = useTokensOfOwner(address)
 
-  const isLoading = balanceLoading || tokensLoading
+  // Paged enumeration — "Load more" appends the next 50 tokens
+  const [offset, setOffset] = useState(0)
+  const { tokenIds, count, hasMore, isLoading: tokensLoading } = useTokensOfOwner(
+    address,
+    offset
+  )
+
+  // ONE multicall for all tokenURI reads of the current page
+  const { uriByTokenId, isPending: batchLoading } = useBatchTokenUris(tokenIds)
+
+  const isLoading = balanceLoading || tokensLoading || batchLoading
+  const showGrid = !isLoading && tokenIds.length > 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -56,19 +68,37 @@ export default function MyNftsPage() {
         )}
 
         {/* Owned NFTs grid */}
-        {!isLoading && tokenIds.length > 0 && (
+        {showGrid && (
           <div>
             <h2 className="font-display mb-4 text-xl">Your NFTs</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {tokenIds.map((tokenId) => (
-                <NftCard key={tokenId} tokenId={tokenId} />
+                <NftCard
+                  key={tokenId}
+                  tokenId={tokenId}
+                  preloadedTokenURI={uriByTokenId.get(tokenId)}
+                />
               ))}
             </div>
-            {isTruncated && (
-              <p className="mt-6 text-center text-sm text-muted-foreground">
-                Showing first {tokenIds.length} of {count} owned NFTs.
-              </p>
-            )}
+            <div className="mt-6 flex flex-col items-center gap-2">
+              {hasMore && (
+                <Button
+                  variant="outline"
+                  onClick={() => setOffset((o) => o + OWNED_PAGE_SIZE)}
+                  disabled={tokensLoading}
+                >
+                  {tokensLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Load More ({count - offset - tokenIds.length} more)
+                </Button>
+              )}
+              {!hasMore && (
+                <p className="text-sm text-muted-foreground">
+                  Showing {Math.min(offset + tokenIds.length, count)} of {count} owned NFTs.
+                </p>
+              )}
+            </div>
           </div>
         )}
 

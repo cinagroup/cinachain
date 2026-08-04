@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import type { Hash, Address } from "viem"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,6 +41,13 @@ export default function AdminBadgesPage() {
     })
 
   const isBusy = isPending || (!!txHash && !confirmed && !reverted)
+
+  // A mined-but-reverted tx must not look like success
+  useEffect(() => {
+    if (reverted) {
+      setError("Transaction reverted on-chain — no badge was minted.")
+    }
+  }, [reverted])
 
   const handleMint = async () => {
     setError(null)

@@ -34,6 +34,11 @@ export const CINA_NFT_ABI = [
   parseAbiItem("function paused() view returns (bool)"),
   parseAbiItem("function merkleRoot() view returns (bytes32)"),
   parseAbiItem("function baseURI() view returns (string)"),
+  parseAbiItem("function mintedByAddress(address account) view returns (uint256)"),
+  parseAbiItem(
+    "function whitelistMintedByAddress(address account) view returns (uint256)"
+  ),
+  parseAbiItem("function remainingSupply() view returns (uint256)"),
 
   // Admin
   parseAbiItem("function pause()"),

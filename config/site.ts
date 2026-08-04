@@ -15,7 +15,6 @@ interface SiteConfig {
   }
 }
 
-export const SITE_CANONICAL = "https://cinachain.com"
 
 export const siteConfig: SiteConfig = {
   name: "CinaChain",

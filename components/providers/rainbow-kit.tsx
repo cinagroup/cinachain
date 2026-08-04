@@ -10,6 +10,7 @@ import {
   lightTheme,
   RainbowKitProvider,
 } from "@rainbow-me/rainbowkit"
+import { createStorage, noopStorage } from "@wagmi/core"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createConfig, WagmiProvider } from "wagmi"
 
@@ -53,6 +54,12 @@ const wagmiConfig = createConfig({
   chains,
   transports,
   connectors,
+  // wagmi's default storage uses IndexedDB, which crashes during static
+  // prerendering (no indexedDB global on the server). localStorage on the
+  // client, noop on the server.
+  storage: createStorage({
+    storage: typeof window !== "undefined" ? window.localStorage : noopStorage,
+  }),
   // Static export (output: "export") has no server runtime.
   // ssr must be false to avoid hydration mismatches.
   ssr: false,
