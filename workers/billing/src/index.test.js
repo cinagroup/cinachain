@@ -149,4 +149,16 @@ describe("M2 admin endpoints", () => {
     expect(ledger.mintedTierBadges).toEqual(["bronze"])
     expect(ledger.badgeTxHashes).toEqual({ bronze: "0xabc" })
   })
+
+  it("rejects confirm with invalid tier", async () => {
+    const res = await callWorker(makeEnv(), new Request(
+      "https://billing.test/v1/admin/badges/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/free/confirm",
+      {
+        method: "POST",
+        headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+        body: JSON.stringify({ txHash: "0xabc" }),
+      }
+    ))
+    expect(res.status).toBe(400)
+  })
 })

@@ -285,7 +285,15 @@ export default {
       for (const { name } of keys) {
         const raw = await env.CINA_BILLING_KV.get(name)
         if (!raw) continue
-        const ledger = JSON.parse(raw)
+        let ledger
+        try {
+          ledger = JSON.parse(raw)
+        } catch (err) {
+          // One malformed row (e.g. manual/console edit) must not abort the
+          // admin listing — skip it and carry on (mirrors indexer-run.js).
+          console.error(`[admin] skipping malformed ledger row ${name}:`, err?.message ?? err)
+          continue
+        }
         const badges = (ledger.pendingTierBadges ?? []).filter((t) => tierBadgeId(t) !== null)
         if (badges.length) {
           pending.push({
@@ -310,7 +318,16 @@ export default {
       const key = `ledger:${address.toLowerCase()}`
       const res = await withLedgerLock(address.toLowerCase(), async () => {
         const raw = await env.CINA_BILLING_KV.get(key)
-        const ledger = raw ? JSON.parse(raw) : {}
+        let ledger
+        if (raw) {
+          try {
+            ledger = JSON.parse(raw)
+          } catch {
+            return { error: "Ledger data corrupted" }
+          }
+        } else {
+          ledger = {}
+        }
         const minted = [...new Set([...(ledger.mintedTierBadges ?? []), tier])]
         await env.CINA_BILLING_KV.put(key, JSON.stringify({
           ...ledger,

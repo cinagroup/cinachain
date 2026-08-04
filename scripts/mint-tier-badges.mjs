@@ -37,7 +37,11 @@ for (const item of pending) {
       address: BADGE, abi: MINT_ABI, functionName: "mint",
       args: [item.address, TIER_IDS[tier], 1n],
     })
-    await publicClient.waitForTransactionReceipt({ hash })
+    const receipt = await publicClient.waitForTransactionReceipt({ hash })
+    if (receipt.status === "reverted") {
+      console.error(`❌ ${tier} badge mint REVERTED for ${item.address} — skipping confirm`)
+      continue
+    }
     console.log(`✔ ${tier} badge -> ${item.address} tx=${hash}`)
     const confirm = await fetch(
       `${BILLING_URL}/v1/admin/badges/${item.address}/${tier}/confirm`,
