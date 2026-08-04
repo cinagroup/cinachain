@@ -456,3 +456,61 @@ describe("M3 consumption history", () => {
     expect(env.store.get("hist:cust:c1")).toBeTruthy()
   })
 })
+
+describe("M3 ingress submit", () => {
+  // checkRegRateLimit is shared per-IP (5 per 10-min window) across
+  // /v1/custodial/accounts, /v1/keys and /v1/ingress, and the limiter is
+  // module state shared by every test in this file — so each test below
+  // simulates a distinct client IP to keep its own budget.
+  it("valid submit returns pending record id", async () => {
+    const env = makeEnv()
+    env.INGRESS_ENC_KEY = "a".repeat(64) // 32-byte hex
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.1" },
+      body: JSON.stringify({
+        apiKey: "ingress_test_abcdefghijklmnopqrstuvwxyz",
+        model: "demo",
+        declaredMicro: "2000000",
+        owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      }),
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.id).toMatch(/^ing_/)
+    expect(body.status).toBe("pending")
+    const rec = JSON.parse(env.store.get(`ing:${body.id}`))
+    expect(rec.owner).toBe("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(rec.confirmedMicro).toBe("0")
+    // plaintext key never stored — only encrypted + hash
+    expect(JSON.stringify(rec)).not.toContain("ingress_test_abcdefghijklmnopqrstuvwxyz")
+    expect(rec.encrypted.cipher).toBeTruthy()
+  })
+
+  it("duplicate key submission -> 409", async () => {
+    const env = makeEnv()
+    env.INGRESS_ENC_KEY = "a".repeat(64)
+    const body1 = { apiKey: "ingress_test_dup_abcdefghijklmnopqrstuv", model: "demo", declaredMicro: "1000", owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+    const r1 = await callWorker(env, new Request("https://billing.test/v1/ingress", { method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.2" }, body: JSON.stringify(body1) }))
+    expect(r1.status).toBe(200)
+    const r2 = await callWorker(env, new Request("https://billing.test/v1/ingress", { method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.2" }, body: JSON.stringify(body1) }))
+    expect(r2.status).toBe(409)
+  })
+
+  it("invalid declaredMicro -> 400; missing enc key -> 500", async () => {
+    const env = makeEnv()
+    env.INGRESS_ENC_KEY = "a".repeat(64)
+    const bad = await callWorker(env, new Request("https://billing.test/v1/ingress", {
+      method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.3" },
+      body: JSON.stringify({ apiKey: "ingress_test_bad_abcdefghijklmnopqr", model: "demo", declaredMicro: "0", owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }),
+    }))
+    expect(bad.status).toBe(400)
+    const noKey = makeEnv()
+    noKey.INGRESS_ENC_KEY = undefined
+    const five = await callWorker(noKey, new Request("https://billing.test/v1/ingress", {
+      method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.3" },
+      body: JSON.stringify({ apiKey: "ingress_test_nk_abcdefghijklmnopqr", model: "demo", declaredMicro: "1000", owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }),
+    }))
+    expect(five.status).toBe(500)
+  })
+})
