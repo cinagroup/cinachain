@@ -84,6 +84,26 @@ async function main() {
     process.exit(1)
   }
 
+  // ─── CinaCredit-only deployment (avoids re-deploying NFT/Badge) ───
+  if (process.env.DEPLOY_CREDIT_ONLY === "1") {
+    const creditArt = loadArtifact("CinaCredit")
+    const creditAddress = await deploy(
+      "CinaCredit",
+      creditArt.abi,
+      creditArt.bytecode,
+      [
+        account.address,          // initial owner
+        1000000n,                 // ethToCreditRate: 1 ETH = 1,000,000 credit
+        account.address,          // treasury
+        200n,                     // platformFeeBps: 2%
+      ]
+    )
+    console.log(`\n📋 CinaCredit: ${creditAddress}`)
+    console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${creditAddress}`)
+    console.log(`NEXT_PUBLIC_CINA_CREDIT_CONTRACT=${creditAddress}`)
+    return
+  }
+
   // ─── Deploy CinaNFT ───
   const nftArt = loadArtifact("CinaNFT")
   const nftAddress = await deploy(
@@ -111,6 +131,20 @@ async function main() {
     ]
   )
 
+  // ─── Deploy CinaCredit ───
+  const creditArt = loadArtifact("CinaCredit")
+  const creditAddress = await deploy(
+    "CinaCredit",
+    creditArt.abi,
+    creditArt.bytecode,
+    [
+      account.address,          // initial owner
+      1000000n,                 // ethToCreditRate: 1 ETH = 1,000,000 credit
+      account.address,          // treasury
+      200n,                     // platformFeeBps: 2%
+    ]
+  )
+
   // ─── Summary ───
   console.log("\n═══════════════════════════════════════════════")
   console.log("  ✅ Deployment Complete!")
@@ -119,10 +153,13 @@ async function main() {
   console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${nftAddress}`)
   console.log(`\n📋 CinaBadge:  ${badgeAddress}`)
   console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${badgeAddress}`)
+  console.log(`\n📋 CinaCredit: ${creditAddress}`)
+  console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${creditAddress}`)
 
   console.log("\n📝 Add to .env.local:")
   console.log(`NEXT_PUBLIC_CINA_NFT_CONTRACT=${nftAddress}`)
   console.log(`NEXT_PUBLIC_CINA_ERC1155_CONTRACT=${badgeAddress}`)
+  console.log(`NEXT_PUBLIC_CINA_CREDIT_CONTRACT=${creditAddress}`)
 
   console.log("\n🔄 Rebuild DApp:")
   console.log("npm run build")

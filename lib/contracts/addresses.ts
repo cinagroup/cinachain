@@ -30,6 +30,12 @@ export const CINA_ERC1155_CONTRACT = resolveAddress(
   process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT
 )
 
+/** ERC-20 CinaCredit billing token address */
+export const CINA_CREDIT_CONTRACT = resolveAddress(
+  process.env.NEXT_PUBLIC_CINA_CREDIT_CONTRACT
+)
+export const hasCreditContract = CINA_CREDIT_CONTRACT !== ZERO_ADDRESS
+
 /** True when the NFT contract address is set (not the zero placeholder) */
 export const hasNftContract = CINA_NFT_CONTRACT !== ZERO_ADDRESS
 export const hasErc1155Contract = CINA_ERC1155_CONTRACT !== ZERO_ADDRESS
