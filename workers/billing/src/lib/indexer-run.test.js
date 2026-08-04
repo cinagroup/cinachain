@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseTransferLogs, nextCursorRange, selectAddressLogs, applyLogsToSnapshot } from "./indexer-run.js"
+import { parseTransferLogs, nextCursorRange, selectAddressLogs, applyLogsToSnapshot, runIndexer, listAllKeys } from "./indexer-run.js"
 
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3f"
 
@@ -77,5 +77,83 @@ describe("applyLogsToSnapshot", () => {
   it("leaves the snapshot unchanged on self-transfer", () => {
     const logs = [{ from: "0xaaa", to: "0xaaa", value: 5n }]
     expect(applyLogsToSnapshot(logs, "0xaaa", 100n)).toBe(100n)
+  })
+})
+
+function mockKv(initial = {}) {
+  const store = new Map(Object.entries(initial))
+  return {
+    store,
+    async get(k) { return store.has(k) ? store.get(k) : null },
+    async put(k, v) { store.set(k, v) },
+    async list({ prefix } = {}) {
+      return { keys: [...store.keys()].filter((k) => !prefix || k.startsWith(prefix)).map((name) => ({ name })) }
+    },
+  }
+}
+
+describe("runIndexer", () => {
+  it("updates ledger snapshots from transfer logs and advances cursor", async () => {
+    const kv = mockKv({
+      // pre-seeded cursor forces a scan window (cold start would seed at latest)
+      "idx:lastBlock": "0",
+      "ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": JSON.stringify({ onchainSnapshot: "1000000000000000000", committedUsage: "0", cumulativeSpend: "0" }),
+    })
+    const fakeEnv = {
+      CINA_BILLING_KV: kv,
+      BASE_SEPOLIA_RPC: "https://fake",
+      CINA_CREDIT_ADDRESS: "0xcredit",
+    }
+    // latest = 0x10, one transfer-out of 200 wei from 0xaaa
+    const calls = []
+    global.fetch = async (url, opts) => {
+      const body = JSON.parse(opts.body)
+      calls.push(body.method)
+      if (body.method === "eth_blockNumber") {
+        return { json: async () => ({ result: "0x10" }) }
+      }
+      if (body.method === "eth_getLogs") {
+        return { json: async () => ({ result: [{
+          topics: [
+            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3f",
+            "0x000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "0x000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          ],
+          data: "0x00000000000000000000000000000000000000000000000000000000000000c8",
+          blockNumber: "0x10",
+        }] }) }
+      }
+      throw new Error(`unexpected method ${body.method}`)
+    }
+    const res = await runIndexer(fakeEnv)
+    expect(calls).toContain("eth_blockNumber")
+    expect(res.updated).toBe(1)
+    const stored = JSON.parse(kv.store.get("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+    expect(stored.onchainSnapshot).toBe("999999999999999800") // 1e18 - 200
+    expect(kv.store.get("idx:lastBlock")).toBe("16")
+  })
+
+  it("cold start: seeds cursor at latest without backfill", async () => {
+    const kv = mockKv({})
+    const fakeEnv = { CINA_BILLING_KV: kv, BASE_SEPOLIA_RPC: "https://fake", CINA_CREDIT_ADDRESS: "0xcredit" }
+    global.fetch = async () => ({ json: async () => ({ result: "0x1234" }) })
+    const res = await runIndexer(fakeEnv)
+    expect(res.updated).toBe(0)
+    expect(kv.store.get("idx:lastBlock")).toBe("4660")
+  })
+})
+
+describe("listAllKeys", () => {
+  it("paginates KV list cursor", async () => {
+    const keys = Array.from({ length: 1200 }, (_, i) => ({ name: `ledger:0x${i.toString(16).padStart(40, "0")}` }))
+    const kv = {
+      async list({ prefix, cursor } = {}) {
+        const start = cursor ? Number(cursor) : 0
+        const slice = keys.slice(start, start + 1000)
+        return { keys: slice, cursor: start + 1000 < keys.length ? String(start + 1000) : undefined }
+      },
+    }
+    const all = await listAllKeys(kv, "ledger:")
+    expect(all).toHaveLength(1200)
   })
 })

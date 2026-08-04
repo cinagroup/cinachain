@@ -8,6 +8,7 @@ import {
   checkQuota,
   costToWei,
 } from "./lib/billing-core.js"
+import { runIndexer } from "./lib/indexer-run.js"
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
@@ -131,7 +132,7 @@ function corsHeaders(request) {
   if (ALLOWED_ORIGINS.has(origin)) {
     headers["Access-Control-Allow-Origin"] = origin
     headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    headers["Access-Control-Allow-Headers"] = "Content-Type"
+    headers["Access-Control-Allow-Headers"] = "Content-Type, X-Admin-Key"
   }
   return headers
 }
@@ -144,6 +145,13 @@ function json(request, body, status = 200) {
 }
 
 export default {
+  /** Spec §4.3: cron-driven indexer keeps ledger snapshots in sync */
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(
+      runIndexer(env).catch((err) => console.error("[indexer] failed:", err?.message ?? err))
+    )
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url)
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) })
@@ -228,6 +236,15 @@ export default {
       const hash = await hashKey(apiKey)
       await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ address: address.toLowerCase() }))
       return json(request, { ok: true, address: address.toLowerCase() })
+    }
+
+    // Manual indexer trigger (admin key; also used by tests/E2E)
+    if (url.pathname === "/v1/admin/index" && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const res = await runIndexer(env).catch((err) => ({ error: err instanceof Error ? err.message : "indexer failed" }))
+      return json(request, res)
     }
 
     return json(request, { error: "Not found" }, 404)

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { handleUsage } from "./index.js"
+import billingWorker from "./index.js"
 
 // Ledger is wei-unit: 10 credit = 10e18 wei
 const baseLedger = { onchainSnapshot: 10_000_000_000_000_000_000n, committedUsage: 0n, cumulativeSpend: 0n }
@@ -38,5 +39,11 @@ describe("error paths", () => {
   it("decimal tokens -> 400", async () => {
     const res = await handleUsage({ model: "demo", tokens: 1.5 }, baseLedger)
     expect(res.status).toBe(400)
+  })
+})
+
+describe("billing worker", () => {
+  it("exposes a scheduled handler for the indexer cron", () => {
+    expect(typeof billingWorker.scheduled).toBe("function")
   })
 })
