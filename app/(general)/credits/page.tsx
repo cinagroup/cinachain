@@ -61,7 +61,6 @@ export default function CreditsPage() {
   const [lastAction, setLastAction] = useState<"topup" | "redeem">("topup")
   const [redeemAmount, setRedeemAmount] = useState("")
   const [redeemBusy, setRedeemBusy] = useState(false)
-  const [redeemMsg, setRedeemMsg] = useState<string | null>(null)
   const [redeemError, setRedeemError] = useState<string | null>(null)
 
   const { writeContractAsync, isPending } = useWriteContract()
@@ -78,6 +77,7 @@ export default function CreditsPage() {
     if (txConfirmed) {
       setConfirmed(true)
       setEthAmount("")
+      setRedeemAmount("")
       // wagmi registers contract reads under these prefixes
       queryClient.invalidateQueries({ queryKey: ["readContracts"] })
       queryClient.invalidateQueries({ queryKey: ["balance"] })
@@ -149,7 +149,6 @@ export default function CreditsPage() {
 
   const handleRedeem = async () => {
     setRedeemError(null)
-    setRedeemMsg(null)
     setConfirmed(false)
     setLastAction("redeem")
     if (!/^\d+$/.test(redeemAmount) || redeemWei <= 0n) {
@@ -434,14 +433,13 @@ export default function CreditsPage() {
                   disabled={redeemBusy}
                 />
               </div>
-              {ethOut !== undefined && redeemWei > 0n && (
+              {redeemEnabled && ethOut !== undefined && redeemWei > 0n && (
                 <p className="text-xs text-muted-foreground">
                   ≈ {formatEther(ethOut)} ETH
                 </p>
               )}
               {redeemError && <p className="text-sm text-destructive">{redeemError}</p>}
-              {redeemMsg && <p className="text-sm text-[#29bc9b]">{redeemMsg}</p>}
-              <Button onClick={handleRedeem} disabled={redeemBusy || !redeemAmount} className="w-full" variant="outline">
+              <Button onClick={handleRedeem} disabled={redeemBusy || !redeemAmount || !redeemEnabled} className="w-full" variant="outline">
                 {redeemBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Redeem"}
               </Button>
             </CardContent>
