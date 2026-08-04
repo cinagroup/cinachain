@@ -38,14 +38,17 @@ jobs:
       # broke every deploy since M1 (wrangler called /accounts//pages/...).
       - name: Check Cloudflare secrets
         run: |
+          echo "CLOUDFLARE_ACCOUNT_ID present: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}"
+          echo "CLOUDFLARE_API_TOKEN present: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}"
           if [ "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" = "" ]; then
             echo "::error::CLOUDFLARE_ACCOUNT_ID secret is not set — add it in"
-            echo "::error::repo Settings → Secrets and variables → Actions."
-            exit 1
+            echo "::error::repo Settings → Secrets and variables → Actions (exact name, uppercase)."
           fi
           if [ "${{ secrets.CLOUDFLARE_API_TOKEN }}" = "" ]; then
             echo "::error::CLOUDFLARE_API_TOKEN secret is not set — add it in"
-            echo "::error::repo Settings → Secrets and variables → Actions."
+            echo "::error::repo Settings → Secrets and variables → Actions (exact name, uppercase)."
+          fi
+          if [ "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" = "" ] || [ "${{ secrets.CLOUDFLARE_API_TOKEN }}" = "" ]; then
             exit 1
           fi
 
