@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { TrendingUp, Package, DollarSign, PauseCircle, PlayCircle, FileText, Settings, BarChart3, ArrowRight, Award } from "lucide-react"
+import { TrendingUp, Package, DollarSign, PauseCircle, PlayCircle, FileText, Settings, BarChart3, ArrowRight, Award, Coins } from "lucide-react"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
 import { hasNftContract } from "@/lib/contracts/addresses"
 import { AlertCircle } from "lucide-react"
@@ -141,6 +141,12 @@ export default function AdminOverviewPage() {
                 icon={<Settings className="h-5 w-5" />}
                 title="Contract Settings"
                 description="Pause, update prices, withdraw funds"
+              />
+              <QuickAction
+                href="/admin/billing"
+                icon={<Coins className="h-5 w-5" />}
+                title="Billing Settings"
+                description="Exchange rate, credit issuance, ledger"
               />
             </div>
           </CardContent>

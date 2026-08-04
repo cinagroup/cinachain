@@ -40,6 +40,7 @@ export const env = createEnv({
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/)
       .default("0x0000000000000000000000000000000000000000"),
+    NEXT_PUBLIC_CINA_CREDIT_CONTRACT: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
     // Mint price displayed in the UI (read-only; the contract is authoritative)
     NEXT_PUBLIC_MINT_PRICE_ETH: z.string().default("0.05"),
     // Whitelist API (Cloudflare Worker)
@@ -64,6 +65,7 @@ export const env = createEnv({
     NEXT_PUBLIC_CF_RPC_ENDPOINT: process.env.NEXT_PUBLIC_CF_RPC_ENDPOINT,
     NEXT_PUBLIC_CINA_NFT_CONTRACT: process.env.NEXT_PUBLIC_CINA_NFT_CONTRACT,
     NEXT_PUBLIC_CINA_ERC1155_CONTRACT: process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT,
+    NEXT_PUBLIC_CINA_CREDIT_CONTRACT: process.env.NEXT_PUBLIC_CINA_CREDIT_CONTRACT,
     NEXT_PUBLIC_MINT_PRICE_ETH: process.env.NEXT_PUBLIC_MINT_PRICE_ETH,
     NEXT_PUBLIC_WHITELIST_API_URL: process.env.NEXT_PUBLIC_WHITELIST_API_URL,
     NEXT_PUBLIC_PAYMASTER_PROXY_URL: process.env.NEXT_PUBLIC_PAYMASTER_PROXY_URL,

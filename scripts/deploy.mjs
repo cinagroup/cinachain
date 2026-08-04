@@ -65,6 +65,10 @@ async function deploy(name, abi, bytecode, args) {
   return receipt.contractAddress
 }
 
+// ─── CinaCredit deploy config (shared by credit-only and full flows) ───
+// owner, rate, treasury, feeBps — 与 .env / 前端费率展示保持一致
+// 实现于 main() 内的 creditArgs()（需要 account.address，无法在模块顶层定义）
+
 // ─── Check balance ───
 async function main() {
   console.log("═══════════════════════════════════════════════")
@@ -82,6 +86,24 @@ async function main() {
     console.error("❌ No ETH balance! Get test ETH from a Base Sepolia faucet:")
     console.error("   https://faucet.quicknode.com/base/sepolia")
     process.exit(1)
+  }
+
+  // ─── CinaCredit deploy config (shared by credit-only and full flows) ───
+  const creditArt = loadArtifact("CinaCredit")
+  const creditArgs = () => [account.address, 1000000n, account.address, 200n]
+
+  // ─── CinaCredit-only deployment (avoids re-deploying NFT/Badge) ───
+  if (process.env.DEPLOY_CREDIT_ONLY === "1") {
+    const creditAddress = await deploy(
+      "CinaCredit",
+      creditArt.abi,
+      creditArt.bytecode,
+      creditArgs()
+    )
+    console.log(`\n📋 CinaCredit: ${creditAddress}`)
+    console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${creditAddress}`)
+    console.log(`NEXT_PUBLIC_CINA_CREDIT_CONTRACT=${creditAddress}`)
+    return
   }
 
   // ─── Deploy CinaNFT ───
@@ -111,6 +133,14 @@ async function main() {
     ]
   )
 
+  // ─── Deploy CinaCredit ───
+  const creditAddress = await deploy(
+    "CinaCredit",
+    creditArt.abi,
+    creditArt.bytecode,
+    creditArgs()
+  )
+
   // ─── Summary ───
   console.log("\n═══════════════════════════════════════════════")
   console.log("  ✅ Deployment Complete!")
@@ -119,10 +149,13 @@ async function main() {
   console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${nftAddress}`)
   console.log(`\n📋 CinaBadge:  ${badgeAddress}`)
   console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${badgeAddress}`)
+  console.log(`\n📋 CinaCredit: ${creditAddress}`)
+  console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${creditAddress}`)
 
   console.log("\n📝 Add to .env.local:")
   console.log(`NEXT_PUBLIC_CINA_NFT_CONTRACT=${nftAddress}`)
   console.log(`NEXT_PUBLIC_CINA_ERC1155_CONTRACT=${badgeAddress}`)
+  console.log(`NEXT_PUBLIC_CINA_CREDIT_CONTRACT=${creditAddress}`)
 
   console.log("\n🔄 Rebuild DApp:")
   console.log("npm run build")

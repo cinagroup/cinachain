@@ -1,0 +1,12 @@
+name = "cinachain-billing"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[kv_namespaces]]
+binding = "CINA_BILLING_KV"
+id = "b7aaab94dc9f438c919ec40c53112d68"
+
+[vars]
+API_VERSION = "v1"
+CINA_CREDIT_ADDRESS = "0x78f5aebc75b7d197b10622cccabe8429617836d7"
+BASE_SEPOLIA_RPC = "https://sepolia.base.org"
