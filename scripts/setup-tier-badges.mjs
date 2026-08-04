@@ -34,7 +34,7 @@ const TIERS = [
 
 const count = await publicClient.readContract({ address: BADGE, abi: BADGE_ABI, functionName: "badgeTypeCount" })
 // count = 5 标准 + custom；已创建 5 个自定义则跳过
-const custom = Number(count) - 5
+const custom = Math.max(0, Number(count) - 5)
 if (custom >= 5) {
   console.log(`✔ 等级徽章已存在（custom count=${custom}），预期 IDs 100-104，跳过`)
   process.exit(0)
@@ -46,5 +46,9 @@ for (let i = custom; i < 5; i++) {
     args: [t.name, t.description, true, 0n], // soulbound, unlimited
   })
   const receipt = await publicClient.waitForTransactionReceipt({ hash })
+  if (receipt.status === "reverted") {
+    console.error(`❌ ${t.name} badge creation REVERTED (check owner key / pause state)`)
+    process.exit(1)
+  }
   console.log(`✔ ${t.name} badge created id=#${100 + i} tx=${hash}`)
 }
