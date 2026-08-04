@@ -2,11 +2,17 @@ import { useQuery } from "@tanstack/react-query"
 import { useReadContract } from "wagmi"
 import { CINA_NFT_CONTRACT, hasNftContract } from "@/lib/contracts/addresses"
 import { CINA_NFT_ABI } from "@/lib/contracts/abi"
-import { fetchNftMetadata, resolveNftImage, type NftMetadata } from "@/lib/ipfs"
+import {
+  fetchNftMetadata,
+  resolveNftImage,
+  getNftPlaceholderSvg,
+  type NftMetadata,
+} from "@/lib/ipfs"
 
 /**
  * Read tokenURI from the contract, then fetch + cache NFT metadata via IPFS.
  * Uses the robust fetchNftMetadata helper (SSRF protection, timeout, fallback gateways).
+ * Falls back to a deterministic SVG placeholder when the metadata has no image.
  */
 export function useTokenMetadata(tokenId: bigint | number | string | undefined) {
   const id = tokenId !== undefined ? BigInt(tokenId) : undefined
@@ -30,7 +36,11 @@ export function useTokenMetadata(tokenId: bigint | number | string | undefined) 
     staleTime: 5 * 60 * 1000, // 5 min cache
   })
 
-  const image = resolveNftImage(metadataQuery.data ?? null)
+  // Always resolve an image: real artwork if present, else an on-chain-style
+  // SVG placeholder so every token renders with visual identity (I1 fix).
+  const image =
+    resolveNftImage(metadataQuery.data ?? null) ??
+    (id !== undefined ? getNftPlaceholderSvg(id) : null)
 
   return {
     tokenId: id,

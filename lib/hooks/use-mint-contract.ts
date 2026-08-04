@@ -35,7 +35,7 @@ export type MintStatus =
 
 export interface UseMintContractResult {
   mintWhitelist: (proof: string[], quantity: number) => Promise<Hash | undefined>
-  mintPublic: (quantity: number) => Promise<Hash | undefined>
+  mintPublic: (quantity: number, pricePerNftWei?: bigint) => Promise<Hash | undefined>
   status: MintStatus
   isPending: boolean
   isConfirmed: boolean
@@ -44,6 +44,9 @@ export interface UseMintContractResult {
   reset: () => void
   isGasless: boolean
 }
+
+/** Contract's MAX_PER_ADDRESS — mirrors CinaNFT.sol */
+const MAX_PUBLIC_PER_TX = 10
 
 /**
  * NFT 铸造合约交互 hook
@@ -96,8 +99,8 @@ export function useMintContract(): UseMintContractResult {
         setStatus("error")
         return undefined
       }
-      if (quantity < 1) {
-        setError("Quantity must be at least 1")
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        setError("Quantity must be a positive integer")
         setStatus("error")
         return undefined
       }
@@ -125,26 +128,29 @@ export function useMintContract(): UseMintContractResult {
   )
 
   const doMintPublic = useCallback(
-    async (quantity: number): Promise<Hash | undefined> => {
+    async (quantity: number, pricePerNftWei?: bigint): Promise<Hash | undefined> => {
       if (!CINA_NFT_CONTRACT || CINA_NFT_CONTRACT === "0x0000000000000000000000000000000000000000") {
         setError("NFT contract address not configured")
         setStatus("error")
         return undefined
       }
-      if (quantity < 1) {
-        setError("Quantity must be at least 1")
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_PUBLIC_PER_TX) {
+        setError(`Quantity must be an integer between 1 and ${MAX_PUBLIC_PER_TX}`)
         setStatus("error")
         return undefined
       }
       setStatus("awaiting-wallet")
       setError(null)
       try {
+        // Prefer the on-chain mintPrice (passed by the mint page); fall back
+        // to the env constant so the sent value always matches the contract.
+        const priceWei = pricePerNftWei ?? parseEther(String(MINT_PRICE_ETH))
         const hash = await writeContractAsync({
           address: CINA_NFT_CONTRACT,
           abi: MINT_ABI,
           functionName: "mintPublic",
           args: [BigInt(quantity)],
-          value: parseEther(String(MINT_PRICE_ETH)) * BigInt(quantity),
+          value: priceWei * BigInt(quantity),
           capabilities,
         })
         setTxHash(hash)

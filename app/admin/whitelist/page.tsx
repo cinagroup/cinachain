@@ -1,17 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Copy, KeyRound, Link2 } from "lucide-react"
 
 interface WhitelistEntry {
   address: string
   mintLimit: number
 }
+
+const TOKEN_STORAGE_KEY = "cinachain-admin-token"
 
 export default function WhitelistManagementPage() {
   const [entries, setEntries] = useState<WhitelistEntry[]>([])
@@ -20,6 +22,22 @@ export default function WhitelistManagementPage() {
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle")
   const [deployStatus, setDeployStatus] = useState<"idle" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState("")
+  const [merkleRoot, setMerkleRoot] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  // Admin token is typed per-session by the operator. It is kept in
+  // sessionStorage only — never in a NEXT_PUBLIC_* variable (which would
+  // ship in the public bundle and defeat the auth).
+  const [adminToken, setAdminToken] = useState("")
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(TOKEN_STORAGE_KEY)
+      if (stored) setAdminToken(stored)
+    } catch {
+      // sessionStorage unavailable — token must be typed each time
+    }
+  }, [])
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -32,34 +50,34 @@ export default function WhitelistManagementPage() {
     try {
       const text = await file.text()
       const lines = text.split("\n").filter((line) => line.trim())
-      
+
       const parsedEntries: WhitelistEntry[] = []
-      
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim()
-        
+
         // Skip header row
         if (i === 0 && (line.toLowerCase().includes("address") || line.toLowerCase().includes("limit"))) {
           continue
         }
-        
+
         // Parse CSV: address,limit or just address (default limit = 1)
         const parts = line.split(",").map((p) => p.trim())
         const address = parts[0]
         const limit = parts[1] ? parseInt(parts[1]) : 1
-        
+
         // Validate address format
         if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
           throw new Error(`Invalid address format at line ${i + 1}: ${address}`)
         }
-        
-        if (isNaN(limit) || limit < 1) {
-          throw new Error(`Invalid mint limit at line ${i + 1}: ${parts[1]}`)
+
+        if (isNaN(limit) || limit < 1 || limit > 10) {
+          throw new Error(`Invalid mint limit at line ${i + 1}: ${parts[1]} (must be 1-10)`)
         }
-        
+
         parsedEntries.push({ address: address.toLowerCase(), mintLimit: limit })
       }
-      
+
       setEntries(parsedEntries)
       setUploadStatus("success")
     } catch (error) {
@@ -73,30 +91,53 @@ export default function WhitelistManagementPage() {
 
   const handleDeployWhitelist = async () => {
     if (entries.length === 0) return
+    if (!adminToken) {
+      setDeployStatus("error")
+      setErrorMessage("Enter the admin token to deploy the whitelist")
+      return
+    }
 
     setIsDeploying(true)
     setDeployStatus("idle")
     setErrorMessage("")
+    setMerkleRoot(null)
+    setCopied(false)
 
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_WHITELIST_API_URL ||
         "https://cinachain-whitelist-api.cinagroup.workers.dev"
 
+      // Per-address mint limits (the worker stores them individually)
+      const limits: Record<string, number> = {}
+      for (const e of entries) limits[e.address] = e.mintLimit
+
       const response = await fetch(`${apiUrl}/admin/whitelist`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Token": adminToken,
+        },
         body: JSON.stringify({
           addresses: entries.map((e) => e.address),
-          mintLimit: entries[0]?.mintLimit || 3,
+          limits,
         }),
       })
 
+      const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        throw new Error(`Deploy failed: ${response.status}`)
+        throw new Error(data.error || `Deploy failed: ${response.status}`)
+      }
+
+      // Persist token for this browser session (not localStorage)
+      try {
+        sessionStorage.setItem(TOKEN_STORAGE_KEY, adminToken)
+      } catch {
+        // ignore
       }
 
       setDeployStatus("success")
+      if (data.merkleRoot) setMerkleRoot(data.merkleRoot)
     } catch (err) {
       setDeployStatus("error")
       setErrorMessage(
@@ -104,6 +145,17 @@ export default function WhitelistManagementPage() {
       )
     } finally {
       setIsDeploying(false)
+    }
+  }
+
+  const copyRoot = async () => {
+    if (!merkleRoot) return
+    try {
+      await navigator.clipboard.writeText(merkleRoot)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard unavailable
     }
   }
 
@@ -134,150 +186,206 @@ export default function WhitelistManagementPage() {
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Input
                 type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              disabled={isProcessing}
-              className="max-w-xs mx-auto"
-            />
-            <p className="text-sm text-muted-foreground mt-4">
-              CSV format: <code className="bg-muted px-2 py-1 rounded">address,limit</code>
-              <br />
-              Example: <code className="bg-muted px-2 py-1 rounded">0x123...abc,3</code>
-            </p>
-          </div>
+                accept=".csv"
+                onChange={handleFileUpload}
+                disabled={isProcessing}
+                className="max-w-xs mx-auto"
+              />
+              <p className="text-sm text-muted-foreground mt-4">
+                CSV format: <code className="bg-muted px-2 py-1 rounded">address,limit</code>
+                <br />
+                Example: <code className="bg-muted px-2 py-1 rounded">0x123...abc,3</code>
+                <br />
+                <span className="text-xs opacity-80">Limit must be 1-10. Empty CSV lines and duplicate addresses are ignored.</span>
+              </p>
+            </div>
 
-          {uploadStatus === "success" && (
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                Successfully parsed {entries.length} addresses from CSV file
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {uploadStatus === "error" && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-      {entries.length > 0 && (
-        <Card className="shadow-vercel-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Preview ({entries.length} addresses)
-            </CardTitle>
-            <CardDescription>
-              Review the addresses before deploying to the whitelist
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {deployStatus === "success" && (
-              <Alert className="mb-4 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-                <CheckCircle className="h-4 w-4 text-[#29bc9b]" />
-                <AlertDescription className="text-sm text-[#29bc9b]">
-                  Whitelist deployed successfully! {entries.length} addresses are now active.
+            {uploadStatus === "success" && (
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Successfully parsed {entries.length} addresses from CSV file
                 </AlertDescription>
               </Alert>
             )}
-            {deployStatus === "error" && (
-              <Alert variant="destructive" className="mb-4">
+
+            {uploadStatus === "error" && (
+              <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{errorMessage}</AlertDescription>
               </Alert>
             )}
+          </CardContent>
+        </Card>
 
-            <div className="max-h-96 overflow-auto rounded-lg border">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-muted">
-                  <tr>
-                    <th className="p-2 text-left font-medium">#</th>
-                    <th className="p-2 text-left font-medium">Address</th>
-                    <th className="p-2 text-left font-medium">Mint Limit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.slice(0, 100).map((entry, index) => (
-                    <tr key={entry.address} className="border-t">
-                      <td className="p-2 text-muted-foreground">{index + 1}</td>
-                      <td className="p-2 font-mono text-xs">{entry.address}</td>
-                      <td className="p-2">{entry.mintLimit}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {entries.length > 100 && (
-                <div className="p-4 text-center text-sm text-muted-foreground border-t">
-                  Showing first 100 of {entries.length} addresses
-                </div>
+        {entries.length > 0 && (
+          <Card className="shadow-vercel-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Preview ({entries.length} addresses)
+              </CardTitle>
+              <CardDescription>
+                Review the addresses before deploying to the whitelist
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Admin token input */}
+              <div className="mb-4 space-y-2">
+                <Label htmlFor="admin-token" className="flex items-center gap-2 text-sm font-medium">
+                  <KeyRound className="h-4 w-4 text-muted-foreground" />
+                  Admin Token
+                </Label>
+                <Input
+                  id="admin-token"
+                  type="password"
+                  placeholder="Enter the whitelist API admin token"
+                  value={adminToken}
+                  onChange={(e) => setAdminToken(e.target.value)}
+                  className="max-w-md"
+                  autoComplete="off"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required to deploy. Stored in this browser session only — never in the public bundle.
+                </p>
+              </div>
+
+              {deployStatus === "success" && (
+                <Alert className="mb-4 border-[#50e3c2]/30 bg-[#50e3c2]/10">
+                  <CheckCircle className="h-4 w-4 text-[#29bc9b]" />
+                  <AlertDescription className="text-sm text-[#29bc9b]">
+                    Whitelist deployed successfully! {entries.length} addresses are now active.
+                  </AlertDescription>
+                </Alert>
               )}
-            </div>
+              {deployStatus === "error" && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
+              )}
 
-            <div className="mt-6 flex gap-3">
-              <Button
-                onClick={handleDeployWhitelist}
-                disabled={isDeploying}
-                className="flex-1"
-              >
-                {isDeploying ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Deploying...
-                  </>
-                ) : (
-                  `Deploy Whitelist (${entries.length} addresses)`
+              {/* Merkle root — must be set on the contract by the owner */}
+              {merkleRoot && (
+                <Alert className="mb-4 border-[#0070f3]/20 bg-[#d3e5ff]/40">
+                  <Link2 className="h-4 w-4 text-[#0761d1]" />
+                  <AlertDescription className="text-sm">
+                    <span className="font-medium text-[#0761d1]">Merkle Root generated.</span>{" "}
+                    <span className="text-[#0761d1]/80">
+                      Set it on the contract in{" "}
+                      <a href="/admin/contract" className="underline">Contract Management → Set Merkle Root</a>{" "}
+                      (owner wallet required) to enable whitelist minting.
+                    </span>
+                    <div className="mt-2 flex items-center gap-2">
+                      <code className="flex-1 break-all rounded bg-muted px-2 py-1 font-mono-tech text-xs">
+                        {merkleRoot}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyRoot}
+                        className="shrink-0"
+                      >
+                        <Copy className="mr-1 h-3 w-3" />
+                        {copied ? "Copied!" : "Copy"}
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="max-h-96 overflow-auto rounded-lg border">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-muted">
+                    <tr>
+                      <th className="p-2 text-left font-medium">#</th>
+                      <th className="p-2 text-left font-medium">Address</th>
+                      <th className="p-2 text-left font-medium">Mint Limit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entries.slice(0, 100).map((entry, index) => (
+                      <tr key={entry.address} className="border-t">
+                        <td className="p-2 text-muted-foreground">{index + 1}</td>
+                        <td className="p-2 font-mono text-xs">{entry.address}</td>
+                        <td className="p-2">{entry.mintLimit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {entries.length > 100 && (
+                  <div className="p-4 text-center text-sm text-muted-foreground border-t">
+                    Showing first 100 of {entries.length} addresses
+                  </div>
                 )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEntries([])
-                  setUploadStatus("idle")
-                }}
-              >
-                Clear
-              </Button>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <Button
+                  onClick={handleDeployWhitelist}
+                  disabled={isDeploying || !adminToken}
+                  className="flex-1"
+                >
+                  {isDeploying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deploying...
+                    </>
+                  ) : (
+                    `Deploy Whitelist (${entries.length} addresses)`
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEntries([])
+                    setUploadStatus("idle")
+                    setMerkleRoot(null)
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>How It Works</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div>
+              <h3 className="font-semibold mb-1">1. CSV Format</h3>
+              <p className="text-muted-foreground">
+                Prepare a CSV file with Ethereum addresses and their mint limits.
+                One address per line, separated by comma.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">2. Merkle Tree Generation</h3>
+              <p className="text-muted-foreground">
+                On deploy, the worker builds a Merkle tree (leaf = keccak256 of the
+                address, matching the contract) and computes the Merkle Root.
+                Per-address proofs are stored in KV and served to minters.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">3. Contract Update</h3>
+              <p className="text-muted-foreground">
+                Copy the generated Merkle Root into Contract Management → Set Merkle Root
+                (owner wallet). Whitelist minting is only enabled once the root is set on-chain.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">4. KV Storage</h3>
+              <p className="text-muted-foreground">
+                Address data, limits, and proofs are stored in Cloudflare Workers KV
+                and served to the mint page.
+              </p>
             </div>
           </CardContent>
         </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>How It Works</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm">
-          <div>
-            <h3 className="font-semibold mb-1">1. CSV Format</h3>
-            <p className="text-muted-foreground">
-              Prepare a CSV file with Ethereum addresses and their mint limits.
-              One address per line, separated by comma.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-1">2. Merkle Tree Generation</h3>
-            <p className="text-muted-foreground">
-              The system generates a Merkle Tree from the addresses and computes the Merkle Root.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-1">3. Contract Update</h3>
-            <p className="text-muted-foreground">
-              The Merkle Root is submitted to the smart contract, enabling whitelist minting.
-            </p>
-          </div>
-          <div>
-            <h3 className="font-semibold mb-1">4. KV Storage</h3>
-            <p className="text-muted-foreground">
-              Address data is stored in Cloudflare Workers KV for proof generation during minting.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
       </div>
     </div>
   )

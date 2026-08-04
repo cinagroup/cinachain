@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useAccount, useSignMessage, useChainId } from "wagmi"
-import { SiweMessage } from "siwe"
 
 const SESSION_KEY = "cinachain-siwe-session"
 
@@ -86,6 +85,9 @@ export function useSiwe() {
 
     setLoading(true)
     try {
+      // Dynamic import: siwe + ethers@5 (~500 KB) only load when the user
+      // actually clicks "Sign in", not on every page load.
+      const { SiweMessage } = await import("siwe")
       const nonce = generateNonce()
       const message = new SiweMessage({
         domain: window.location.host,

@@ -43,3 +43,8 @@ workers/*/node_modules/
 workers/*/package-lock.json
 contracts/openzeppelin/
 contracts/out/
+
+# Playwright test artifacts
+.playwright-mcp/
+prod-mint.png
+dev-server.log

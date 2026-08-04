@@ -70,6 +70,7 @@ contract CinaBadge is ERC1155, Ownable, Pausable, ReentrancyGuard {
     error SoulboundTransferBlocked();
     error ZeroAmount();
     error ZeroAddress();
+    error OwnershipRenounceBlocked();
 
     // ─────────────────────────── Constructor ───────────────────────────
 
@@ -178,28 +179,30 @@ contract CinaBadge is ERC1155, Ownable, Pausable, ReentrancyGuard {
 
     // ─────────────────────────── Soulbound Enforcement ───────────────────────────
 
-    /// @dev Override safeTransferFrom to block soulbound badge transfers
+    /// @dev Override safeTransferFrom to block soulbound badge transfers and
+    ///      respect the emergency pause (transfer of any badge is paused)
     function safeTransferFrom(
         address from,
         address to,
         uint256 id,
         uint256 amount,
         bytes memory data
-    ) public override {
+    ) public override whenNotPaused {
         if (_badgeTypes[id].soulbound && _soulboundHolders[id][from]) {
             revert SoulboundTransferBlocked();
         }
         super.safeTransferFrom(from, to, id, amount, data);
     }
 
-    /// @dev Override safeBatchTransferFrom to block soulbound badge transfers
+    /// @dev Override safeBatchTransferFrom to block soulbound badge transfers and
+    ///      respect the emergency pause
     function safeBatchTransferFrom(
         address from,
         address to,
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) public override {
+    ) public override whenNotPaused {
         for (uint256 i = 0; i < ids.length; i++) {
             if (_badgeTypes[ids[i]].soulbound && _soulboundHolders[ids[i]][from]) {
                 revert SoulboundTransferBlocked();
@@ -211,10 +214,92 @@ contract CinaBadge is ERC1155, Ownable, Pausable, ReentrancyGuard {
     // ─────────────────────────── Views ───────────────────────────
 
     /// @notice Returns metadata URI for a token ID (ERC-1155 standard)
+    /// @dev Handles "{id}" placeholder substitution per EIP-1155 (64-char
+    ///      zero-padded lowercase hex). Without a placeholder, appends
+    ///      "{id}.json". Unknown badge types return "" per the spec.
     function uri(uint256 tokenId) public view override returns (string memory) {
-        if (!_badgeTypes[tokenId].exists) revert BadgeTypeNotFound();
-        // Replace {id} with the actual token ID (64-hex zero-padded per EIP-1155)
-        return string(abi.encodePacked(baseMetadataURI, tokenId.toString(), ".json"));
+        if (!_badgeTypes[tokenId].exists) return "";
+
+        bytes memory base = bytes(baseMetadataURI);
+        if (base.length == 0) return "";
+
+        uint256 ph = _findPlaceholder(base);
+        if (ph != type(uint256).max) {
+            return _replacePlaceholder(base, ph, _toPaddedHex(tokenId));
+        }
+        return _appendId(base, _toHex(tokenId));
+    }
+
+    /// @dev Locate "{id}" in the base URI (returns type(uint256).max if absent)
+    function _findPlaceholder(bytes memory base) internal pure returns (uint256) {
+        for (uint256 i = 0; i + 3 < base.length; i++) {
+            if (
+                base[i] == 0x7B && // {
+                base[i + 1] == 0x69 && // i
+                base[i + 2] == 0x64 && // d
+                base[i + 3] == 0x7D // }
+            ) {
+                return i;
+            }
+        }
+        return type(uint256).max;
+    }
+
+    /// @dev EIP-1155 id encoding: 64-char zero-padded lowercase hex (no 0x)
+    function _toPaddedHex(uint256 value) internal pure returns (bytes memory) {
+        bytes memory raw = bytes(_toHex(value));
+        bytes memory padded = new bytes(64);
+        for (uint256 i = 0; i < 64; i++) padded[i] = "0";
+        uint256 offset = 64 - raw.length;
+        for (uint256 i = 0; i < raw.length; i++) padded[offset + i] = raw[i];
+        return padded;
+    }
+
+    /// @dev Replace the "{id}" placeholder with the encoded id
+    function _replacePlaceholder(
+        bytes memory base,
+        uint256 ph,
+        bytes memory id
+    ) internal pure returns (string memory) {
+        bytes memory result = new bytes(base.length - 4 + id.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < ph; i++) result[j++] = base[i];
+        for (uint256 i = 0; i < id.length; i++) result[j++] = id[i];
+        for (uint256 i = ph + 4; i < base.length; i++) result[j++] = base[i];
+        return string(result);
+    }
+
+    /// @dev Append "{id}.json" to the base URI (no placeholder case)
+    function _appendId(
+        bytes memory base,
+        string memory rawHex
+    ) internal pure returns (string memory) {
+        bytes memory suffix = abi.encodePacked(rawHex, ".json");
+        bool endsWithSlash = base[base.length - 1] == "/";
+        bytes memory result = new bytes(base.length + (endsWithSlash ? 0 : 1) + suffix.length);
+        uint256 j = 0;
+        for (uint256 i = 0; i < base.length; i++) result[j++] = base[i];
+        if (!endsWithSlash) result[j++] = "/";
+        for (uint256 i = 0; i < suffix.length; i++) result[j++] = suffix[i];
+        return string(result);
+    }
+
+    /// @dev Lowercase hex string without 0x prefix
+    function _toHex(uint256 value) internal pure returns (string memory) {
+        if (value == 0) return "0";
+        bytes memory digits = "0123456789abcdef";
+        uint256 len = 0;
+        uint256 tmp = value;
+        while (tmp > 0) {
+            len++;
+            tmp >>= 4;
+        }
+        bytes memory out = new bytes(len);
+        for (uint256 i = len; i > 0; i--) {
+            out[i - 1] = digits[value & 0xf];
+            value >>= 4;
+        }
+        return string(out);
     }
 
     /// @notice Get badge type information
@@ -271,6 +356,12 @@ contract CinaBadge is ERC1155, Ownable, Pausable, ReentrancyGuard {
     /// @notice Unpause
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    /// @dev Prevent accidental renouncement — ownership controls badge types
+    ///      and minting; renouncing would lock the system permanently.
+    function renounceOwnership() public override onlyOwner {
+        revert OwnershipRenounceBlocked();
     }
 
     // ─────────────────────────── Internal ───────────────────────────

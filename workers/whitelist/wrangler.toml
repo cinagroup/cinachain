@@ -1,11 +1,12 @@
 name = "cinachain-whitelist-api"
 main = "src/index.js"
 compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
 
-# KV 命名空间 - 部署时取消注释并填入实际 ID
-# [[kv_namespaces]]
-# binding = "CINA_WHITELIST_KV"
-# id = "YOUR_KV_NAMESPACE_ID"
+# KV 命名空间（白名单 + Merkle proofs + 管理端限流）
+[[kv_namespaces]]
+binding = "CINA_WHITELIST_KV"
+id = "fd4979f6c1d74dd391c4d6a650c7e199"
 
 [vars]
-API_VERSION = "v1"
+API_VERSION = "v2"

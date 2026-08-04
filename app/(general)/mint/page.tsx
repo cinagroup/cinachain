@@ -13,7 +13,10 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { CheckCircle2, ExternalLink, AlertCircle, Loader2 } from "lucide-react"
+import { formatEther } from "viem"
 import { MINT_PRICE_ETH } from "@/lib/contracts/addresses"
+
+const MAX_PUBLIC_PER_TX = 10
 
 export default function MintPage() {
   const { address, isConnected } = useAccount()
@@ -23,11 +26,12 @@ export default function MintPage() {
     isLoading: whitelistLoading,
     isError: whitelistError,
   } = useWhitelist(address)
-  const { paused } = useContractStats()
+  const { paused, mintPrice } = useContractStats()
   const isPaused = paused?.data === true
 
   const [quantity, setQuantity] = useState(1)
   const [mintPhase, setMintPhase] = useState<"whitelist" | "public" | "inactive">("inactive")
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const {
     mintWhitelist,
@@ -47,34 +51,56 @@ export default function MintPage() {
       setMintPhase("inactive")
       return
     }
-    if (!whitelistData) return
-    if (whitelistData.eligible) {
-      setMintPhase("whitelist")
-    } else if (whitelistData.phase === "public") {
+    // Whitelist service down → fall back to public (public mint is on-chain only)
+    if (whitelistError) {
       setMintPhase("public")
+      return
+    }
+    if (!whitelistData) return
+    // The Worker's phase field is authoritative. Check it FIRST so a
+    // public mint is never misclassified as a whitelist mint.
+    if (whitelistData.phase === "public") {
+      setMintPhase("public")
+    } else if (whitelistData.phase === "whitelist" && whitelistData.eligible) {
+      setMintPhase("whitelist")
     } else {
       setMintPhase("inactive")
     }
-  }, [whitelistData, isPaused])
+  }, [whitelistData, isPaused, whitelistError])
 
   // After successful mint: reset quantity + invalidate queries
   useEffect(() => {
     if (isConfirmed) {
       setQuantity(1)
       queryClient.invalidateQueries({ queryKey: ["whitelist"] })
-      queryClient.invalidateQueries({ queryKey: ["nft-balance"] })
-      queryClient.invalidateQueries({ queryKey: ["contract-stats"] })
+      // wagmi registers contract reads under these prefixes (I2 fix)
+      queryClient.invalidateQueries({ queryKey: ["readContract"] })
+      queryClient.invalidateQueries({ queryKey: ["readContracts"] })
+      queryClient.invalidateQueries({ queryKey: ["balance"] })
     }
   }, [isConfirmed, queryClient])
 
   const handleMint = async () => {
-    if (quantity < 1) return
+    setLocalError(null)
+    const maxQty =
+      mintPhase === "whitelist" ? whitelistData?.mintLimit ?? 1 : MAX_PUBLIC_PER_TX
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQty) {
+      setLocalError(`Quantity must be between 1 and ${maxQty}`)
+      return
+    }
     reset()
 
-    if (mintPhase === "whitelist" && whitelistData?.proof) {
+    if (mintPhase === "whitelist") {
+      if (!whitelistData?.proof) {
+        setLocalError(
+          "No whitelist proof available for this address. Please contact the CinaChain team."
+        )
+        return
+      }
       await mintWhitelist(whitelistData.proof, quantity)
     } else if (mintPhase === "public") {
-      await mintPublic(quantity)
+      // Use the on-chain mintPrice so value always matches the contract (I3 fix)
+      await mintPublic(quantity, mintPrice?.data)
     }
   }
 
@@ -131,25 +157,15 @@ export default function MintPage() {
     )
   }
 
-  // Error fetching whitelist
-  if (whitelistError) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container max-w-[1200px] px-6 py-12">
-          <Card className="max-w-md shadow-vercel-card">
-            <CardContent className="pt-6">
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Failed to load mint status. The whitelist service may be temporarily unavailable.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+  // On-chain price (fallback to env constant while loading)
+  const priceDisplay = mintPrice?.data
+    ? formatEther(mintPrice.data).replace(/\.?0+$/, "")
+    : String(MINT_PRICE_ETH)
+  const totalDisplay = mintPrice?.data
+    ? (Number(formatEther(mintPrice.data)) * quantity)
+        .toFixed(6)
+        .replace(/\.?0+$/, "")
+    : (MINT_PRICE_ETH * quantity).toFixed(2)
 
   // Main mint UI
   return (
@@ -169,6 +185,17 @@ export default function MintPage() {
             {mintPhase === "inactive" && "Minting is not currently active."}
           </p>
         </div>
+
+        {/* Whitelist service degraded — soft warning, mint still available */}
+        {whitelistError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Whitelist service is temporarily unavailable. Showing public mint status —
+              whitelist minting may be affected.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="max-w-md">
           <Card className="shadow-vercel-card">
@@ -202,7 +229,7 @@ export default function MintPage() {
                 <Alert className="bg-[#aaffec] border-[#50e3c2]/20">
                   <AlertDescription className="text-sm text-[#29bc9b]">
                     Public mint active. Price:{" "}
-                    <span className="font-semibold">{MINT_PRICE_ETH} ETH</span> per NFT.
+                    <span className="font-semibold">{priceDisplay} ETH</span> per NFT.
                   </AlertDescription>
                 </Alert>
               )}
@@ -216,10 +243,10 @@ export default function MintPage() {
               )}
 
               {/* Transaction feedback */}
-              {error && (
+              {(localError || error) && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-sm break-all">{error}</AlertDescription>
+                  <AlertDescription className="text-sm break-all">{localError ?? error}</AlertDescription>
                 </Alert>
               )}
 
@@ -268,7 +295,7 @@ export default function MintPage() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Price per NFT</span>
                       <span className="font-medium text-foreground">
-                        {MINT_PRICE_ETH} ETH
+                        {priceDisplay} ETH
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -278,7 +305,7 @@ export default function MintPage() {
                     <div className="border-t border-border pt-3 flex justify-between">
                       <span className="font-medium text-foreground">Total</span>
                       <span className="font-display text-lg text-foreground">
-                        {(MINT_PRICE_ETH * quantity).toFixed(2)} ETH
+                        {totalDisplay} ETH
                       </span>
                     </div>
                   </div>

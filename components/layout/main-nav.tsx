@@ -30,18 +30,24 @@ export function MainNav() {
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <Link href="/dashboard">
-              <NavigationMenuLink className="h-8 rounded-sm text-sm font-medium text-foreground/70 transition-colors hover:text-foreground">
+            <NavigationMenuLink asChild>
+              <Link
+                href="/dashboard"
+                className="h-8 rounded-sm text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+              >
                 Dashboard
-              </NavigationMenuLink>
-            </Link>
+              </Link>
+            </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <Link href={siteConfig.links.docs}>
-              <NavigationMenuLink className="h-8 rounded-sm text-sm font-medium text-foreground/70 transition-colors hover:text-foreground">
+            <NavigationMenuLink asChild>
+              <Link
+                href={siteConfig.links.docs}
+                className="h-8 rounded-sm text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+              >
                 Documentation
-              </NavigationMenuLink>
-            </Link>
+              </Link>
+            </NavigationMenuLink>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>

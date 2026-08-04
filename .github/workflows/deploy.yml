@@ -21,23 +21,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --ignore-scripts
+        run: npm ci --legacy-peer-deps --ignore-scripts
 
-      - name: Build for Cloudflare Pages
-        run: npx --yes @cloudflare/next-on-pages@1.11.3
-        env:
-          NEXT_PUBLIC_CF_IPFS_GATEWAY: ${{ vars.NEXT_PUBLIC_CF_IPFS_GATEWAY || 'https://ipfs.cinachain.com' }}
-          NEXT_PUBLIC_CF_RPC_ENDPOINT: ${{ vars.NEXT_PUBLIC_CF_RPC_ENDPOINT || 'https://rpc.cinachain.com/v1' }}
-          NEXT_PUBLIC_CINA_NFT_CONTRACT: ${{ vars.NEXT_PUBLIC_CINA_NFT_CONTRACT || '0x0000000000000000000000000000000000000000' }}
-          NEXT_PUBLIC_WC_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_WC_PROJECT_ID || 'placeholder' }}
+      - name: Build static export
+        # .env.production (committed, public values only) provides the
+        # NEXT_PUBLIC_* vars — mirrors the local build exactly.
+        run: npm run build
+
+      - name: Strip null bytes (Windows-safe webpack output)
+        run: node scripts/strip-nulls.mjs
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: cinachain-nft-dapp
-          directory: .vercel/output/static
-          wranglerVersion: "3"
+          command: pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true

@@ -1,19 +1,19 @@
 "use client"
 
-import { useState } from "react"
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { useState, useEffect } from "react"
+import { useWriteContract, useWaitForTransactionReceipt, useBalance } from "wagmi"
 import { parseEther, type Hash } from "viem"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Pause, Play, DollarSign, AlertCircle, Settings, CheckCircle2, ExternalLink, Loader2 } from "lucide-react"
+import { Pause, Play, DollarSign, AlertCircle, Settings, CheckCircle2, ExternalLink, Loader2, TreePine } from "lucide-react"
 import { CINA_NFT_CONTRACT, hasNftContract } from "@/lib/contracts/addresses"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
 
 export default function ContractManagementPage() {
-  const { paused } = useContractStats()
+  const { paused, refetch: refetchStats } = useContractStats()
   const isPaused = paused.data === true
 
   const { writeContractAsync, isPending } = useWriteContract()
@@ -24,6 +24,12 @@ export default function ContractManagementPage() {
   // New price & baseURI inputs
   const [newPriceEth, setNewPriceEth] = useState("")
   const [newBaseURI, setNewBaseURI] = useState("")
+  const [newMerkleRoot, setNewMerkleRoot] = useState("")
+
+  const { data: contractBalance, refetch: refetchBalance } = useBalance({
+    address: CINA_NFT_CONTRACT,
+    query: { enabled: hasNftContract },
+  })
 
   const { isSuccess: confirmed, isError: reverted } =
     useWaitForTransactionReceipt({
@@ -31,10 +37,24 @@ export default function ContractManagementPage() {
       query: { enabled: !!txHash },
     })
 
+  // After a tx confirms, refresh on-chain status + contract balance (M3/M4)
+  useEffect(() => {
+    if (confirmed) {
+      refetchStats()
+      refetchBalance()
+    }
+  }, [confirmed, refetchStats, refetchBalance])
+
   const isBusy = isPending || (!!txHash && !confirmed && !reverted)
 
+/** Trim trailing zeros from a formatted balance (e.g. "0.001000" → "0.001") */
+function trimEth(formatted: string): string {
+  if (!formatted.includes(".")) return formatted
+  return formatted.replace(/\.?0+$/, "")
+}
+
   const handleAction = async (
-    functionName: "pause" | "unpause" | "withdraw" | "setMintPrice" | "setBaseURI",
+    functionName: "pause" | "unpause" | "withdraw" | "setMintPrice" | "setBaseURI" | "setMerkleRoot",
     label: string,
     args?: readonly unknown[],
     value?: bigint
@@ -52,13 +72,16 @@ export default function ContractManagementPage() {
             type: "function",
             stateMutability: value !== undefined ? "payable" : "nonpayable",
             inputs: args
-              ? args.map((_, i) => ({
-                  name: `arg${i}`,
-                  type:
-                    typeof args[i] === "bigint"
-                      ? "uint256"
-                      : "string",
-                }))
+              ? args.map((_, i) => {
+                  const v = args[i]
+                  if (typeof v === "bigint") {
+                    return { name: `arg${i}`, type: "uint256" }
+                  }
+                  if (typeof v === "string" && /^0x[0-9a-fA-F]{64}$/.test(v)) {
+                    return { name: `arg${i}`, type: "bytes32" }
+                  }
+                  return { name: `arg${i}`, type: "string" }
+                })
               : [],
             outputs: [],
           },
@@ -189,6 +212,12 @@ export default function ContractManagementPage() {
             <CardDescription>Withdraw collected ETH from the contract</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex items-center justify-between rounded-md border border-border bg-secondary p-4">
+              <span className="text-sm font-medium">Contract Balance</span>
+              <span className="font-mono-tech text-sm text-foreground">
+                {contractBalance ? `${trimEth(contractBalance.formatted)} ETH` : "—"}
+              </span>
+            </div>
             <Alert className="mb-4">
               <AlertDescription className="text-sm">
                 This will transfer all ETH in the contract to the owner address.
@@ -200,7 +229,7 @@ export default function ContractManagementPage() {
                   handleAction("withdraw", "Withdrawal")
                 }
               }}
-              disabled={isBusy}
+              disabled={isBusy || !contractBalance || contractBalance.value === 0n}
               variant="outline"
               className="w-full"
             >
@@ -209,7 +238,9 @@ export default function ContractManagementPage() {
               ) : (
                 <DollarSign className="h-4 w-4 mr-2" />
               )}
-              Withdraw All Funds
+              {contractBalance && contractBalance.value === 0n
+                ? "Nothing to Withdraw"
+                : "Withdraw All Funds"}
             </Button>
           </CardContent>
         </Card>
@@ -240,8 +271,11 @@ export default function ContractManagementPage() {
             <Button
               onClick={() => {
                 const price = parseFloat(newPriceEth)
-                if (isNaN(price) || price < 0) {
-                  setError("Invalid price")
+                if (isNaN(price) || price <= 0) {
+                  setError("Price must be greater than 0")
+                  return
+                }
+                if (!window.confirm(`Set mint price to ${newPriceEth} ETH per NFT?`)) {
                   return
                 }
                 handleAction("setMintPrice", "Price update", [parseEther(newPriceEth)])
@@ -251,6 +285,45 @@ export default function ContractManagementPage() {
               className="w-full"
             >
               Update Price
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Set Merkle Root */}
+        <Card className="shadow-vercel-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TreePine className="h-5 w-5" />
+              Set Merkle Root
+            </CardTitle>
+            <CardDescription>Enable whitelist minting with the root from Whitelist Management</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="merkle-root">Merkle Root (0x...)</Label>
+              <Input
+                id="merkle-root"
+                type="text"
+                placeholder="0x0000...0000"
+                value={newMerkleRoot}
+                onChange={(e) => setNewMerkleRoot(e.target.value.trim())}
+                disabled={isBusy}
+                className="font-mono-tech text-xs"
+              />
+            </div>
+            <Button
+              onClick={() => {
+                if (!/^0x[0-9a-fA-F]{64}$/.test(newMerkleRoot)) {
+                  setError("Invalid Merkle root — must be 32 bytes (0x + 64 hex chars)")
+                  return
+                }
+                handleAction("setMerkleRoot", "Merkle root update", [newMerkleRoot])
+              }}
+              disabled={isBusy || !newMerkleRoot}
+              variant="outline"
+              className="w-full"
+            >
+              Set Merkle Root
             </Button>
           </CardContent>
         </Card>

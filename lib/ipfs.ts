@@ -40,6 +40,8 @@ export function ipfsToHttps(
 ): string {
   // Pass through https:// as-is (after scheme check)
   if (uri.startsWith("https://")) return uri
+  // Pass through data: URIs as-is (e.g. on-chain SVG images)
+  if (uri.startsWith("data:")) return uri
   if (!uri.startsWith("ipfs://")) return uri
 
   const cid = extractCid(uri)
@@ -49,6 +51,8 @@ export function ipfsToHttps(
 
 /** Get an ordered list of gateway URLs for an IPFS image (for fallback loading). */
 export function getIpfsImageSources(ipfsUri: string): string[] {
+  // data: URIs are self-contained — nothing to gateway-resolve
+  if (ipfsUri.startsWith("data:")) return [ipfsUri]
   const cid = extractCid(ipfsUri)
   const sources = [`${IPFS_GATEWAY}/ipfs/${cid}`]
   FALLBACK_GATEWAYS.forEach((gw) => sources.push(`${gw}${cid}`))
@@ -136,7 +140,40 @@ export function resolveNftImage(
   fallback?: string
 ): string | null {
   if (!metadata?.image) return fallback ?? null
-  return ipfsToHttps(metadata.image, "image")
+  const img = metadata.image
+  // Only allow schemes our image pipeline can render safely
+  if (
+    img.startsWith("ipfs://") ||
+    img.startsWith("https://") ||
+    img.startsWith("data:")
+  ) {
+    return ipfsToHttps(img, "image")
+  }
+  return fallback ?? null
+}
+
+/**
+ * Deterministic SVG placeholder for tokens without artwork.
+ * Generates a data:image/svg+xml;base64 URI — colored per token ID.
+ */
+export function getNftPlaceholderSvg(tokenId: bigint | number): string {
+  const id = Number(tokenId)
+  const hue = ((id % 360) * 47 + 13) % 360
+  const hue2 = (hue + 40) % 360
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'>` +
+    `<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>` +
+    `<stop offset='0%' stop-color='hsl(${hue},70%,24%)'/>` +
+    `<stop offset='100%' stop-color='hsl(${hue2},65%,44%)'/>` +
+    `</linearGradient></defs>` +
+    `<rect width='800' height='800' fill='url(#g)'/>` +
+    `<circle cx='660' cy='120' r='230' fill='rgba(255,255,255,0.07)'/>` +
+    `<circle cx='90' cy='720' r='170' fill='rgba(0,0,0,0.15)'/>` +
+    `<text x='60' y='440' font-family='monospace' font-size='104' font-weight='700' fill='rgba(255,255,255,0.95)'>CinaChain</text>` +
+    `<text x='60' y='540' font-family='monospace' font-size='72' font-weight='600' fill='rgba(255,255,255,0.85)'>#${id}</text>` +
+    `<text x='60' y='726' font-family='monospace' font-size='28' fill='rgba(255,255,255,0.55)'>Built on Base</text>` +
+    `</svg>`
+  return `data:image/svg+xml;base64,${btoa(svg)}`
 }
 
 export { IPFS_GATEWAY, CDN_GATEWAY, META_GATEWAY }

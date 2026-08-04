@@ -56,7 +56,13 @@ const input = {
   sources,
   settings: {
     optimizer: { enabled: true, runs: 200 },
-    outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } },
+    // Only codegen OUR contracts — generating artifacts for every OZ file
+    // (143 sources) can trip "stack too deep" in unrelated library codegen.
+    // Note: source unit keys must match the `sources` keys exactly.
+    outputSelection: {
+      "contracts/src/CinaNFT.sol": { "*": ["abi", "evm.bytecode.object"] },
+      "contracts/src/CinaBadge.sol": { "*": ["abi", "evm.bytecode.object"] },
+    },
   },
 }
 

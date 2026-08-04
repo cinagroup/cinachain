@@ -17,11 +17,13 @@ const badgeVariants: Record<ReturnType<typeof GetNetworkColor>, string> = {
 }
 
 export function NetworkStatus() {
-  const { data } = useBlockNumber()
-  const { chain } = useAccount()
+  const { address, chain } = useAccount()
+  // Only poll the block number while a wallet is connected — visitors on
+  // marketing pages shouldn't generate constant RPC traffic.
+  const { data } = useBlockNumber({ query: { enabled: !!address } })
   const blockExplorerUrl = chain?.blockExplorers?.default.url
 
-  if (!chain || !blockExplorerUrl) return null
+  if (!address || !chain || !blockExplorerUrl) return null
 
   return (
     <Link

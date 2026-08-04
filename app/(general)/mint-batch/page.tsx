@@ -14,14 +14,13 @@ import { CINA_ERC1155_CONTRACT } from "@/lib/contracts/addresses"
 
 const MINT_BATCH_ABI = [
   {
-    name: "mintBatch",
+    name: "mintToAddress",
     type: "function",
     stateMutability: "nonpayable",
     inputs: [
       { name: "to", type: "address" },
-      { name: "ids", type: "uint256[]" },
+      { name: "tokenIds", type: "uint256[]" },
       { name: "amounts", type: "uint256[]" },
-      { name: "data", type: "bytes" },
     ],
     outputs: [],
   },
@@ -105,8 +104,8 @@ export default function BatchMintPage() {
       const hash = await writeContractAsync({
         address: CINA_ERC1155_CONTRACT,
         abi: MINT_BATCH_ABI,
-        functionName: "mintBatch",
-        args: [address, ids, amounts, "0x"],
+        functionName: "mintToAddress",
+        args: [address, ids, amounts],
       })
 
       setTxHash(hash)
@@ -155,7 +154,12 @@ export default function BatchMintPage() {
             Batch Mint ERC1155<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
-            Mint multiple token IDs in a single transaction. Perfect for collections with multiple variants.
+            Mint multiple badge types to your address in a single transaction. Perfect for collections with multiple variants.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground max-w-[560px]">
+            <span className="font-medium">Note:</span> the underlying contract function is
+            <code className="bg-secondary rounded px-1.5 py-0.5 text-xs mx-1">onlyOwner</code>
+            — only the contract owner&apos;s wallet can execute this.
           </p>
         </div>
 

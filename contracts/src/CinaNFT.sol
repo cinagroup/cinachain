@@ -76,6 +76,7 @@ contract CinaNFT is
     error InvalidProof();
     error ZeroQuantity();
     error WithdrawFailed();
+    error OwnershipRenounceBlocked();
 
     // ─────────────────────────── Constructor ───────────────────────────
 
@@ -192,15 +193,17 @@ contract CinaNFT is
         return _generateOnChainMetadata(tokenId);
     }
 
-    /// @dev Generates base64-encoded JSON metadata on-chain
+    /// @dev Generates base64-encoded JSON metadata on-chain (with embedded SVG image)
     function _generateOnChainMetadata(uint256 tokenId) internal pure returns (string memory) {
         string memory name = string(abi.encodePacked("CinaChain NFT #", tokenId.toString()));
-        string memory description = "CinaChain NFT - a collectible on the Ethereum blockchain.";
+        string memory description = "CinaChain NFT - a collectible on the Base network.";
+        string memory image = _generateSvgImage(tokenId);
 
         string memory json = string(
             abi.encodePacked(
                 '{"name":"', name, '",',
                 '"description":"', description, '",',
+                '"image":"', image, '",',
                 '"attributes":[',
                     '{"trait_type":"Collection","value":"CinaChain"},',
                     '{"trait_type":"Token ID","value":', tokenId.toString(), '}',
@@ -214,6 +217,48 @@ contract CinaNFT is
                 "data:application/json;base64,",
                 Base64.encode(bytes(json))
             )
+        );
+    }
+
+    /// @dev Deterministic SVG artwork as a data URI. Single-quoted XML attributes
+    ///      keep the SVG free of double quotes, so it embeds in JSON unescaped.
+    ///      Hue varies with tokenId so every NFT is visually distinct.
+    ///      Built in two parts to keep stack depth safe for legacy codegen.
+    function _generateSvgImage(uint256 tokenId) internal pure returns (string memory) {
+        uint256 hue = (tokenId * 47 + 13) % 360;
+        uint256 hue2 = (hue + 40) % 360;
+
+        string memory part1 = string(
+            abi.encodePacked(
+                "<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'>",
+                "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>",
+                "<stop offset='0%' stop-color='hsl(",
+                hue.toString(),
+                ",70%,24%)'/>",
+                "<stop offset='100%' stop-color='hsl(",
+                hue2.toString(),
+                ",65%,44%)'/>",
+                "</linearGradient></defs>",
+                "<rect width='800' height='800' fill='url(#g)'/>"
+            )
+        );
+
+        string memory part2 = string(
+            abi.encodePacked(
+                "<circle cx='660' cy='120' r='230' fill='rgba(255,255,255,0.07)'/>",
+                "<circle cx='90' cy='720' r='170' fill='rgba(0,0,0,0.15)'/>",
+                "<text x='60' y='440' font-family='monospace' font-size='104' font-weight='700' fill='rgba(255,255,255,0.95)'>CinaChain</text>",
+                "<text x='60' y='540' font-family='monospace' font-size='72' font-weight='600' fill='rgba(255,255,255,0.85)'>#",
+                tokenId.toString(),
+                "</text>",
+                "<text x='60' y='726' font-family='monospace' font-size='28' fill='rgba(255,255,255,0.55)'>Built on Base</text>",
+                "</svg>"
+            )
+        );
+
+        string memory svg = string(abi.encodePacked(part1, part2));
+        return string(
+            abi.encodePacked("data:image/svg+xml;base64,", Base64.encode(bytes(svg)))
         );
     }
 
@@ -256,6 +301,12 @@ contract CinaNFT is
         if (!success) revert WithdrawFailed();
 
         emit Withdrawn(owner(), balance);
+    }
+
+    /// @dev Prevent accidental renouncement — ownership is required to withdraw
+    ///      collected mint funds. Once renounced, the funds would be stuck forever.
+    function renounceOwnership() public override onlyOwner {
+        revert OwnershipRenounceBlocked();
     }
 
     // ─────────────────────────── Overrides ───────────────────────────
