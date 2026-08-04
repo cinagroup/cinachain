@@ -178,6 +178,7 @@ export default {
             await env.CINA_BILLING_KV.put(
               `ledger:${keyRow.address}`,
               JSON.stringify({
+                ...stored,
                 onchainSnapshot: snapshot.toString(),
                 committedUsage: updated.committedUsage.toString(),
                 cumulativeSpend: updated.cumulativeSpend.toString(),

@@ -30,15 +30,17 @@ describe("applyConsumption", () => {
 })
 
 describe("getTier / pricing", () => {
-  it("tier by cumulative spend", () => {
+  it("tier by cumulative spend (wei units)", () => {
     expect(getTier(0n)).toBe("free")
-    expect(getTier(10_000n)).toBe("bronze")
-    expect(getTier(100_000n)).toBe("silver")
-    expect(getTier(1_000_000n)).toBe("gold")
-    expect(getTier(10_000_000n)).toBe("diamond")
+    expect(getTier(9_999n * 10n ** 18n)).toBe("free")
+    expect(getTier(10_000n * 10n ** 18n)).toBe("bronze")
+    expect(getTier(100_000n * 10n ** 18n)).toBe("silver")
+    expect(getTier(1_000_000n * 10n ** 18n)).toBe("gold")
+    expect(getTier(10_000_000n * 10n ** 18n)).toBe("diamond")
   })
   it("cost respects tier discount", () => {
     // 1000 tokens @ 2000 micro/token = 2_000_000 micro; bronze 95% -> 1_900_000
+    // (bronze discount applies once cumulative spend reaches 1 万 credit = 1e22 wei)
     const cost = estimateCost("demo", 1000n, "bronze")
     expect(cost).toBe(1_900_000n)
   })

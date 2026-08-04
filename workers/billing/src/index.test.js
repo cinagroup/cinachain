@@ -12,6 +12,14 @@ describe("handleUsage", () => {
     // remaining = 1e19 wei (10 credit) - 2e18 wei = 8e18 wei
     expect(res.body.remainingWei).toBe("8000000000000000000")
   })
+  it("no tier discount below bronze threshold (wei ledger)", async () => {
+    // 5000 credit in wei cumulative spend -> still free tier (no discount)
+    const ledger = { ...baseLedger, cumulativeSpend: 5_000n * 10n ** 18n }
+    const res = await handleUsage({ model: "demo", tokens: 1000n }, ledger)
+    expect(res.status).toBe(200)
+    expect(res.body.tier).toBe("free")
+    expect(res.body.chargedWei).toBe("2000000000000000000") // full price, no discount
+  })
   it("429 when insufficient", async () => {
     const res = await handleUsage({ model: "demo", tokens: 1000n }, { ...baseLedger, onchainSnapshot: 1000n })
     expect(res.status).toBe(429)
