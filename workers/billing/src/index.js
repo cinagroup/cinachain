@@ -211,35 +211,8 @@ export default {
               tier: res.body.tier,
               pendingTierBadges: res.body.pendingBadges,
             }
-            // Consumption report (spec §7.2): append to per-address history
-            const histKey = keyRow.kind === "cust" ? `hist:cust:${keyRow.custId}` : `hist:${keyRow.address}`
-            let hist = []
-            try {
-              const histRaw = await env.CINA_BILLING_KV.get(histKey)
-              hist = histRaw ? JSON.parse(histRaw) : []
-              if (!Array.isArray(hist)) hist = []
-            } catch {
-              console.error(`[billing] resetting corrupted history ${histKey}`)
-            }
-            hist.push({ ts: Date.now(), model: body.model ?? "demo", tokens: String(body.tokens ?? 0), chargedWei: res.body.chargedWei, tier: res.body.tier })
-            const trimmed = hist.slice(-100)
-            await env.CINA_BILLING_KV.put(histKey, JSON.stringify(trimmed))
-            // Key ingress confirmation (spec §6.3): attribute this charge to
-            // a pooled key; flip to minting once confirmed >= declared.
-            if (body.ingressId) {
-              const ingKey = `ing:${body.ingressId}`
-              const ingRaw = await env.CINA_BILLING_KV.get(ingKey)
-              if (ingRaw) {
-                const rec = JSON.parse(ingRaw)
-                if (rec.status === "pending") {
-                  rec.confirmedMicro = (BigInt(rec.confirmedMicro ?? 0) + BigInt(res.body.chargedMicro)).toString()
-                  if (BigInt(rec.confirmedMicro) >= BigInt(rec.declaredMicro)) {
-                    rec.status = "minting"
-                  }
-                  await env.CINA_BILLING_KV.put(ingKey, JSON.stringify(rec))
-                }
-              }
-            }
+            // COMMIT POINT — fail-closed: the ledger write lands first so a
+            // committed charge is never lost to downstream bookkeeping.
             if (keyRow.kind === "cust") {
               // balanceWei (DB) unchanged by consumption; usage is committed
               await env.CINA_BILLING_KV.put(ledgerKey, JSON.stringify(merged))
@@ -248,6 +221,46 @@ export default {
                 ...merged,
                 onchainSnapshot: snapshot.toString(),
               }))
+            }
+            // Consumption report (spec §7.2): best-effort after the commit —
+            // a history failure must not fail-closed a committed charge.
+            const histKey = keyRow.kind === "cust" ? `hist:cust:${keyRow.custId}` : `hist:${keyRow.address}`
+            try {
+              let hist = []
+              try {
+                const histRaw = await env.CINA_BILLING_KV.get(histKey)
+                hist = histRaw ? JSON.parse(histRaw) : []
+                if (!Array.isArray(hist)) hist = []
+              } catch {
+                console.error(`[billing] resetting corrupted history ${histKey}`)
+              }
+              hist.push({ ts: Date.now(), model: body.model ?? "demo", tokens: String(body.tokens ?? 0), chargedWei: res.body.chargedWei, tier: res.body.tier })
+              const trimmed = hist.slice(-100)
+              await env.CINA_BILLING_KV.put(histKey, JSON.stringify(trimmed))
+            } catch (err) {
+              console.error(`[billing] history write-back failed for ${histKey}: ${err?.message ?? err}`)
+            }
+            // Key ingress confirmation (spec §6.3): attribute this charge to
+            // a pooled key; flip to minting once confirmed >= declared.
+            // Best-effort under the ing lock (nested inside the user lock —
+            // lock order user -> ing, so no deadlock with the confirm route).
+            if (body.ingressId) {
+              await withLedgerLock(`ing:${body.ingressId}`, async () => {
+                try {
+                  const ingKey = `ing:${body.ingressId}`
+                  const ingRaw = await env.CINA_BILLING_KV.get(ingKey)
+                  if (ingRaw) {
+                    const rec = JSON.parse(ingRaw)
+                    if (rec.status === "pending") {
+                      rec.confirmedMicro = (BigInt(rec.confirmedMicro ?? 0) + BigInt(res.body.chargedMicro)).toString()
+                      if (BigInt(rec.confirmedMicro) >= BigInt(rec.declaredMicro)) rec.status = "minting"
+                      await env.CINA_BILLING_KV.put(ingKey, JSON.stringify(rec))
+                    }
+                  }
+                } catch (err) {
+                  console.error(`[billing] ingress attribution failed for ${body.ingressId}: ${err?.message ?? err}`)
+                }
+              })
             }
           }
           return res
@@ -470,14 +483,22 @@ export default {
       const [, id] = ingConfirmMatch
       const body = await request.json().catch(() => ({}))
       const key = `ing:${id}`
-      const raw = await env.CINA_BILLING_KV.get(key)
-      if (!raw) return json(request, { error: "Ingress record not found" }, 404)
-      const rec = JSON.parse(raw)
-      if (!ingressStatusTransitions(rec.status, "minted")) return json(request, { error: `Invalid transition from ${rec.status}` }, 400)
-      rec.status = "minted"
-      rec.txHash = body.txHash ?? null
-      await env.CINA_BILLING_KV.put(key, JSON.stringify(rec))
-      return json(request, { ok: true, id, status: rec.status })
+      const res = await withLedgerLock(`ing:${id}`, async () => {
+        const raw = await env.CINA_BILLING_KV.get(key)
+        if (!raw) return { status: 404, body: { error: "Ingress record not found" } }
+        let rec
+        try {
+          rec = JSON.parse(raw)
+        } catch {
+          return { status: 400, body: { error: "Ingress record corrupted" } }
+        }
+        if (!ingressStatusTransitions(rec.status, "minted")) return { status: 400, body: { error: `Invalid transition from ${rec.status}` } }
+        rec.status = "minted"
+        rec.txHash = body.txHash ?? null
+        await env.CINA_BILLING_KV.put(key, JSON.stringify(rec))
+        return { status: 200, body: { ok: true, id, status: rec.status } }
+      })
+      return json(request, res.body, res.status)
     }
 
     // Admin: list ingress records (status filter optional)

@@ -637,4 +637,94 @@ describe("M3 ingress consumption", () => {
     expect(body.records[0].id).toBe("ing1")
     expect(body.records[0].confirmedMicro).toBe("2000000")
   })
+
+  it("corrupted ingress row does not block charging (ledger still committed)", async () => {
+    const env = makeEnv()
+    const data = new TextEncoder().encode("ingresskey3")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    env.store.set("ing:ing_bad", "{ not json")
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "ingresskey3", model: "demo", tokens: "100", ingressId: "ing_bad" }),
+      }))
+      expect(res.status).toBe(200)
+    } finally {
+      global.fetch = origFetch
+    }
+    // charge still committed: 100 tokens demo @2000 micro = 2e5 micro = 2e17 wei
+    const ledger = JSON.parse(env.store.get("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+    expect(ledger.committedUsage).toBe("200000000000000000")
+  })
+
+  it("confirm with a corrupted record -> 400 (not 500)", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", "{ not json")
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress/ing1/confirm", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ txHash: "0xdef" }),
+    }))
+    expect(res.status).toBe(400)
+  })
+
+  it("usage with ingressId on a custodial key also attributes", async () => {
+    const env = makeEnv()
+    env.store.set("cust:c1", JSON.stringify({
+      owner: "0xaaa", balanceWei: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const data = new TextEncoder().encode("custingresskey1")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "cust", custId: "c1" }))
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaa", model: "demo", declaredMicro: "1000000", confirmedMicro: "0", status: "pending", keyHash: "0xabc", createdAt: 1,
+    }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: "custingresskey1", model: "demo", tokens: "1000", ingressId: "ing1" }),
+    }))
+    expect(res.status).toBe(200)
+    const rec = JSON.parse(env.store.get("ing:ing1"))
+    expect(rec.confirmedMicro).toBe("2000000") // 1000 tokens demo @2000 micro
+    expect(rec.status).toBe("minting") // declared 1e6 -> crossed
+  })
+
+  it("usage after flip to minting is not attributed again (status guard)", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaa", model: "demo", declaredMicro: "2000000", confirmedMicro: "2000000", status: "minting", keyHash: "0xabc", createdAt: 1,
+    }))
+    const data = new TextEncoder().encode("ingresskey4")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "ingresskey4", model: "demo", tokens: "100", ingressId: "ing1" }),
+      }))
+      expect(res.status).toBe(200)
+    } finally {
+      global.fetch = origFetch
+    }
+    const rec = JSON.parse(env.store.get("ing:ing1"))
+    expect(rec.confirmedMicro).toBe("2000000") // unchanged
+    expect(rec.status).toBe("minting") // unchanged
+  })
 })
