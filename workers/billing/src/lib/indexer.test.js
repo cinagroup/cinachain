@@ -27,3 +27,10 @@ describe("mergeTransfers", () => {
     expect(mergeTransfers(logs, { "0xa": 0n })).toEqual({ "0xa": 100n })
   })
 })
+
+describe("self-transfer edge", () => {
+  it("mergeTransfers no-ops self-transfers", () => {
+    const logs = [{ from: "0xa", to: "0xa", value: 5000n }]
+    expect(mergeTransfers(logs, { "0xa": 100n })).toEqual({ "0xa": 100n })
+  })
+})
