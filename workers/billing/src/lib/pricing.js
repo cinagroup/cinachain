@@ -13,7 +13,7 @@ export const DEFAULT_PRICING = {
 
 /** Merge a KV override map (string values) onto the default table */
 export function applyPricingOverrides(base, overrides) {
-  if (!overrides) return base
+  if (!overrides) return { ...base }
   const merged = { ...base }
   for (const [model, row] of Object.entries(overrides)) {
     if (!base[model]) throw new Error(`unknown model: ${model}`)

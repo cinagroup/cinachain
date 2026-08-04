@@ -28,6 +28,12 @@ describe("applyPricingOverrides", () => {
   it("accepts null overrides (no-op)", () => {
     expect(applyPricingOverrides(DEFAULT_PRICING, null)).toEqual(DEFAULT_PRICING)
   })
+  it("accepts a null row as no-op", () => {
+    expect(applyPricingOverrides(DEFAULT_PRICING, { demo: null })).toEqual(DEFAULT_PRICING)
+  })
+  it("accepts number-typed values", () => {
+    expect(applyPricingOverrides(DEFAULT_PRICING, { demo: { perTokenMicroCredit: 3000 } }).demo.perTokenMicroCredit).toBe(3000n)
+  })
 })
 
 describe("estimateCostWithPricing", () => {
@@ -42,5 +48,8 @@ describe("estimateCostWithPricing", () => {
   })
   it("throws for unknown model", () => {
     expect(() => estimateCostWithPricing(DEFAULT_PRICING, "nope", 1n, "free")).toThrow(/unknown model/)
+  })
+  it("throws for unknown tier", () => {
+    expect(() => estimateCostWithPricing(DEFAULT_PRICING, "demo", 1n, "bogus")).toThrow(/unknown tier/)
   })
 })
