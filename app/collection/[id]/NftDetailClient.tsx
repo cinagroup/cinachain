@@ -82,7 +82,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
           <div className="flex gap-3">
             <Button asChild variant="outline" className="flex-1">
               <Link
-                href={`https://basescan.org/token/${CINA_NFT_CONTRACT}?a=${tokenId}`}
+                href={`https://sepolia.basescan.org/token/${CINA_NFT_CONTRACT}?a=${tokenId}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -91,7 +91,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
             </Button>
             <Button asChild variant="outline" className="flex-1">
               <Link
-                href={`https://opensea.io/assets/ethereum/${CINA_NFT_CONTRACT}/${tokenId}`}
+                href={`https://testnets.opensea.io/assets/base-sepolia/${CINA_NFT_CONTRACT}/${tokenId}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -126,7 +126,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
               </CardHeader>
               <CardContent>
                 <Link
-                  href={`https://basescan.org/address/${owner}`}
+                  href={`https://sepolia.basescan.org/address/${owner}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="break-all font-mono-tech text-sm text-link transition-colors hover:text-link-deep"
@@ -192,7 +192,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                   <dt className="text-muted-foreground">Contract Address</dt>
                   <dd>
                     <Link
-                      href={`https://basescan.org/address/${CINA_NFT_CONTRACT}`}
+                      href={`https://sepolia.basescan.org/address/${CINA_NFT_CONTRACT}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono-tech text-link transition-colors hover:text-link-deep"

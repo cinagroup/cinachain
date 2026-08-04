@@ -124,7 +124,7 @@ export default function ContractManagementPage() {
           <AlertDescription className="text-sm text-[#29bc9b]">
             {successAction} successful!{" "}
             <a
-              href={`https://basescan.org/tx/${txHash}`}
+              href={`https://sepolia.basescan.org/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"

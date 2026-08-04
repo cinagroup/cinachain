@@ -1,7 +1,7 @@
 // Service Worker for CinaChain PWA
 // 静态导出兼容方案
 
-const CACHE_NAME = "cinachain-v1"
+const CACHE_NAME = "cinachain-v2"
 const OFFLINE_URL = "/offline"
 
 // 需要缓存的静态资源

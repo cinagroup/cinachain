@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { TrendingUp, Package, DollarSign, PauseCircle, PlayCircle, FileText, Settings, BarChart3, ArrowRight } from "lucide-react"
+import { TrendingUp, Package, DollarSign, PauseCircle, PlayCircle, FileText, Settings, BarChart3, ArrowRight, Award } from "lucide-react"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
 import { hasNftContract } from "@/lib/contracts/addresses"
 import { AlertCircle } from "lucide-react"
@@ -117,7 +117,13 @@ export default function AdminOverviewPage() {
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <QuickAction
+                href="/admin/badges"
+                icon={<Award className="h-5 w-5" />}
+                title="Mint Badges"
+                description="Award achievement badges to community members"
+              />
               <QuickAction
                 href="/admin/whitelist"
                 icon={<FileText className="h-5 w-5" />}

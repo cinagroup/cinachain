@@ -7,6 +7,10 @@ export const menuAdmin = [
     href: "/admin",
   },
   {
+    label: "Badges",
+    href: "/admin/badges",
+  },
+  {
     label: "Whitelist",
     href: "/admin/whitelist",
   },

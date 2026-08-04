@@ -4,6 +4,7 @@
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
   "https://cinachain-nft-dapp.pages.dev",
+  "https://cinachain-dapp-v2.pages.dev",
   "https://cinachain.pages.dev",
   "http://localhost:3000",
 ])
@@ -60,6 +61,12 @@ export default {
 
     // POST /admin/whitelist — upload whitelist data (admin only)
     if (request.method === "POST" && url.pathname === "/admin/whitelist") {
+      // Auth check: require ADMIN_TOKEN header
+      const authHeader = request.headers.get("X-Admin-Token")
+      if (!env.ADMIN_TOKEN || authHeader !== env.ADMIN_TOKEN) {
+        return jsonResponse(request, { error: "Unauthorized" }, 401)
+      }
+
       const kv = env && env.CINA_WHITELIST_KV
       if (!kv) {
         return jsonResponse(

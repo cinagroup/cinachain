@@ -6,9 +6,11 @@
  * This script removes all null bytes after the build completes.
  */
 import { readdir, readFile, writeFile } from "fs/promises"
-import { join, extname } from "path"
+import { join, extname, resolve, dirname } from "path"
+import { fileURLToPath } from "url"
 
-const OUT_DIR = new URL("../out/", import.meta.url)
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const OUT_DIR = resolve(__dirname, "..", "out")
 
 async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true })

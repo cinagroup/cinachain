@@ -174,12 +174,12 @@ export default function BatchMintPage() {
               <AlertDescription className="text-sm text-[#29bc9b]">
                 Batch mint confirmed!{" "}
                 <a
-                  href={`https://basescan.org/tx/${txHash}`}
+                  href={`https://sepolia.basescan.org/tx/${txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 underline"
                 >
-                  View on Etherscan <ExternalLink className="h-3 w-3" />
+                  View on Basescan <ExternalLink className="h-3 w-3" />
                 </a>
               </AlertDescription>
             </Alert>
