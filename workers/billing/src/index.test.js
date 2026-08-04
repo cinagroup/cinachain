@@ -403,15 +403,38 @@ describe("M3 consumption history", () => {
     expect(hbody.entries[0].model).toBe("demo")
   })
 
-  it("history caps at 100 entries (oldest dropped)", async () => {
+  it("history write-back caps at 100 entries (oldest dropped)", async () => {
     const env = makeEnv()
     const ADDR = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    // seed a full history, then a usage write must drop the oldest (ts: 0)
     const existing = Array.from({ length: 100 }, (_, i) => ({ ts: i, model: "demo", tokens: "1", chargedWei: "1", tier: "free" }))
     env.store.set(`hist:${ADDR}`, JSON.stringify(existing))
-    const hres = await callWorker(env, new Request(`https://billing.test/v1/history/${ADDR}`))
-    expect(hres.status).toBe(200)
-    const hbody = await hres.json()
-    expect(hbody.entries).toHaveLength(100)
+    const data = new TextEncoder().encode("histkey2")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: ADDR }))
+    env.store.set(`ledger:${ADDR}`, JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    const before = Date.now()
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "histkey2", model: "demo", tokens: "1000" }),
+      }))
+      expect(res.status).toBe(200)
+    } finally {
+      global.fetch = origFetch // 恢复，避免污染其他用例
+    }
+    const hist = JSON.parse(env.store.get(`hist:${ADDR}`))
+    expect(hist).toHaveLength(100) // still capped after the write
+    expect(hist[0].ts).toBe(1) // oldest (ts: 0) dropped
+    const newest = hist[99]
+    expect(newest.ts).toBeGreaterThanOrEqual(before) // new entry with current ts
+    expect(newest.chargedWei).toBe("2000000000000000000")
   })
 
   it("usage history for a custodial key uses hist:cust:<id>", async () => {

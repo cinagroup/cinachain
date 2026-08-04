@@ -212,8 +212,14 @@ export default {
             }
             // Consumption report (spec §7.2): append to per-address history
             const histKey = keyRow.kind === "cust" ? `hist:cust:${keyRow.custId}` : `hist:${keyRow.address}`
-            const histRaw = await env.CINA_BILLING_KV.get(histKey)
-            const hist = histRaw ? JSON.parse(histRaw) : []
+            let hist = []
+            try {
+              const histRaw = await env.CINA_BILLING_KV.get(histKey)
+              hist = histRaw ? JSON.parse(histRaw) : []
+              if (!Array.isArray(hist)) hist = []
+            } catch {
+              console.error(`[billing] resetting corrupted history ${histKey}`)
+            }
             hist.push({ ts: Date.now(), model: body.model ?? "demo", tokens: String(body.tokens ?? 0), chargedWei: res.body.chargedWei, tier: res.body.tier })
             const trimmed = hist.slice(-100)
             await env.CINA_BILLING_KV.put(histKey, JSON.stringify(trimmed))
@@ -287,7 +293,8 @@ export default {
     // Consumption report (spec §7.2): last N metered charges for an address
     if (url.pathname.startsWith("/v1/history/") && request.method === "GET") {
       const address = url.pathname.split("/").pop().toLowerCase()
-      const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 100), 1), 100)
+      const rawLimit = Number(url.searchParams.get("limit") ?? 100)
+      const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 100
       try {
         const raw = await env.CINA_BILLING_KV.get(`hist:${address}`)
         const entries = raw ? JSON.parse(raw) : []
