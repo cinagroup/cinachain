@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
-import type { Hash } from "viem"
+import type { Address, Hash } from "viem"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -60,6 +60,12 @@ export default function BillingManagementPage() {
   // Ledger
   const [ledger, setLedger] = useState<LedgerData | null>(null)
   const [ledgerError, setLedgerError] = useState(false)
+
+  // Tier badge minting (spec §5: platform mints on tier crossing)
+  const [adminKey, setAdminKey] = useState("")
+  const [pendingList, setPendingList] = useState<Array<{ address: string; badges: string[]; cumulativeSpend: string }>>([])
+  const [isFetchingPending, setIsFetchingPending] = useState(false)
+  const [badgeError, setBadgeError] = useState<string | null>(null)
 
   const { isSuccess: confirmed, isError: reverted } =
     useWaitForTransactionReceipt({
@@ -121,6 +127,55 @@ export default function BillingManagementPage() {
     } catch (err) {
       const anyErr = err as unknown as { shortMessage?: string; message?: string }
       setError(anyErr.shortMessage ?? anyErr.message ?? `Failed to ${label}`)
+    }
+  }
+
+  const fetchPending = async () => {
+    setIsFetchingPending(true)
+    setBadgeError(null)
+    try {
+      const res = await fetch(`${BILLING_API_URL}/v1/admin/pending-badges`, {
+        headers: { "X-Admin-Key": adminKey },
+      })
+      if (!res.ok) throw new Error(`pending-badges ${res.status}`)
+      const body = await res.json()
+      setPendingList(body.pending ?? [])
+    } catch (err) {
+      setBadgeError(err instanceof Error ? err.message : "Failed to load pending badges")
+    } finally {
+      setIsFetchingPending(false)
+    }
+  }
+
+  const BADGE_MINT_ABI = [
+    { name: "mint", type: "function", stateMutability: "nonpayable",
+      inputs: [{ name: "to", type: "address" }, { name: "tokenId", type: "uint256" }, { name: "amount", type: "uint256" }],
+      outputs: [] },
+  ] as const
+  const TIER_IDS: Record<string, bigint> = { bronze: 100n, silver: 101n, gold: 102n, diamond: 103n, whale: 104n }
+  const BADGE_CONTRACT = process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT || "0x72cc9adb6c877d233e9843ee2d00424b9766d0cf"
+
+  const mintPending = async (item: { address: string; badges: string[] }) => {
+    setBadgeError(null)
+    try {
+      for (const tier of item.badges) {
+        const hash = await writeContractAsync({
+          address: BADGE_CONTRACT as Address,
+          abi: BADGE_MINT_ABI,
+          functionName: "mint",
+          args: [item.address as Address, TIER_IDS[tier], 1n],
+        })
+        await fetch(`${BILLING_API_URL}/v1/admin/badges/${item.address}/${tier}/confirm`, {
+          method: "POST",
+          headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ txHash: hash }),
+        })
+      }
+      setSuccessAction("Tier badges minted")
+      await fetchPending()
+    } catch (err) {
+      const anyErr = err as unknown as { shortMessage?: string; message?: string }
+      setBadgeError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge")
     }
   }
 
@@ -449,6 +504,57 @@ export default function BillingManagementPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tier badge minting (spec §5: platform mints on tier crossing) */}
+      <Card className="mt-6 shadow-vercel-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BadgeCheck className="h-5 w-5" />
+            Tier Badge Minting
+          </CardTitle>
+          <CardDescription>
+            Addresses that crossed a tier threshold but have no on-chain badge yet
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Input
+              placeholder="Admin key"
+              type="password"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              className="max-w-[240px]"
+            />
+            <Button variant="outline" size="sm" onClick={fetchPending} disabled={isFetchingPending}>
+              {isFetchingPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+            </Button>
+          </div>
+          {badgeError && (
+            <p className="mt-3 text-sm text-destructive">{badgeError}</p>
+          )}
+          {pendingList.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              {isFetchingPending ? "Loading..." : "No pending tier badges"}
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {pendingList.map((item) => (
+                <li key={item.address} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+                  <div>
+                    <p className="font-mono-tech text-xs text-foreground">{item.address}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.badges.join(", ")} · cumulative {(Number(item.cumulativeSpend) / 1e18).toLocaleString()} credit
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={() => mintPending(item)} disabled={isBusy || !adminKey}>
+                    Mint
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

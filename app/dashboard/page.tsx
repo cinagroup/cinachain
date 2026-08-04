@@ -15,7 +15,9 @@ import { PWAInstallPrompt } from "@/components/pwa/install-prompt"
 import { useNftBalance } from "@/lib/hooks/use-nft-balance"
 import { useWhitelist } from "@/lib/hooks/use-whitelist"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { useTierProgress } from "@/lib/hooks/use-tier-progress"
 import { trimFormattedBalance } from "@/lib/utils"
+import type { Address } from "viem"
 
 function StatCard({
   label,
@@ -45,6 +47,63 @@ function StatCard({
         </div>
         {sublabel && (
           <p className="mt-1 text-xs text-muted-foreground">{sublabel}</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function TierProgressCard({ address }: { address?: Address }) {
+  const { data, isLoading } = useTierProgress(address)
+  const TIER_LABEL: Record<string, string> = {
+    free: "Free", bronze: "Bronze", silver: "Silver",
+    gold: "Gold", diamond: "Diamond", whale: "Whale",
+  }
+  const spendCredits = data
+    ? (Number(data.cumulativeSpend) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 2 })
+    : "0"
+  return (
+    <Card className="shadow-vercel-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          Membership Tier
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading || !data ? (
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <span className="font-display text-2xl text-foreground">
+                {TIER_LABEL[data.tier] ?? data.tier}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {spendCredits} credit spent
+              </span>
+            </div>
+            {data.nextTier ? (
+              <>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#7928ca] to-[#0070f3]"
+                    style={{ width: `${data.progressBps / 100}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {((Number(data.nextThreshold ?? 0) / 1e18) / 10000).toLocaleString()} credit to{" "}
+                  {TIER_LABEL[data.nextTier] ?? data.nextTier}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground">Top tier reached</p>
+            )}
+            {data.pendingBadges.length > 0 && (
+              <p className="mt-2 text-xs font-medium text-violet">
+                🎖 Badge pending: {data.pendingBadges.join(", ")}
+              </p>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
@@ -111,6 +170,11 @@ export default function PageDashboard() {
               value={`${mintedCount.toLocaleString()} / ${maxCount.toLocaleString()}`}
               sublabel="Total minted"
             />
+          </div>
+
+          {/* Membership Tier */}
+          <div className="mt-8">
+            <TierProgressCard address={address} />
           </div>
 
           {/* Quick Actions */}
