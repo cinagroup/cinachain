@@ -11,7 +11,7 @@ import {
   tierBadgeId,
 } from "./lib/billing-core.js"
 import { runIndexer, listAllKeys } from "./lib/indexer-run.js"
-import { DEFAULT_PRICING, estimateCostWithPricing } from "./lib/pricing.js"
+import { DEFAULT_PRICING, estimateCostWithPricing, applyPricingOverrides } from "./lib/pricing.js"
 import { ingressRecord, validateDeclaredMicro, ingressStatusTransitions, encryptKey } from "./lib/ingress.js"
 
 const ALLOWED_ORIGINS = new Set([
@@ -147,8 +147,12 @@ function corsHeaders(request) {
   return headers
 }
 
+// BigInt -> Number in the wire format: JSON cannot carry BigInt, and micro
+// prices (pricing table) are the only BigInts ever put into a response body —
+// far below Number.MAX_SAFE_INTEGER, so no precision loss. Everything else is
+// already .toString()'d at the call site.
 function json(request, body, status = 200) {
-  return new Response(JSON.stringify(body), {
+  return new Response(JSON.stringify(body, (_k, v) => (typeof v === "bigint" ? Number(v) : v)), {
     status,
     headers: { ...corsHeaders(request), "Content-Type": "application/json" },
   })
@@ -201,7 +205,12 @@ export default {
             cumulativeSpend: BigInt(stored.cumulativeSpend ?? 0),
             mintedTierBadges: stored.mintedTierBadges ?? [],
           }
-          const res = await handleUsage({ model, tokens }, ledger)
+          // Runtime pricing (spec §7.2, grayscale): merge KV overrides onto the
+          // default table once per request, inside the ledger lock so the price
+          // a charge is metered at and the lock-held read are consistent.
+          const pricingRaw = await env.CINA_BILLING_KV.get("pricing")
+          const pricing = applyPricingOverrides(DEFAULT_PRICING, pricingRaw ? JSON.parse(pricingRaw) : null)
+          const res = await handleUsage({ model, tokens, ingressId: body.ingressId }, ledger, pricing)
           if (res.status === 200) {
             const updated = applyConsumption(ledger, BigInt(res.body.chargedWei))
             const merged = {
@@ -474,6 +483,36 @@ export default {
       return json(request, { ok: true, id, status: rec.status, declaredMicro: rec.declaredMicro, model: rec.model })
     }
 
+    // Public: list own ingress records (spec §6.3: user can view pending status).
+    // Never exposes key material — id/model/micro amounts/status/createdAt only.
+    if (url.pathname === "/v1/ingress" && request.method === "GET") {
+      const owner = (url.searchParams.get("owner") ?? "").toLowerCase()
+      if (!/^0x[a-fA-F0-9]{40}$/.test(owner)) return json(request, { error: "Invalid owner" }, 400)
+      const keys = await listAllKeys(env.CINA_BILLING_KV, "ing:")
+      const records = []
+      for (const { name } of keys) {
+        const raw = await env.CINA_BILLING_KV.get(name)
+        if (!raw) continue
+        let rec
+        try {
+          rec = JSON.parse(raw)
+        } catch {
+          continue
+        }
+        if (rec.owner === owner) {
+          records.push({
+            id: name.slice("ing:".length),
+            model: rec.model,
+            declaredMicro: rec.declaredMicro,
+            confirmedMicro: rec.confirmedMicro,
+            status: rec.status,
+            createdAt: rec.createdAt,
+          })
+        }
+      }
+      return json(request, { records })
+    }
+
     // Admin: confirm an ingress mint (moves minting -> minted, records txHash)
     const ingConfirmMatch = url.pathname.match(/^\/v1\/ingress\/([a-zA-Z0-9_]+)\/confirm$/)
     if (ingConfirmMatch && request.method === "POST") {
@@ -631,6 +670,29 @@ export default {
         return { ok: true, address, tier, custId: body.custId ?? null }
       })
       return json(request, res)
+    }
+
+    // Admin: view pricing (default + overrides)
+    if (url.pathname === "/v1/admin/pricing" && request.method === "GET") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) return json(request, { error: "Unauthorized" }, 401)
+      const raw = await env.CINA_BILLING_KV.get("pricing")
+      const overrides = raw ? JSON.parse(raw) : {}
+      return json(request, { default: DEFAULT_PRICING, overrides })
+    }
+
+    // Admin: update pricing overrides (spec §7.2 — grayscale, no redeploy).
+    // Validates against the default table BEFORE persisting, so a bad override
+    // never lands in KV and never breaks the usage hot path.
+    if (url.pathname === "/v1/admin/pricing" && request.method === "PUT") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) return json(request, { error: "Unauthorized" }, 401)
+      const body = await request.json().catch(() => ({}))
+      try {
+        const merged = applyPricingOverrides(DEFAULT_PRICING, body.overrides ?? null)
+        await env.CINA_BILLING_KV.put("pricing", JSON.stringify(body.overrides ?? {}))
+        return json(request, { ok: true, merged })
+      } catch (err) {
+        return json(request, { error: err instanceof Error ? err.message : "Invalid pricing" }, 400)
+      }
     }
 
     // Manual indexer trigger (admin key; also used by tests/E2E)

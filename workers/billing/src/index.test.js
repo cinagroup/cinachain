@@ -523,6 +523,18 @@ describe("M3 ingress submit", () => {
     }))
     expect(res.status).toBe(500)
   })
+
+  it("GET /v1/ingress?owner= lists only that owner's records", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ingA", JSON.stringify({ owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", model: "demo", declaredMicro: "1000", confirmedMicro: "0", status: "pending", createdAt: 1 }))
+    env.store.set("ing:ingB", JSON.stringify({ owner: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", model: "demo", declaredMicro: "2000", confirmedMicro: "0", status: "pending", createdAt: 2 }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress?owner=0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.records).toHaveLength(1)
+    expect(body.records[0].id).toBe("ingA")
+    expect(body.records[0].status).toBe("pending")
+  })
 })
 
 describe("M3 ingress consumption", () => {
@@ -726,5 +738,68 @@ describe("M3 ingress consumption", () => {
     const rec = JSON.parse(env.store.get("ing:ing1"))
     expect(rec.confirmedMicro).toBe("2000000") // unchanged
     expect(rec.status).toBe("minting") // unchanged
+  })
+})
+
+describe("M3 pricing admin", () => {
+  it("GET /v1/admin/pricing returns defaults + overrides", async () => {
+    const env = makeEnv()
+    env.store.set("pricing", JSON.stringify({ "gpt-4o-mini": { perTokenMicroCredit: "150" } }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/admin/pricing", { headers: { "X-Admin-Key": "test-admin" } }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.overrides["gpt-4o-mini"].perTokenMicroCredit).toBe("150")
+    expect(body.default.demo.perTokenMicroCredit).toBe(2000)
+  })
+
+  it("PUT /v1/admin/pricing validates and persists overrides", async () => {
+    const env = makeEnv()
+    const res = await callWorker(env, new Request("https://billing.test/v1/admin/pricing", {
+      method: "PUT",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ overrides: { demo: { perTokenMicroCredit: "2500" } } }),
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    // JSON round-trips cannot carry BigInt, so the merged table is serialized
+    // with micro prices as JSON numbers (mirrors GET's default table).
+    expect(body.merged.demo.perTokenMicroCredit).toBe(2500)
+    expect(JSON.parse(env.store.get("pricing")).demo.perTokenMicroCredit).toBe("2500")
+  })
+
+  it("PUT rejects invalid overrides with 400", async () => {
+    const env = makeEnv()
+    const res = await callWorker(env, new Request("https://billing.test/v1/admin/pricing", {
+      method: "PUT",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ overrides: { nope: { perTokenMicroCredit: "1" } } }),
+    }))
+    expect(res.status).toBe(400)
+  })
+
+  it("usage applies runtime pricing overrides from KV", async () => {
+    const env = makeEnv()
+    env.store.set("pricing", JSON.stringify({ "gpt-4o-mini": { perTokenMicroCredit: "200" } }))
+    const data = new TextEncoder().encode("pricingkey1")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "pricingkey1", model: "gpt-4o-mini", tokens: "1000" }),
+      }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.chargedMicro).toBe("200000") // 200 micro × 1000, free tier
+    } finally {
+      global.fetch = origFetch
+    }
   })
 })
