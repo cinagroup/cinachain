@@ -102,11 +102,13 @@ contract CinaCredit is ERC20, Ownable, Pausable, ReentrancyGuard {
 
 | 等级徽章 ID | 名称 | 累计消耗门槛 |
 |---|---|---|
-| 10 | Bronze 青铜 | 1 万 Credit |
-| 11 | Silver 白银 | 10 万 Credit |
-| 12 | Gold 黄金 | 100 万 Credit |
-| 13 | Diamond 钻石 | 1000 万 Credit |
-| 14 | Whale 巨鲸 | 1 亿 Credit |
+| 100 | Bronze 青铜 | 1 万 Credit |
+| 101 | Silver 白银 | 10 万 Credit |
+| 102 | Gold 黄金 | 100 万 Credit |
+| 103 | Diamond 钻石 | 1000 万 Credit |
+| 104 | Whale 巨鲸 | 1 亿 Credit |
+
+> 注：CinaBadge 自定义徽章 ID 从 100 起（`nextCustomBadgeId = 100`），故等级徽章为 100-104。
 
 - 等级判定在服务端（累计消耗是服务端权威数据），达标后由平台调用 CinaBadge.mint 发放——链上无需自动升级逻辑
 - 徽章作为链上凭证：可展示、可成就体系联动（与现有 Dashboard/Badges 页无缝衔接）
@@ -163,11 +165,11 @@ contract CinaCredit is ERC20, Ownable, Pausable, ReentrancyGuard {
 | 等级 | 门槛（累计消耗） | 权益 | 徽章 |
 |---|---|---|---|
 | Free | 0 | 基础速率限制 | — |
-| Bronze | 1 万 | 95 折、限速 ×2 | #10 |
-| Silver | 10 万 | 9 折、限速 ×5 | #11 |
-| Gold | 100 万 | 85 折、专属队列 | #12 |
-| Diamond | 1000 万 | 8 折、专属模型+客服 | #13 |
-| Whale | 1 亿 | 定制合同、白名单新模型 | #14 |
+| Bronze | 1 万 | 95 折、限速 ×2 | #100 |
+| Silver | 10 万 | 9 折、限速 ×5 | #101 |
+| Gold | 100 万 | 85 折、专属队列 | #102 |
+| Diamond | 1000 万 | 8 折、专属模型+客服 | #103 |
+| Whale | 1 亿 | 定制合同、白名单新模型 | #104 |
 
 - 折扣在服务端定价表应用：消耗按原始 token 数计量，折扣在扣费金额生效
 - 速率限制服务端执行；等级变化实时生效（服务端账本判定）
