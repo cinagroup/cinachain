@@ -3,6 +3,8 @@
 import { useMemo } from "react"
 import { useAccount, useCapabilities } from "wagmi"
 
+import { routePaymaster } from "@/lib/paymaster-route"
+
 import { useAccountType } from "./use-account-type"
 
 /**
@@ -16,6 +18,9 @@ import { useAccountType } from "./use-account-type"
  *   capabilities (paymaster proxy URL) to attach to sendCalls for gasless
  *   transactions (see use-mint-contract).
  * - EOA: empty capabilities — the user pays gas normally.
+ *
+ * The decision matrix lives in the pure function routePaymaster
+ * (lib/paymaster-route.ts) so it is unit-testable without React mocks.
  */
 export function usePaymasterCapabilities() {
   const { address, chainId } = useAccount()
@@ -30,40 +35,33 @@ export function usePaymasterCapabilities() {
 
   const { capabilities, isPaymasterSupported, viaSmartAccount } =
     useMemo(() => {
-      if (accountType === "sa") {
-        // AppKit's smart-account flow handles UserOp + paymaster internally;
-        // no manual capabilities needed — mark the path for callers.
-        return {
-          capabilities: {},
-          isPaymasterSupported: true,
-          viaSmartAccount: true,
-        }
+      const decision = routePaymaster({
+        accountType,
+        chainId,
+        available,
+        paymasterProxyUrl,
+      })
+      switch (decision.kind) {
+        case "smart-account":
+          return {
+            capabilities: {},
+            isPaymasterSupported: true,
+            viaSmartAccount: true,
+          }
+        case "coinbase":
+          return {
+            capabilities: decision.capabilities,
+            isPaymasterSupported: true,
+            viaSmartAccount: false,
+          }
+        case "eoa":
+          return {
+            capabilities: {},
+            isPaymasterSupported: false,
+            viaSmartAccount: false,
+          }
       }
-      if (!available || !chainId || !paymasterProxyUrl) {
-        return {
-          capabilities: {},
-          isPaymasterSupported: false,
-          viaSmartAccount: false,
-        }
-      }
-      const chainCaps = available[chainId]
-      if (chainCaps?.paymasterService?.supported) {
-        return {
-          capabilities: {
-            paymasterService: {
-              url: paymasterProxyUrl,
-            },
-          },
-          isPaymasterSupported: true,
-          viaSmartAccount: false,
-        }
-      }
-      return {
-        capabilities: {},
-        isPaymasterSupported: false,
-        viaSmartAccount: false,
-      }
-    }, [accountType, available, chainId, paymasterProxyUrl])
+    }, [accountType, chainId, available, paymasterProxyUrl])
 
   return {
     capabilities,
