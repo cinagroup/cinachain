@@ -64,9 +64,14 @@ export default function BillingManagementPage() {
 
   // Tier badge minting (spec §5: platform mints on tier crossing)
   const [adminKey, setAdminKey] = useState("")
-  const [pendingList, setPendingList] = useState<Array<{ address: string; badges: string[]; cumulativeSpend: string }>>([])
+  const [pendingList, setPendingList] = useState<Array<{ address: string; badges: string[]; cumulativeSpend: string; custId?: string }>>([])
   const [isFetchingPending, setIsFetchingPending] = useState(false)
   const [badgeError, setBadgeError] = useState<string | null>(null)
+
+  // Custodial accounts
+  const [custId, setCustId] = useState("")
+  const [custAmountWei, setCustAmountWei] = useState("")
+  const [custMsg, setCustMsg] = useState<string | null>(null)
 
   const { isSuccess: confirmed, isError: reverted } =
     useWaitForTransactionReceipt({
@@ -156,7 +161,7 @@ export default function BillingManagementPage() {
   const TIER_IDS: Record<string, bigint> = { bronze: 100n, silver: 101n, gold: 102n, diamond: 103n, whale: 104n }
   const BADGE_CONTRACT = process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT || "0x72cc9adb6c877d233e9843ee2d00424b9766d0cf"
 
-  const mintPending = async (item: { address: string; badges: string[] }) => {
+  const mintPending = async (item: { address: string; badges: string[]; custId?: string }) => {
     setBadgeError(null)
     try {
       if (!publicClient) throw new Error("No public client available")
@@ -173,7 +178,7 @@ export default function BillingManagementPage() {
         const confirmRes = await fetch(`${BILLING_API_URL}/v1/admin/badges/${item.address}/${tier}/confirm`, {
           method: "POST",
           headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
-          body: JSON.stringify({ txHash: hash }),
+          body: JSON.stringify({ txHash: hash, ...(item.custId ? { custId: item.custId } : {}) }),
         })
         if (!confirmRes.ok) throw new Error(`confirm failed: ${confirmRes.status}`)
       }
@@ -182,6 +187,24 @@ export default function BillingManagementPage() {
     } catch (err) {
       const anyErr = err as unknown as { shortMessage?: string; message?: string }
       setBadgeError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge")
+    }
+  }
+
+  const custOperate = async (op: "credit" | "debit") => {
+    setBadgeError(null)
+    setCustMsg(null)
+    try {
+      if (!custId || !/^\d+$/.test(custAmountWei)) throw new Error("Valid account id and amountWei required")
+      const res = await fetch(`${BILLING_API_URL}/v1/custodial/${op}`, {
+        method: "POST",
+        headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: custId, amountWei: custAmountWei }),
+      })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body.error ?? `${op} failed: ${res.status}`)
+      setCustMsg(`${op} ok — balanceWei ${body.balanceWei}`)
+    } catch (err) {
+      setBadgeError(err instanceof Error ? err.message : "Custodial operation failed")
     }
   }
 
@@ -545,7 +568,7 @@ export default function BillingManagementPage() {
           ) : (
             <ul className="mt-4 space-y-3">
               {pendingList.map((item) => (
-                <li key={item.address} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+                <li key={`${item.custId ?? item.address}`} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
                   <div>
                     <p className="font-mono-tech text-xs text-foreground">{item.address}</p>
                     <p className="text-xs text-muted-foreground">
@@ -559,6 +582,40 @@ export default function BillingManagementPage() {
               ))}
             </ul>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Custodial accounts (spec §6.1: pool + DB bookkeeping) */}
+      <Card className="mt-6 shadow-vercel-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5" />
+            Custodial Accounts
+          </CardTitle>
+          <CardDescription>
+            DB bookkeeping on top of the hot-wallet pool — credit on deposit, debit after pool withdrawal
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="custId">Account ID</Label>
+              <Input id="custId" placeholder="cust_..." value={custId} onChange={(e) => setCustId(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="custAmount">Amount (wei)</Label>
+              <Input id="custAmount" placeholder="1000000000000000000" value={custAmountWei} onChange={(e) => setCustAmountWei(e.target.value)} />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => custOperate("credit")} disabled={!adminKey}>
+              Credit
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => custOperate("debit")} disabled={!adminKey}>
+              Debit
+            </Button>
+          </div>
+          {custMsg && <p className="mt-3 text-sm text-[#29bc9b]">{custMsg}</p>}
         </CardContent>
       </Card>
     </div>

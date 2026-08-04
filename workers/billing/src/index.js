@@ -320,6 +320,32 @@ export default {
       return json(request, res.body, res.status)
     }
 
+    if (url.pathname === "/v1/custodial/debit" && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const body = await request.json().catch(() => ({}))
+      const { id, amountWei } = body
+      const key = `cust:${id ?? ""}`
+      const res = await withLedgerLock(key, async () => {
+        try {
+          const raw = await env.CINA_BILLING_KV.get(key)
+          const ledger = raw ? JSON.parse(raw) : null
+          if (!ledger) return { status: 404, body: { error: "Account not found" } }
+          const sub = BigInt(amountWei ?? 0)
+          if (sub <= 0n) return { status: 400, body: { error: "amountWei must be > 0" } }
+          const current = BigInt(ledger.balanceWei ?? 0)
+          if (current < sub) return { status: 400, body: { error: "Insufficient balance" } }
+          ledger.balanceWei = (current - sub).toString()
+          await env.CINA_BILLING_KV.put(key, JSON.stringify(ledger))
+          return { status: 200, body: { ok: true, balanceWei: ledger.balanceWei } }
+        } catch (err) {
+          return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+        }
+      })
+      return json(request, res.body, res.status)
+    }
+
     if (url.pathname.startsWith("/v1/custodial/") && request.method === "GET") {
       const id = url.pathname.split("/").pop()
       const raw = await env.CINA_BILLING_KV.get(`cust:${id}`)

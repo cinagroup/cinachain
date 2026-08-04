@@ -55,7 +55,8 @@ if (MODE === "fund") {
     process.exit(1)
   }
   console.log(`✔ 池已转 ${process.argv[5] ?? "1"} credit -> ${to} tx=${hash}`)
-  // 提示：链上转账后应调用 POST /v1/custodial/debit 扣减 DB 余额（见 admin UI）
+  console.log(`   ⚠ 链上转账后请扣减 DB 余额:`)
+  console.log(`     curl -X POST $BILLING_URL/v1/custodial/debit -H "X-Admin-Key: $ADMIN_KEY" -H "Content-Type: application/json" -d '{"id":"<custId>","amountWei":"${credits}"}'`)
 } else {
   console.error("用法: gen | fund <pool> <credits> | withdraw <poolKey> <to> <credits>")
   process.exit(1)

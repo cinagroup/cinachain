@@ -313,4 +313,38 @@ describe("M2 custodial accounts", () => {
     }))
     expect(res.status).toBe(404)
   })
+
+  it("admin debits a custodial account", async () => {
+    const env = makeEnv()
+    env.store.set("cust:test1", JSON.stringify({ owner: "0xaaa", balanceWei: (100n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0" }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/debit", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "test1", amountWei: (40n * 10n ** 18n).toString() }),
+    }))
+    expect(res.status).toBe(200)
+    const stored = JSON.parse(env.store.get("cust:test1"))
+    expect(stored.balanceWei).toBe((60n * 10n ** 18n).toString())
+  })
+
+  it("debit rejects over-draw (insufficient balance)", async () => {
+    const env = makeEnv()
+    env.store.set("cust:test1", JSON.stringify({ owner: "0xaaa", balanceWei: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0" }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/debit", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "test1", amountWei: (11n * 10n ** 18n).toString() }),
+    }))
+    expect(res.status).toBe(400)
+  })
+
+  it("debit without admin key -> 401", async () => {
+    const env = makeEnv()
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/debit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "test1", amountWei: "1" }),
+    }))
+    expect(res.status).toBe(401)
+  })
 })

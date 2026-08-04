@@ -48,7 +48,7 @@ for (const item of pending) {
       {
         method: "POST",
         headers: { "X-Admin-Key": ADMIN_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ txHash: hash }),
+        body: JSON.stringify({ txHash: hash, ...(item.custId ? { custId: item.custId } : {}) }),
       }
     )
     if (!confirm.ok) console.warn(`⚠ confirm failed for ${tier} ${item.address}: ${await confirm.text()}`)
