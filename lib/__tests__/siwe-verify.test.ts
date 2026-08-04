@@ -38,12 +38,16 @@ describe("verifySiweSignature", () => {
 
   it("returns false when viem verifyMessage rejects (e.g. bad signature)", async () => {
     vi.mocked(verifyMessage).mockRejectedValue(new Error("invalid signature"))
+    // The root cause must be logged so production failures stay diagnosable.
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     const ok = await verifySiweSignature(mockPublicClient, {
       address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       message: "Sign in to CinaChain",
       signature: "0xdeadbeef",
     })
     expect(ok).toBe(false)
+    expect(errorSpy).toHaveBeenCalled()
+    errorSpy.mockRestore()
   })
 
   it("returns false when viem verifyMessage returns false", async () => {

@@ -25,7 +25,8 @@ export async function verifySiweSignature(
       message,
       signature,
     })
-  } catch {
+  } catch (err) {
+    console.error("[siwe] signature verification failed:", err)
     return false
   }
 }

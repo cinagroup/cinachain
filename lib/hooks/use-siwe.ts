@@ -44,6 +44,10 @@ function generateNonce(): string {
  * (counterfactual) smart-account signatures — Reown smart accounts
  * emit 1271/6492, so the session is only stored once the signature
  * verifies against the account.
+ *
+ * `signInError` carries the reason the last sign-in attempt failed
+ * (e.g. "Signature verification failed") so callers can surface an
+ * accurate message instead of guessing it was a missing connection.
  */
 export function useSiwe() {
   const { address } = useAccount()
@@ -52,6 +56,7 @@ export function useSiwe() {
   const { signMessageAsync } = useSignMessage()
   const [session, setSession] = useState<SiweSession | null>(null)
   const [loading, setLoading] = useState(false)
+  const [signInError, setSignInError] = useState<string | null>(null)
 
   // Load session from localStorage on mount
   useEffect(() => {
@@ -75,6 +80,7 @@ export function useSiwe() {
     if (!address) {
       // Wallet disconnected — clear session from state AND localStorage
       setSession(null)
+      setSignInError(null)
       if (typeof window !== "undefined") {
         localStorage.removeItem(SESSION_KEY)
       }
@@ -83,6 +89,7 @@ export function useSiwe() {
     if (session && session.address.toLowerCase() !== address.toLowerCase()) {
       // Account changed — clear stale session
       setSession(null)
+      setSignInError(null)
       if (typeof window !== "undefined") {
         localStorage.removeItem(SESSION_KEY)
       }
@@ -90,6 +97,7 @@ export function useSiwe() {
   }, [address, session])
 
   const signIn = useCallback(async (): Promise<boolean> => {
+    setSignInError(null)
     if (!address) return false
 
     setLoading(true)
@@ -146,6 +154,14 @@ export function useSiwe() {
       return true
     } catch (error) {
       console.error("[cinachain] SIWE sign-in failed:", error)
+      // Distinguish verification failures from generic errors so the
+      // caller can show an accurate message instead of assuming the
+      // wallet was never connected.
+      setSignInError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Sign-in failed"
+      )
       return false
     } finally {
       setLoading(false)
@@ -169,6 +185,7 @@ export function useSiwe() {
     session,
     isAuthenticated,
     isLoading: loading,
+    signInError,
     signIn,
     signOut,
   }
