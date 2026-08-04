@@ -39,3 +39,30 @@ const TRANSITIONS = {
 export function ingressStatusTransitions(from, to) {
   return (TRANSITIONS[from] ?? []).includes(to)
 }
+
+// AES-GCM key encryption for pooled ingress keys (spec §6.3: plaintext
+// never leaves the platform). INGRESS_ENC_KEY = 32-byte hex (testnet var;
+// mainnet: worker secret).
+export function hexToBytes(hex) {
+  return Uint8Array.from(hex.match(/.{2}/g).map((b) => parseInt(b, 16)))
+}
+export function bytesToHex(bytes) {
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("")
+}
+
+export async function encryptKey(secretHex, rawKey) {
+  const key = await crypto.subtle.importKey("raw", hexToBytes(secretHex), { name: "AES-GCM" }, false, ["encrypt"])
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(rawKey))
+  return { iv: bytesToHex(iv), cipher: bytesToHex(new Uint8Array(cipher)) }
+}
+
+export async function decryptKey(secretHex, { iv, cipher }) {
+  const key = await crypto.subtle.importKey("raw", hexToBytes(secretHex), { name: "AES-GCM" }, false, ["decrypt"])
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: hexToBytes(iv) },
+    key,
+    hexToBytes(cipher)
+  )
+  return new TextDecoder().decode(plain)
+}

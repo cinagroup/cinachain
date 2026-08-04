@@ -1,6 +1,6 @@
 // workers/billing/src/lib/ingress.js tests
 import { describe, it, expect } from "vitest"
-import { ingressRecord, ingressStatusTransitions, validateDeclaredMicro } from "./ingress.js"
+import { ingressRecord, ingressStatusTransitions, validateDeclaredMicro, encryptKey, decryptKey } from "./ingress.js"
 
 describe("ingressRecord", () => {
   it("builds a pending record with defaults", () => {
@@ -43,5 +43,22 @@ describe("ingressStatusTransitions", () => {
   })
   it("allows pending -> rejected", () => {
     expect(ingressStatusTransitions("pending", "rejected")).toBe(true)
+  })
+})
+
+describe("ingress key encryption", () => {
+  const SECRET = "ab".repeat(32) // 32-byte hex
+  it("encrypt -> decrypt roundtrips the raw key", async () => {
+    const raw = "sk-ingress_roundtrip_0123456789abcdef"
+    const enc = await encryptKey(SECRET, raw)
+    expect(enc.iv).toMatch(/^[0-9a-f]{24}$/)
+    expect(enc.cipher).toMatch(/^[0-9a-f]+$/)
+    expect(enc.cipher).not.toContain(raw)
+    const dec = await decryptKey(SECRET, enc)
+    expect(dec).toBe(raw)
+  })
+  it("decrypt with wrong key fails", async () => {
+    const enc = await encryptKey(SECRET, "sk-ingress_wrongkey_0123456789abcdef")
+    await expect(decryptKey("cd".repeat(32), enc)).rejects.toThrow()
   })
 })

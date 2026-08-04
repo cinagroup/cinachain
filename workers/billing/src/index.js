@@ -12,7 +12,7 @@ import {
 } from "./lib/billing-core.js"
 import { runIndexer, listAllKeys } from "./lib/indexer-run.js"
 import { DEFAULT_PRICING, estimateCostWithPricing } from "./lib/pricing.js"
-import { ingressRecord, validateDeclaredMicro, ingressStatusTransitions } from "./lib/ingress.js"
+import { ingressRecord, validateDeclaredMicro, ingressStatusTransitions, encryptKey } from "./lib/ingress.js"
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
@@ -134,33 +134,6 @@ async function hashKey(apiKey) {
   const data = new TextEncoder().encode(apiKey)
   const digest = await crypto.subtle.digest("SHA-256", data)
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
-}
-
-// AES-GCM key encryption for pooled ingress keys (spec §6.3: plaintext
-// never leaves the platform). INGRESS_ENC_KEY = 32-byte hex (testnet var;
-// mainnet: worker secret).
-function hexToBytes(hex) {
-  return Uint8Array.from(hex.match(/.{2}/g).map((b) => parseInt(b, 16)))
-}
-function bytesToHex(bytes) {
-  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("")
-}
-
-async function encryptKey(secretHex, rawKey) {
-  const key = await crypto.subtle.importKey("raw", hexToBytes(secretHex), { name: "AES-GCM" }, false, ["encrypt"])
-  const iv = crypto.getRandomValues(new Uint8Array(12))
-  const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(rawKey))
-  return { iv: bytesToHex(iv), cipher: bytesToHex(new Uint8Array(cipher)) }
-}
-
-async function decryptKey(secretHex, { iv, cipher }) {
-  const key = await crypto.subtle.importKey("raw", hexToBytes(secretHex), { name: "AES-GCM" }, false, ["decrypt"])
-  const plain = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: hexToBytes(iv) },
-    key,
-    hexToBytes(cipher)
-  )
-  return new TextDecoder().decode(plain)
 }
 
 function corsHeaders(request) {
@@ -461,7 +434,9 @@ export default {
         }
       }
       const secretHex = env.INGRESS_ENC_KEY
-      if (!secretHex || secretHex.length !== 64) return json(request, { error: "Ingress encryption not configured" }, 500)
+      if (!secretHex || secretHex.length !== 64 || secretHex === "0".repeat(64)) {
+        return json(request, { error: "Ingress encryption not configured" }, 500)
+      }
       const encrypted = await encryptKey(secretHex, apiKey)
       const id = `ing_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`
       const rec = ingressRecord({ owner: owner.toLowerCase(), model, declaredMicro: declared, keyHash })
