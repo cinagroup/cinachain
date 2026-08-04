@@ -91,6 +91,15 @@ export default {
       return respond(request, { error: "Paymaster not configured" }, 503)
     }
 
+    // The key is embedded in the URL — refuse plaintext transports
+    try {
+      if (new URL(paymasterUrl).protocol !== "https:") {
+        return respond(request, { error: "Paymaster URL must be https" }, 503)
+      }
+    } catch {
+      return respond(request, { error: "Paymaster URL is invalid" }, 503)
+    }
+
     try {
       const body = await request.text()
       if (body.length === 0) {
@@ -107,8 +116,8 @@ export default {
       } catch {
         return respond(request, { error: "Invalid JSON" }, 400)
       }
-      // Accept either a raw userOp or { userOp: {...} }
-      const userOp = parsed.userOp ?? parsed
+      // Accept either a raw userOp or { userOp: {...} } — guard null bodies
+      const userOp = parsed && typeof parsed === "object" ? (parsed.userOp ?? parsed) : null
       if (!isPlausibleUserOp(userOp)) {
         return respond(request, { error: "Invalid userOp payload" }, 400)
       }

@@ -20,7 +20,10 @@ export function NetworkStatus() {
   const { address, chain } = useAccount()
   // Only poll the block number while a wallet is connected — visitors on
   // marketing pages shouldn't generate constant RPC traffic.
-  const { data } = useBlockNumber({ query: { enabled: !!address } })
+  const { data } = useBlockNumber({
+    watch: true,
+    query: { enabled: !!address, refetchInterval: 12_000 },
+  })
   const blockExplorerUrl = chain?.blockExplorers?.default.url
 
   if (!address || !chain || !blockExplorerUrl) return null
@@ -38,7 +41,9 @@ export function NetworkStatus() {
       >
         {chain.name}
       </Badge>
-      <p className="mx-2 text-xs">#{data?.toString()}</p>
+      {data !== undefined && (
+        <p className="mx-2 text-xs">#{data.toString()}</p>
+      )}
     </Link>
   )
 }

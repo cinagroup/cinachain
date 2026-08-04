@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAccount } from "wagmi"
+import { useAccount, useReadContracts } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
 import { useWhitelist } from "@/lib/hooks/use-whitelist"
 import { useMintContract } from "@/lib/hooks/use-mint-contract"
@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { CheckCircle2, ExternalLink, AlertCircle, Loader2 } from "lucide-react"
+import { CheckCircle2, ExternalLink, AlertCircle, Loader2, Info } from "lucide-react"
 import { formatEther } from "viem"
-import { MINT_PRICE_ETH } from "@/lib/contracts/addresses"
+import { MINT_PRICE_ETH, CINA_NFT_CONTRACT, hasNftContract } from "@/lib/contracts/addresses"
+import { CINA_NFT_ABI } from "@/lib/contracts/abi"
 
 const MAX_PUBLIC_PER_TX = 10
 
@@ -32,6 +33,40 @@ export default function MintPage() {
   const [quantity, setQuantity] = useState(1)
   const [mintPhase, setMintPhase] = useState<"whitelist" | "public" | "inactive">("inactive")
   const [localError, setLocalError] = useState<string | null>(null)
+
+  // Cumulative per-address mint counts (contract caps are cumulative, not per-tx)
+  const { data: usageRes } = useReadContracts({
+    contracts: [
+      {
+        address: CINA_NFT_CONTRACT,
+        abi: CINA_NFT_ABI,
+        functionName: "mintedByAddress",
+        args: address ? [address] : undefined,
+      },
+      {
+        address: CINA_NFT_CONTRACT,
+        abi: CINA_NFT_ABI,
+        functionName: "whitelistMintedByAddress",
+        args: address ? [address] : undefined,
+      },
+    ],
+    query: { enabled: isConnected && !!address && hasNftContract },
+  })
+  const mintedPublicCount =
+    usageRes?.[0]?.status === "success" ? Number(usageRes[0].result) : 0
+  const mintedWhitelistCount =
+    usageRes?.[1]?.status === "success" ? Number(usageRes[1].result) : 0
+  const publicRemaining = Math.max(0, MAX_PUBLIC_PER_TX - mintedPublicCount)
+  const whitelistRemaining = Math.max(
+    0,
+    (whitelistData?.mintLimit ?? 3) - mintedWhitelistCount
+  )
+
+  // True when a whitelist IS deployed but this address isn't on it
+  const notWhitelisted =
+    !!whitelistData &&
+    whitelistData.phase === "whitelist" &&
+    !whitelistData.eligible
 
   const {
     mintWhitelist,
@@ -63,6 +98,10 @@ export default function MintPage() {
       setMintPhase("public")
     } else if (whitelistData.phase === "whitelist" && whitelistData.eligible) {
       setMintPhase("whitelist")
+    } else if (whitelistData.phase === "whitelist") {
+      // Whitelist deployed but this address isn't on it — public mint stays
+      // open on-chain (mintPublic is only gated by paused/maxSupply).
+      setMintPhase("public")
     } else {
       setMintPhase("inactive")
     }
@@ -80,12 +119,20 @@ export default function MintPage() {
     }
   }, [isConfirmed, queryClient])
 
+  const maxQty =
+    mintPhase === "whitelist"
+      ? Math.min(whitelistData?.mintLimit ?? 1, whitelistRemaining)
+      : publicRemaining
+  const limitReached = maxQty <= 0
+
   const handleMint = async () => {
     setLocalError(null)
-    const maxQty =
-      mintPhase === "whitelist" ? whitelistData?.mintLimit ?? 1 : MAX_PUBLIC_PER_TX
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQty) {
-      setLocalError(`Quantity must be between 1 and ${maxQty}`)
+      setLocalError(
+        limitReached
+          ? "You have reached your mint limit for this address."
+          : `Quantity must be between 1 and ${maxQty}`
+      )
       return
     }
     reset()
@@ -197,6 +244,17 @@ export default function MintPage() {
           </Alert>
         )}
 
+        {/* Whitelist deployed but address not on it — public mint still open */}
+        {notWhitelisted && (
+          <Alert className="mb-6 border-[#0070f3]/20 bg-[#d3e5ff]/40">
+            <Info className="h-4 w-4 text-[#0761d1]" />
+            <AlertDescription className="text-sm text-[#0761d1]">
+              This address is not on the whitelist. Public minting is still open — you can
+              mint at the regular price.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="max-w-md">
           <Card className="shadow-vercel-card">
             <CardHeader>
@@ -278,15 +336,18 @@ export default function MintPage() {
                       id="quantity"
                       type="number"
                       min={1}
-                      max={
-                        mintPhase === "whitelist"
-                          ? whitelistData?.mintLimit || 1
-                          : 10
-                      }
+                      max={Math.max(maxQty, 1)}
                       value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      onChange={(e) => {
+                        if (e.target.value === "") {
+                          setQuantity(1)
+                          return
+                        }
+                        const v = Number(e.target.value)
+                        if (!Number.isNaN(v)) setQuantity(v)
+                      }}
                       className="h-10"
-                      disabled={isPending}
+                      disabled={isPending || limitReached}
                     />
                   </div>
 
@@ -308,6 +369,22 @@ export default function MintPage() {
                         {totalDisplay} ETH
                       </span>
                     </div>
+                    {mintPhase === "public" && mintedPublicCount > 0 && (
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Minted by you</span>
+                        <span>
+                          {mintedPublicCount} / {MAX_PUBLIC_PER_TX}
+                        </span>
+                      </div>
+                    )}
+                    {mintPhase === "whitelist" && mintedWhitelistCount > 0 && (
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Whitelist mints by you</span>
+                        <span>
+                          {mintedWhitelistCount} / {whitelistData?.mintLimit ?? 3}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Mint Button */}
@@ -315,9 +392,16 @@ export default function MintPage() {
                     size="lg"
                     className="w-full"
                     onClick={handleMint}
-                    disabled={isPending || quantity < 1 || status === "awaiting-wallet"}
+                    disabled={
+                      isPending ||
+                      quantity < 1 ||
+                      limitReached ||
+                      status === "awaiting-wallet"
+                    }
                   >
-                    {isPending && status === "awaiting-wallet" ? (
+                    {limitReached ? (
+                      "Mint Limit Reached"
+                    ) : isPending && status === "awaiting-wallet" ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         {buttonLabel}

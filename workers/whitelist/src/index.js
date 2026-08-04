@@ -21,6 +21,10 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
 ])
 
+// Contract hard cap — mirrors CinaNFT.sol MAX_WHITELIST_PER_ADDRESS.
+// Limits above this would be advertised to users but always revert on-chain.
+const MAX_WHITELIST_LIMIT = 3
+
 // Admin endpoint: max 10 POSTs per IP per hour
 const ADMIN_RATE_LIMIT = 10
 const ADMIN_RATE_WINDOW_MS = 60 * 60 * 1000
@@ -118,14 +122,22 @@ function getProof(levels, leaf) {
 async function checkRateLimit(env, request) {
   const kv = env && env.CINA_WHITELIST_KV
   if (!kv) return true // KV missing → fail-open on rate limiting (auth still gates)
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown"
-  const windowStart = Math.floor(Date.now() / ADMIN_RATE_WINDOW_MS)
-  const key = `ratelimit:admin:${ip}:${windowStart}`
-  const raw = await kv.get(key)
-  const count = raw ? parseInt(raw, 10) : 0
-  if (count >= ADMIN_RATE_LIMIT) return false
-  await kv.put(key, String(count + 1), { expirationTtl: 7200 })
-  return true
+  try {
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown"
+    const windowStart = Math.floor(Date.now() / ADMIN_RATE_WINDOW_MS)
+    const key = `ratelimit:admin:${ip}:${windowStart}`
+    const raw = await kv.get(key)
+    const count = raw ? parseInt(raw, 10) : 0
+    if (count >= ADMIN_RATE_LIMIT) return false
+    await kv.put(key, String(count + 1), { expirationTtl: 7200 })
+    return true
+  } catch (err) {
+    // Best effort: transient KV errors must not turn into non-JSON 500s.
+    // NOTE: the counter is read-then-write (KV has no atomic increment), so
+    // the 10/hour cap is approximate under concurrent requests — acceptable
+    // defense-in-depth behind the admin token.
+    return true
+  }
 }
 
 export default {
@@ -207,12 +219,12 @@ export default {
           }
         }
 
-        // Per-address mint limits (default 3, bounded 1..10)
+        // Per-address mint limits (clamped 1..3 — the contract's hard cap)
         const defaultLimit =
           typeof body.mintLimit === "number" &&
           Number.isInteger(body.mintLimit) &&
           body.mintLimit >= 1 &&
-          body.mintLimit <= 10
+          body.mintLimit <= MAX_WHITELIST_LIMIT
             ? body.mintLimit
             : 3
         const limits = {}
@@ -221,7 +233,9 @@ export default {
             const a = addr.toLowerCase()
             if (!isValidAddress(a)) continue
             const l = Number(lim)
-            if (Number.isInteger(l) && l >= 1 && l <= 10) limits[a] = l
+            if (Number.isInteger(l) && l >= 1 && l <= MAX_WHITELIST_LIMIT) {
+              limits[a] = l
+            }
           }
         }
 
@@ -350,7 +364,7 @@ export default {
     }
 
     // Look up precomputed proof + per-address limit
-    const proof = proofsMap[address] || proofsMap[segments[1]] || null
+    const proof = proofsMap[address] || null
     const mintLimit = limitsMap[address] ?? defaultLimit
 
     return jsonResponse(request, {

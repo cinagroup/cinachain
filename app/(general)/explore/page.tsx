@@ -3,6 +3,7 @@
 import { useMemo } from "react"
 import { Loader2, PackageOpen } from "lucide-react"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { useBatchTokenUris } from "@/lib/hooks/use-batch-token-uris"
 import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
 import { hasNftContract } from "@/lib/contracts/addresses"
 
@@ -16,6 +17,9 @@ export default function ExplorePage() {
     const limit = Math.min(mintedCount, 100)
     return Array.from({ length: limit }, (_, i) => String(i + 1))
   }, [mintedCount])
+
+  // ONE multicall for all tokenURI reads (instead of one eth_call per card)
+  const { uriByTokenId, isPending: batchLoading } = useBatchTokenUris(tokenIds)
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,14 +78,27 @@ export default function ExplorePage() {
         </div>
       )}
 
-      {/* NFT Grid */}
+      {/* NFT Grid — gate on the batch multicall so cards don't fire
+          individual RPC reads while it's in flight */}
       {hasNftContract && !isLoading && tokenIds.length > 0 && (
         <>
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {tokenIds.map((tokenId) => (
-              <NftCard key={tokenId} tokenId={tokenId} />
-            ))}
-          </div>
+          {batchLoading ? (
+            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <NftCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {tokenIds.map((tokenId) => (
+                <NftCard
+                  key={tokenId}
+                  tokenId={tokenId}
+                  preloadedTokenURI={uriByTokenId.get(tokenId)}
+                />
+              ))}
+            </div>
+          )}
 
           {mintedCount > 100 && (
             <p className="mt-8 text-center text-sm text-muted-foreground">

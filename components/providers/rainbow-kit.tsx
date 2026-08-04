@@ -6,12 +6,12 @@ import { useMemo, type ReactNode } from "react"
 import { env } from "@/env.mjs"
 import {
   darkTheme,
-  getDefaultConfig,
+  getDefaultWallets,
   lightTheme,
   RainbowKitProvider,
 } from "@rainbow-me/rainbowkit"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { WagmiProvider } from "wagmi"
+import { createConfig, WagmiProvider } from "wagmi"
 
 import { chains, transports } from "@/config/networks"
 import { siteConfig } from "@/config/site"
@@ -28,21 +28,34 @@ if (!PROJECT_ID && process.env.NODE_ENV === "development") {
   )
 }
 
-// getDefaultConfig already includes coinbaseWallet() with preference: 'all'.
-// This means users get both Smart Wallet (passkey) and EOA options automatically.
-// No explicit connectors array needed — keeping defaults preserves MetaMask,
-// WalletConnect, and Coinbase Smart Wallet all at once.
-const wagmiConfig = getDefaultConfig({
+// getDefaultConfig() does not expose WalletConnect options, so build the
+// identical default connector set (Rainbow / Coinbase / MetaMask /
+// WalletConnect) via getDefaultWallets and pass walletConnectParameters:
+//   - metadata: mirrors what getDefaultConfig computes for its connectors
+//   - telemetryEnabled: false -> stops pulse.walletconnect.org telemetry POSTs
+const { connectors } = getDefaultWallets({
   appName: siteConfig.title,
   projectId: PROJECT_ID,
+  walletConnectParameters: {
+    metadata: {
+      name: siteConfig.title,
+      description: siteConfig.description,
+      url: typeof window !== "undefined" ? window.location.href : "",
+      icons: [],
+    },
+    telemetryEnabled: false,
+  },
+})
+
+// coinbaseWallet() with preference: 'all' is included by getDefaultWallets,
+// so users get both Smart Wallet (passkey) and EOA options automatically.
+const wagmiConfig = createConfig({
   chains,
   transports,
+  connectors,
   // Static export (output: "export") has no server runtime.
   // ssr must be false to avoid hydration mismatches.
   ssr: false,
-  // Coinbase Smart Wallet is enabled by default via getDefaultConfig.
-  // Users will see "Coinbase Wallet" in the modal and can create
-  // a passkey-based smart wallet without leaving the page.
 })
 
 export function RainbowKit({ children }: { children: ReactNode }) {

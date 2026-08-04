@@ -24,6 +24,8 @@ export default function WhitelistManagementPage() {
   const [errorMessage, setErrorMessage] = useState("")
   const [merkleRoot, setMerkleRoot] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Actual count returned by the worker (dedupes addresses client-side too)
+  const [activeCount, setActiveCount] = useState<number | null>(null)
 
   // Admin token is typed per-session by the operator. It is kept in
   // sessionStorage only — never in a NEXT_PUBLIC_* variable (which would
@@ -52,6 +54,7 @@ export default function WhitelistManagementPage() {
       const lines = text.split("\n").filter((line) => line.trim())
 
       const parsedEntries: WhitelistEntry[] = []
+      const seen = new Set<string>()
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim()
@@ -71,11 +74,16 @@ export default function WhitelistManagementPage() {
           throw new Error(`Invalid address format at line ${i + 1}: ${address}`)
         }
 
-        if (isNaN(limit) || limit < 1 || limit > 10) {
-          throw new Error(`Invalid mint limit at line ${i + 1}: ${parts[1]} (must be 1-10)`)
+        if (isNaN(limit) || limit < 1 || limit > 3) {
+          throw new Error(`Invalid mint limit at line ${i + 1}: ${parts[1]} (must be 1-3, the contract's whitelist cap)`)
         }
 
-        parsedEntries.push({ address: address.toLowerCase(), mintLimit: limit })
+        // Dedupe on lowercase address — first occurrence wins
+        const key = address.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+
+        parsedEntries.push({ address: key, mintLimit: limit })
       }
 
       setEntries(parsedEntries)
@@ -86,6 +94,8 @@ export default function WhitelistManagementPage() {
       setEntries([])
     } finally {
       setIsProcessing(false)
+      // Allow re-selecting the same file after upload/clear
+      event.target.value = ""
     }
   }
 
@@ -101,6 +111,7 @@ export default function WhitelistManagementPage() {
     setDeployStatus("idle")
     setErrorMessage("")
     setMerkleRoot(null)
+    setActiveCount(null)
     setCopied(false)
 
     try {
@@ -137,6 +148,7 @@ export default function WhitelistManagementPage() {
       }
 
       setDeployStatus("success")
+      if (typeof data.count === "number") setActiveCount(data.count)
       if (data.merkleRoot) setMerkleRoot(data.merkleRoot)
     } catch (err) {
       setDeployStatus("error")
@@ -196,7 +208,7 @@ export default function WhitelistManagementPage() {
                 <br />
                 Example: <code className="bg-muted px-2 py-1 rounded">0x123...abc,3</code>
                 <br />
-                <span className="text-xs opacity-80">Limit must be 1-10. Empty CSV lines and duplicate addresses are ignored.</span>
+                    <span className="text-xs opacity-80">Limit must be 1-3 (the contract's whitelist cap). Duplicate addresses are ignored.</span>
               </p>
             </div>
 
@@ -254,7 +266,8 @@ export default function WhitelistManagementPage() {
                 <Alert className="mb-4 border-[#50e3c2]/30 bg-[#50e3c2]/10">
                   <CheckCircle className="h-4 w-4 text-[#29bc9b]" />
                   <AlertDescription className="text-sm text-[#29bc9b]">
-                    Whitelist deployed successfully! {entries.length} addresses are now active.
+                    Whitelist deployed successfully!{" "}
+                    {activeCount !== null ? activeCount : entries.length} addresses are now active.
                   </AlertDescription>
                 </Alert>
               )}

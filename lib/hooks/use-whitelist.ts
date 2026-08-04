@@ -54,6 +54,7 @@ export function useWhitelist(address?: Address) {
     },
     enabled: !!address,
     staleTime: 1000 * 60 * 5, // 5 分钟缓存
+    refetchInterval: 1000 * 60, // 每 60s 轮询 — 阶段切换能传播到已打开的页面
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 8000),
   })

@@ -17,11 +17,17 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
   const { metadata, image, name, description, attributes, isLoading } =
     useTokenMetadata(tokenId)
 
-  const { data: owner } = useReadContract({
+  const {
+    data: owner,
+    isError: ownerError,
+    isPending: ownerLoading,
+  } = useReadContract({
     address: CINA_NFT_CONTRACT,
     abi: CINA_NFT_ABI,
     functionName: "ownerOf",
     args: [BigInt(tokenId)],
+    // Reverts are deterministic for unminted ids — no point retrying
+    query: { retry: false },
   })
 
   const { data: collectionName } = useReadContract({
@@ -32,6 +38,42 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
 
   const isOwner =
     !!address && !!owner && address.toLowerCase() === owner.toLowerCase()
+
+  // Explicit "not minted yet" state for tokens that don't exist on-chain
+  if (!ownerLoading && ownerError) {
+    return (
+      <div>
+        {/* Breadcrumb */}
+        <nav className="mb-8">
+          <ol className="flex items-center gap-2 text-sm">
+            <li>
+              <Link
+                href="/explore"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Collection
+              </Link>
+            </li>
+            <li className="text-muted-foreground">/</li>
+            <li className="font-medium text-foreground">#{tokenId}</li>
+          </ol>
+        </nav>
+
+        <div className="mx-auto mt-16 max-w-md rounded-lg border border-border bg-card p-10 text-center shadow-vercel-card">
+          <p className="font-display text-2xl tracking-tight text-foreground">
+            This NFT has not been minted yet
+          </p>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            Token #{tokenId} doesn&apos;t exist on-chain yet. Be the first to
+            mint it and own it forever.
+          </p>
+          <Button asChild className="mt-6">
+            <Link href="/mint">Mint NFT #{tokenId}</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>

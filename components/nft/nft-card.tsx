@@ -10,6 +10,8 @@ import { hasNftContract } from "@/lib/contracts/addresses"
 interface NftCardProps {
   tokenId: string
   showFavorite?: boolean
+  /** URI from the explore-page multicall; skips the per-card tokenURI RPC read */
+  preloadedTokenURI?: string | null
 }
 
 /**
@@ -17,8 +19,15 @@ interface NftCardProps {
  * Displays image, name, tokenId, and price.
  * Includes favorite toggle.
  */
-export function NftCard({ tokenId, showFavorite = true }: NftCardProps) {
-  const { metadata, image, name, isLoading, isError } = useTokenMetadata(tokenId)
+export function NftCard({
+  tokenId,
+  showFavorite = true,
+  preloadedTokenURI,
+}: NftCardProps) {
+  const { metadata, image, name, isLoading, isError } = useTokenMetadata(
+    tokenId,
+    preloadedTokenURI
+  )
 
   return (
     <Link href={`/collection/${tokenId}`} className="group block">

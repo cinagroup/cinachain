@@ -13,8 +13,13 @@ import {
  * Read tokenURI from the contract, then fetch + cache NFT metadata via IPFS.
  * Uses the robust fetchNftMetadata helper (SSRF protection, timeout, fallback gateways).
  * Falls back to a deterministic SVG placeholder when the metadata has no image.
+ * @param preloadedTokenURI optional URI from a batched multicall — skips the
+ *        per-card tokenURI RPC read entirely when provided.
  */
-export function useTokenMetadata(tokenId: bigint | number | string | undefined) {
+export function useTokenMetadata(
+  tokenId: bigint | number | string | undefined,
+  preloadedTokenURI?: string | null
+) {
   const id = tokenId !== undefined ? BigInt(tokenId) : undefined
 
   const {
@@ -26,13 +31,18 @@ export function useTokenMetadata(tokenId: bigint | number | string | undefined) 
     abi: CINA_NFT_ABI,
     functionName: "tokenURI",
     args: id !== undefined ? [id] : undefined,
-    query: { enabled: hasNftContract && id !== undefined },
+    query: {
+      enabled:
+        hasNftContract && id !== undefined && preloadedTokenURI === undefined,
+    },
   })
 
+  const uri = preloadedTokenURI ?? tokenURI ?? null
+
   const metadataQuery = useQuery<NftMetadata | null>({
-    queryKey: ["nft-metadata", id?.toString(), tokenURI],
-    queryFn: () => (tokenURI ? fetchNftMetadata(tokenURI) : null),
-    enabled: !!tokenURI,
+    queryKey: ["nft-metadata", id?.toString(), uri],
+    queryFn: () => (uri ? fetchNftMetadata(uri) : null),
+    enabled: !!uri,
     staleTime: 5 * 60 * 1000, // 5 min cache
   })
 
@@ -44,7 +54,7 @@ export function useTokenMetadata(tokenId: bigint | number | string | undefined) 
 
   return {
     tokenId: id,
-    tokenURI: tokenURI ?? null,
+    tokenURI: uri,
     metadata: metadataQuery.data ?? null,
     image,
     name: metadataQuery.data?.name ?? (id ? `CinaNFT #${Number(id)}` : ""),

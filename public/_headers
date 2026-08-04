@@ -3,12 +3,15 @@
 # ============================================================
 
 # --- Global security headers for all HTML pages ---
+# NOTE: script-src 'unsafe-inline' is required — static export emits inline
+# scripts (next-themes init + Next.js RSC payloads); no nonce support exists.
+# style-src 'unsafe-inline' required for inline style attrs + RainbowKit theme.
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://*.walletconnect.com https://verify.walletconnect.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.cinachain.com https://*.basescan.org https://sepolia.base.org https://base-sepolia.publicnode.com https://cloudflare-ipfs.com https://ipfs.io https://*.walletconnect.com https://verify.walletconnect.com https://pulse.walletconnect.org wss://*.walletconnect.com; frame-src 'self' https://verify.walletconnect.org https://*.walletconnect.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://*.walletconnect.com https://verify.walletconnect.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.cinachain.com https://*.basescan.org https://sepolia.base.org https://base-sepolia.publicnode.com https://cloudflare-ipfs.com https://ipfs.io https://*.walletconnect.com https://verify.walletconnect.com https://cinachain-whitelist-api.cinagroup.workers.dev wss://*.walletconnect.com; frame-src 'self' https://verify.walletconnect.org https://*.walletconnect.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
 # --- Static assets: long cache (immutable hashed files) ---
 /_next/static/*

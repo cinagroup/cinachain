@@ -43,7 +43,11 @@ export default function ContractManagementPage() {
       refetchStats()
       refetchBalance()
     }
-  }, [confirmed, refetchStats, refetchBalance])
+    if (reverted) {
+      // A mined-but-reverted tx must not look successful
+      setSuccessAction(null)
+    }
+  }, [confirmed, reverted, refetchStats, refetchBalance])
 
   const isBusy = isPending || (!!txHash && !confirmed && !reverted)
 
@@ -163,6 +167,23 @@ function trimEth(formatted: string): string {
           <Loader2 className="h-4 w-4 animate-spin text-[#0761d1]" />
           <AlertDescription className="text-sm text-[#0761d1]">
             Transaction submitted. Waiting for confirmation...
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {reverted && txHash && (
+        <Alert variant="destructive" className="mt-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="break-all">
+            Transaction reverted on-chain — the action failed.{" "}
+            <a
+              href={`https://sepolia.basescan.org/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 underline"
+            >
+              View on Etherscan <ExternalLink className="h-3 w-3" />
+            </a>
           </AlertDescription>
         </Alert>
       )}

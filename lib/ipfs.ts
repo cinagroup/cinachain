@@ -155,10 +155,11 @@ export function resolveNftImage(
 /**
  * Deterministic SVG placeholder for tokens without artwork.
  * Generates a data:image/svg+xml;base64 URI — colored per token ID.
+ * BigInt-safe: hue computed modulo 360 on the BigInt, label uses the raw id.
  */
 export function getNftPlaceholderSvg(tokenId: bigint | number): string {
-  const id = Number(tokenId)
-  const hue = ((id % 360) * 47 + 13) % 360
+  const id = BigInt(tokenId)
+  const hue = Number((id * 47n + 13n) % 360n)
   const hue2 = (hue + 40) % 360
   const svg =
     `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'>` +
@@ -170,7 +171,7 @@ export function getNftPlaceholderSvg(tokenId: bigint | number): string {
     `<circle cx='660' cy='120' r='230' fill='rgba(255,255,255,0.07)'/>` +
     `<circle cx='90' cy='720' r='170' fill='rgba(0,0,0,0.15)'/>` +
     `<text x='60' y='440' font-family='monospace' font-size='104' font-weight='700' fill='rgba(255,255,255,0.95)'>CinaChain</text>` +
-    `<text x='60' y='540' font-family='monospace' font-size='72' font-weight='600' fill='rgba(255,255,255,0.85)'>#${id}</text>` +
+    `<text x='60' y='540' font-family='monospace' font-size='72' font-weight='600' fill='rgba(255,255,255,0.85)'>#${id.toString()}</text>` +
     `<text x='60' y='726' font-family='monospace' font-size='28' fill='rgba(255,255,255,0.55)'>Built on Base</text>` +
     `</svg>`
   return `data:image/svg+xml;base64,${btoa(svg)}`
