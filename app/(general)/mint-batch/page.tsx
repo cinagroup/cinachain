@@ -1,16 +1,27 @@
 "use client"
 
 import { useState } from "react"
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { CheckCircle2, ExternalLink, Loader2, Plus, Trash2 } from "lucide-react"
 import type { Hash } from "viem"
+import {
+  useAccount,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi"
+
+import { CINA_ERC1155_CONTRACT } from "@/lib/contracts/addresses"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { Plus, Trash2, Loader2, CheckCircle2, ExternalLink } from "lucide-react"
-import { CINA_ERC1155_CONTRACT } from "@/lib/contracts/addresses"
+import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 
 const MINT_BATCH_ABI = [
   {
@@ -110,7 +121,10 @@ export default function BatchMintPage() {
 
       setTxHash(hash)
     } catch (err) {
-      const anyErr = err as unknown as { shortMessage?: string; message?: string }
+      const anyErr = err as {
+        shortMessage?: string
+        message?: string
+      }
       setError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint batch")
     }
   }
@@ -131,10 +145,12 @@ export default function BatchMintPage() {
           <Card className="max-w-md shadow-vercel-card">
             <CardHeader>
               <CardTitle>Connect Wallet</CardTitle>
-              <CardDescription>Connect your wallet to batch mint</CardDescription>
+              <CardDescription>
+                Connect your wallet to batch mint
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <ConnectButton />
+              <AppKitConnectButton />
             </CardContent>
           </Card>
         </div>
@@ -153,12 +169,16 @@ export default function BatchMintPage() {
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
             Batch Mint ERC1155<span className="text-foreground">.</span>
           </h1>
-          <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
-            Mint multiple badge types to your address in a single transaction. Perfect for collections with multiple variants.
+          <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
+            Mint multiple badge types to your address in a single transaction.
+            Perfect for collections with multiple variants.
           </p>
-          <p className="mt-2 text-sm text-muted-foreground max-w-[560px]">
-            <span className="font-medium">Note:</span> the underlying contract function is
-            <code className="bg-secondary rounded px-1.5 py-0.5 text-xs mx-1">onlyOwner</code>
+          <p className="mt-2 max-w-[560px] text-sm text-muted-foreground">
+            <span className="font-medium">Note:</span> the underlying contract
+            function is
+            <code className="mx-1 rounded bg-secondary px-1.5 py-0.5 text-xs">
+              onlyOwner
+            </code>
             — only the contract owner&apos;s wallet can execute this.
           </p>
         </div>
@@ -173,8 +193,8 @@ export default function BatchMintPage() {
 
           {/* Success Message */}
           {confirmed && txHash && (
-            <Alert className="bg-[#aaffec] border-[#50e3c2]/20">
-              <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
+            <Alert className="border-[#50e3c2]/20 bg-[#aaffec]">
+              <CheckCircle2 className="size-4 text-[#29bc9b]" />
               <AlertDescription className="text-sm text-[#29bc9b]">
                 Batch mint confirmed!{" "}
                 <a
@@ -183,7 +203,7 @@ export default function BatchMintPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 underline"
                 >
-                  View on Basescan <ExternalLink className="h-3 w-3" />
+                  View on Basescan <ExternalLink className="size-3" />
                 </a>
               </AlertDescription>
             </Alert>
@@ -191,8 +211,8 @@ export default function BatchMintPage() {
 
           {/* Pending Message */}
           {isMinting && txHash && !confirmed && !reverted && (
-            <Alert className="bg-[#d3e5ff] border-[#0070f3]/20">
-              <Loader2 className="h-4 w-4 animate-spin text-[#0761d1]" />
+            <Alert className="border-[#0070f3]/20 bg-[#d3e5ff]">
+              <Loader2 className="size-4 animate-spin text-[#0761d1]" />
               <AlertDescription className="text-sm text-[#0761d1]">
                 Transaction submitted. Waiting for confirmation...
               </AlertDescription>
@@ -201,7 +221,9 @@ export default function BatchMintPage() {
 
           {reverted && (
             <Alert variant="destructive">
-              <AlertDescription>Transaction reverted on-chain.</AlertDescription>
+              <AlertDescription>
+                Transaction reverted on-chain.
+              </AlertDescription>
             </Alert>
           )}
 
@@ -215,7 +237,7 @@ export default function BatchMintPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {items.map((item, index) => (
-                <div key={index} className="flex gap-3 items-start">
+                <div key={index} className="flex items-start gap-3">
                   <div className="flex-1 space-y-2">
                     <Label htmlFor={`id-${index}`}>Token ID</Label>
                     <Input
@@ -235,7 +257,9 @@ export default function BatchMintPage() {
                       min="1"
                       placeholder="1"
                       value={item.amount}
-                      onChange={(e) => updateItem(index, "amount", e.target.value)}
+                      onChange={(e) =>
+                        updateItem(index, "amount", e.target.value)
+                      }
                     />
                   </div>
                   {items.length > 1 && (
@@ -245,31 +269,32 @@ export default function BatchMintPage() {
                       onClick={() => removeItem(index)}
                       className="mt-6"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="size-4" />
                     </Button>
                   )}
                 </div>
               ))}
 
-              <Button
-                variant="outline"
-                onClick={addItem}
-                className="w-full"
-              >
-                <Plus className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={addItem} className="w-full">
+                <Plus className="mr-2 size-4" />
                 Add Item
               </Button>
 
               {/* Summary */}
-              <div className="rounded-md border border-border bg-secondary p-4 space-y-3">
+              <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total Items</span>
-                  <span className="font-medium text-foreground">{items.length}</span>
+                  <span className="font-medium text-foreground">
+                    {items.length}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total Amount</span>
                   <span className="font-medium text-foreground">
-                    {items.reduce((sum, item) => sum + (parseInt(item.amount) || 0), 0)}
+                    {items.reduce(
+                      (sum, item) => sum + (parseInt(item.amount) || 0),
+                      0
+                    )}
                   </span>
                 </div>
               </div>
@@ -283,11 +308,13 @@ export default function BatchMintPage() {
               >
                 {isMinting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 size-4 animate-spin" />
                     Minting...
                   </>
                 ) : (
-                  `Batch Mint ${items.length} Item${items.length > 1 ? "s" : ""}`
+                  `Batch Mint ${items.length} Item${
+                    items.length > 1 ? "s" : ""
+                  }`
                 )}
               </Button>
             </CardContent>

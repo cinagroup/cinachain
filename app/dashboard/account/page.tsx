@@ -36,7 +36,7 @@ export default function AccountPage() {
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
               Account<span className="text-foreground">.</span>
             </h1>
-            <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+            <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
               Manage your wallet and authentication settings.
             </p>
           </div>
@@ -46,7 +46,7 @@ export default function AccountPage() {
             <Card className="shadow-vercel-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Wallet className="h-5 w-5" />
+                  <Wallet className="size-5" />
                   Wallet
                 </CardTitle>
                 <CardDescription>Your connected wallet details</CardDescription>
@@ -67,7 +67,7 @@ export default function AccountPage() {
                   <p className="mb-1 text-xs text-muted-foreground">ENS Name</p>
                   <div className="flex items-center gap-2">
                     {ensLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
                     ) : (
                       <>
                         <WalletEnsName className="text-sm font-medium" />
@@ -96,11 +96,11 @@ export default function AccountPage() {
                 <div className="border-t border-border pt-2">
                   <Button asChild variant="outline" size="sm" className="w-full">
                     <Link
-                      href={`${explorerBase}/address/${address}`}
+                      href={`${explorerBase}/address/${address ?? ""}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <ExternalLink className="mr-2 h-4 w-4" />
+                      <ExternalLink className="mr-2 size-4" />
                       View on Explorer
                     </Link>
                   </Button>
@@ -112,7 +112,7 @@ export default function AccountPage() {
             <Card className="shadow-vercel-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <KeyRound className="h-5 w-5" />
+                  <KeyRound className="size-5" />
                   Authentication
                 </CardTitle>
                 <CardDescription>Sign-In with Ethereum status</CardDescription>
@@ -122,7 +122,7 @@ export default function AccountPage() {
                   <p className="mb-1 text-xs text-muted-foreground">SIWE Status</p>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`h-2 w-2 rounded-full ${
+                      className={`size-2 rounded-full ${
                         isAuthenticated ? "bg-emerald-500" : "bg-muted-foreground"
                       }`}
                     />
@@ -135,7 +135,7 @@ export default function AccountPage() {
                 {isAuthenticated && session && (
                   <div className="rounded-md border border-[#50e3c2]/30 bg-[#50e3c2]/10 p-3">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
+                      <CheckCircle2 className="size-4 text-[#29bc9b]" />
                       <span className="text-sm text-[#29bc9b]">
                         Authenticated
                       </span>
@@ -172,7 +172,7 @@ export default function AccountPage() {
                       disabled={siweLoading}
                     >
                       {siweLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 size-4 animate-spin" />
                       ) : null}
                       Sign In with Ethereum
                     </Button>
@@ -192,23 +192,23 @@ export default function AccountPage() {
               <div className="grid gap-3 md:grid-cols-3">
                 <Button asChild variant="outline" className="justify-start">
                   <Link
-                    href={`${explorerBase}/address/${address}`}
+                    href={`${explorerBase}/address/${address ?? ""}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <ExternalLink className="mr-2 h-4 w-4" />
+                    <ExternalLink className="mr-2 size-4" />
                     Block Explorer
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="justify-start">
                   <Link href="/dashboard/nfts">
-                    <Wallet className="mr-2 h-4 w-4" />
+                    <Wallet className="mr-2 size-4" />
                     My NFTs
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="justify-start">
                   <Link href="/mint">
-                    <Shield className="mr-2 h-4 w-4" />
+                    <Shield className="mr-2 size-4" />
                     Mint Page
                   </Link>
                 </Button>
@@ -225,7 +225,7 @@ export default function AccountPage() {
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground">
               Connect your wallet<span className="text-foreground">.</span>
             </h1>
-            <p className="mt-4 text-base text-muted-foreground max-w-md">
+            <p className="mt-4 max-w-md text-base text-muted-foreground">
               Connect your wallet to view your account details, manage settings, and access exclusive features.
             </p>
             <div className="mt-8">

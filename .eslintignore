@@ -4,3 +4,4 @@
 **/generated
 .next/**
 tailwind.config.js
+**/wagmi.config.ts

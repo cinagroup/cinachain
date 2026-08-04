@@ -38,7 +38,7 @@ export function useUser({ redirectTo = "", redirectIfFound = false } = {}) {
 
   const { data: user, refetch: mutateUser } = useQuery<User>({
     queryKey: ["user", address],
-    queryFn: async () => {
+    queryFn: () => {
       if (!address) return { isLoggedIn: false }
       const stored = getStoredUser()
       if (stored.isLoggedIn && stored.address?.toLowerCase() === address.toLowerCase()) {

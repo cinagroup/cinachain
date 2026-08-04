@@ -1,5 +1,8 @@
 import { HtmlHTMLAttributes } from "react"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+
+// Reown AppKit connect button — supports EOA connectors (injected,
+// WalletConnect, Coinbase) and email/social smart accounts in one modal.
+import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 
 export const WalletConnect = ({
   className,
@@ -7,17 +10,7 @@ export const WalletConnect = ({
 }: HtmlHTMLAttributes<HTMLSpanElement>) => {
   return (
     <span className={className} {...props}>
-      <ConnectButton
-        showBalance={false}
-        accountStatus={{
-          smallScreen: "avatar",
-          largeScreen: "avatar",
-        }}
-        chainStatus={{
-          smallScreen: "icon",
-          largeScreen: "icon",
-        }}
-      />
+      <AppKitConnectButton />
     </span>
   )
 }

@@ -56,7 +56,7 @@ export async function getPassportScore(
     throw new Error(`Failed to fetch passport score: ${response.statusText}`)
   }
 
-  return response.json()
+  return (await response.json()) as PassportScore
 }
 
 export async function submitPassport(
@@ -83,7 +83,7 @@ export async function submitPassport(
     throw new Error(`Failed to submit passport: ${response.statusText}`)
   }
 
-  return response.json()
+  return (await response.json()) as PassportScore
 }
 
 // 推荐的最低分数阈值

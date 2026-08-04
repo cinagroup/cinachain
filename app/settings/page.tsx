@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAccount } from "wagmi"
 import {
   AlertCircle,
   CheckCircle2,
@@ -10,6 +9,9 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react"
+import { useAccount } from "wagmi"
+
+import { useApiKeys } from "@/lib/hooks/use-api-keys"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -20,10 +22,10 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { useApiKeys } from "@/lib/hooks/use-api-keys"
 
 export default function SettingsPage() {
-  const { keys, isAuthenticated, signIn, createKey, revokeKey } = useApiKeys()
+  const { keys, isAuthenticated, signIn, signInError, createKey, revokeKey } =
+    useApiKeys()
   const { address } = useAccount()
   const [error, setError] = useState<string | null>(null)
   const [newKey, setNewKey] = useState<string | null>(null)
@@ -39,12 +41,21 @@ export default function SettingsPage() {
     setCopied(false)
   }, [address])
 
+  // Surface hook-level sign-in errors (e.g. signature verification
+  // failure) as soon as they occur: handleSignIn's closure captures the
+  // pre-attempt value of signInError, so only this effect can show the
+  // accurate reason on the first failed attempt.
+  useEffect(() => {
+    if (signInError) setError(signInError)
+  }, [signInError])
+
   const handleSignIn = async () => {
     setSigningIn(true)
     setError(null)
     try {
       const ok = await signIn()
-      if (!ok) setError("Sign-in failed — connect a wallet first")
+      if (!ok)
+        setError(signInError ?? "Sign-in failed — connect a wallet first")
     } catch {
       setError("Sign-in failed — connect a wallet first")
     } finally {
@@ -59,9 +70,7 @@ export default function SettingsPage() {
       const raw = await createKey()
       setNewKey(raw)
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create API key"
-      )
+      setError(err instanceof Error ? err.message : "Failed to create API key")
     } finally {
       setCreating(false)
     }
@@ -90,7 +99,8 @@ export default function SettingsPage() {
             API Keys<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            Create API keys bound to your wallet address for the billing gateway.
+            Create API keys bound to your wallet address for the billing
+            gateway.
           </p>
         </div>
 
@@ -98,7 +108,7 @@ export default function SettingsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5" />
+                <KeyRound className="size-5" />
                 Sign In
               </CardTitle>
               <CardDescription>
@@ -112,13 +122,14 @@ export default function SettingsPage() {
                 className="w-full sm:w-auto"
               >
                 {signingIn ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : null}
                 Sign In with Ethereum
               </Button>
               {!address ? (
                 <p className="text-sm text-muted-foreground">
-                  Connect a wallet first, then sign in with Ethereum to manage API keys.
+                  Connect a wallet first, then sign in with Ethereum to manage
+                  API keys.
                 </p>
               ) : null}
             </CardContent>
@@ -128,7 +139,7 @@ export default function SettingsPage() {
             {/* Error */}
             {error ? (
               <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="size-4" />
                 <AlertTitle>Error</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
@@ -137,12 +148,10 @@ export default function SettingsPage() {
             {/* Newly created key */}
             {newKey ? (
               <Alert className="border-emerald-500/50 [&>svg]:text-emerald-500">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="size-4" />
                 <AlertTitle>API Key Created</AlertTitle>
                 <AlertDescription>
-                  <p>
-                    Copy your key now — it won&apos;t be shown again.
-                  </p>
+                  <p>Copy your key now — it won&apos;t be shown again.</p>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input
                       readOnly
@@ -157,9 +166,9 @@ export default function SettingsPage() {
                       className="shrink-0"
                     >
                       {copied ? (
-                        <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" />
+                        <CheckCircle2 className="mr-2 size-4 text-emerald-500" />
                       ) : (
-                        <Copy className="mr-2 h-4 w-4" />
+                        <Copy className="mr-2 size-4" />
                       )}
                       {copied ? "Copied" : "Copy"}
                     </Button>
@@ -171,24 +180,22 @@ export default function SettingsPage() {
             <Card className="shadow-vercel-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <KeyRound className="h-5 w-5" />
+                  <KeyRound className="size-5" />
                   API Keys
                 </CardTitle>
                 <CardDescription>
-                  Keys are prefixed with <code className="rounded bg-secondary px-1">cina_</code>{" "}
-                  and bound to your wallet address. The billing worker only stores the
-                  SHA-256 hash of each key.
+                  Keys are prefixed with{" "}
+                  <code className="rounded bg-secondary px-1">cina_</code> and
+                  bound to your wallet address. The billing worker only stores
+                  the SHA-256 hash of each key.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button
-                  onClick={() => void handleCreate()}
-                  disabled={creating}
-                >
+                <Button onClick={() => void handleCreate()} disabled={creating}>
                   {creating ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 size-4 animate-spin" />
                   ) : (
-                    <KeyRound className="mr-2 h-4 w-4" />
+                    <KeyRound className="mr-2 size-4" />
                   )}
                   Create API Key
                 </Button>
@@ -214,11 +221,11 @@ export default function SettingsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                          className="size-8 shrink-0 text-destructive hover:text-destructive"
                           aria-label={`Revoke API key ${key.prefix}`}
                           onClick={() => revokeKey(key.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="size-4" />
                         </Button>
                       </li>
                     ))}

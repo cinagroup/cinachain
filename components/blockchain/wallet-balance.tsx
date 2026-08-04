@@ -1,4 +1,5 @@
 import { HTMLAttributes } from "react"
+import { formatUnits } from "viem"
 import { useAccount, useBalance } from "wagmi"
 
 import { trimFormattedBalance } from "@/lib/utils"
@@ -22,7 +23,10 @@ export const WalletBalance = ({
 
   return (
     <span className={className} {...props}>
-      {trimFormattedBalance(balance.formatted, decimals)}
+      {trimFormattedBalance(
+        formatUnits(balance.value, balance.decimals),
+        decimals
+      )}
     </span>
   )
 }

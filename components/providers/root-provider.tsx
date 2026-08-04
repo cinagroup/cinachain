@@ -4,7 +4,7 @@ import { ReactNode } from "react"
 import { ThemeProvider } from "next-themes"
 
 import HandleWalletEvents from "@/components/blockchain/handle-wallet-events"
-import { RainbowKit } from "@/components/providers/rainbow-kit"
+import { AppKitProvider } from "@/components/providers/appkit-provider"
 
 interface RootProviderProps {
   children: ReactNode
@@ -17,7 +17,7 @@ interface RootProviderProps {
  * until mount, which made the static export ship an empty <body> and hurt
  * LCP/SEO. Theme hydration is covered by `suppressHydrationWarning` on
  * <html> (app/layout.tsx) and wallet state is hydrated client-side by
- * RainbowKit (ssr: false), so real content now renders from the exported
+ * AppKit (ssr: false), so real content now renders from the exported
  * HTML immediately.
  */
 export default function RootProvider({ children }: RootProviderProps) {
@@ -28,9 +28,9 @@ export default function RootProvider({ children }: RootProviderProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <RainbowKit>
+      <AppKitProvider>
         <HandleWalletEvents>{children}</HandleWalletEvents>
-      </RainbowKit>
+      </AppKitProvider>
     </ThemeProvider>
   )
 }

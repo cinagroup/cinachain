@@ -49,7 +49,7 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded-full bg-foreground" />
+              <div className="size-5 rounded-full bg-foreground" />
               <span className="font-display text-sm tracking-tight text-foreground">CinaChain</span>
             </div>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
@@ -82,13 +82,13 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
           </p>
           <div className="flex items-center gap-4">
             <Link href={siteConfig.links.github} className="text-muted-foreground transition-colors hover:text-foreground">
-              <FaGithub className="h-4 w-4" />
+              <FaGithub className="size-4" />
             </Link>
             <Link href={siteConfig.links.twitter} className="text-muted-foreground transition-colors hover:text-foreground">
-              <FaTwitter className="h-4 w-4" />
+              <FaTwitter className="size-4" />
             </Link>
             <Link href={siteConfig.links.discord} className="text-muted-foreground transition-colors hover:text-foreground">
-              <FaDiscord className="h-4 w-4" />
+              <FaDiscord className="size-4" />
             </Link>
           </div>
         </div>

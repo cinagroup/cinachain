@@ -24,8 +24,11 @@ export const env = createEnv({
     NEXT_PUBLIC_USE_PUBLIC_PROVIDER: z.enum(["true", "false"]).default("true"),
     NEXT_PUBLIC_PROD_NETWORKS_DEV: z.enum(["true", "false"]).default("false"),
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
-    // WalletConnect project id — required for mobile wallets.
-    // Get one at https://cloud.reown.com
+    // WalletConnect/Reown project id — required for the AppKit wallet layer
+    // (EOA wallets + Reown embedded smart accounts). Get one at
+    // https://cloud.reown.com. NEXT_PUBLIC_WC_PROJECT_ID is the deprecated
+    // RainbowKit-era name and kept only for back-compat.
+    NEXT_PUBLIC_REOWN_PROJECT_ID: z.string().default("placeholder"),
     NEXT_PUBLIC_WC_PROJECT_ID: z.string().default("placeholder"),
     NEXT_PUBLIC_CF_IPFS_GATEWAY: z.string().url().optional(),
     NEXT_PUBLIC_CF_CDN_GATEWAY: z.string().url().optional(),
@@ -58,6 +61,7 @@ export const env = createEnv({
     NEXT_PUBLIC_USE_PUBLIC_PROVIDER: process.env.NEXT_PUBLIC_USE_PUBLIC_PROVIDER,
     NEXT_PUBLIC_PROD_NETWORKS_DEV: process.env.NEXT_PUBLIC_PROD_NETWORKS_DEV,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_REOWN_PROJECT_ID: process.env.NEXT_PUBLIC_REOWN_PROJECT_ID,
     NEXT_PUBLIC_WC_PROJECT_ID: process.env.NEXT_PUBLIC_WC_PROJECT_ID,
     NEXT_PUBLIC_CF_IPFS_GATEWAY: process.env.NEXT_PUBLIC_CF_IPFS_GATEWAY,
     NEXT_PUBLIC_CF_CDN_GATEWAY: process.env.NEXT_PUBLIC_CF_CDN_GATEWAY,

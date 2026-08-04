@@ -22,13 +22,13 @@ export function DashboardSidebar() {
         href="/"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="size-4" />
         Back to site
       </Link>
 
       {/* User section */}
       <div>
-        <h3 className="font-display text-sm tracking-tight text-muted-foreground uppercase">
+        <h3 className="font-display text-sm uppercase tracking-tight text-muted-foreground">
           User
         </h3>
         <SidebarNav items={menuDashboard} />
@@ -37,7 +37,7 @@ export function DashboardSidebar() {
       {/* Admin section — only for admins */}
       {isAdmin && (
         <div>
-          <h3 className="font-display text-sm tracking-tight text-muted-foreground uppercase">
+          <h3 className="font-display text-sm uppercase tracking-tight text-muted-foreground">
             Admin
           </h3>
           <SidebarNav items={menuAdmin} />

@@ -61,7 +61,7 @@ export function PWAInstallPrompt() {
     <Card className="shadow-vercel-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Smartphone className="h-5 w-5" />
+          <Smartphone className="size-5" />
           Install App
         </CardTitle>
         <CardDescription>
@@ -71,24 +71,24 @@ export function PWAInstallPrompt() {
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="h-4 w-4 text-emerald-600" />
+            <CheckCircle className="size-4 text-emerald-600" />
             <span>Works offline</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="h-4 w-4 text-emerald-600" />
+            <CheckCircle className="size-4 text-emerald-600" />
             <span>Faster loading times</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="h-4 w-4 text-emerald-600" />
+            <CheckCircle className="size-4 text-emerald-600" />
             <span>Home screen icon</span>
           </div>
 
           <Button onClick={handleInstall} className="w-full" size="lg">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="mr-2 size-4" />
             Install CinaChain
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-center text-xs text-muted-foreground">
             Or manually: Share → Add to Home Screen
           </p>
         </div>

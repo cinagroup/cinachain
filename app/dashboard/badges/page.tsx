@@ -23,7 +23,7 @@ export default function BadgesPage() {
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground">
             Connect your wallet<span className="text-foreground">.</span>
           </h1>
-          <p className="mt-4 text-base text-muted-foreground max-w-md">
+          <p className="mt-4 max-w-md text-base text-muted-foreground">
             Connect your wallet to view your CinaChain badges and achievements.
           </p>
           <div className="mt-8">
@@ -49,13 +49,13 @@ function BadgesContent() {
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
             Badges<span className="text-foreground">.</span>
           </h1>
-          <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+          <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
             Collect achievements and unlock special privileges.
           </p>
         </div>
         <Card className="shadow-vercel-card">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Lock className="mb-4 h-12 w-12 text-muted-foreground/40" />
+            <Lock className="mb-4 size-12 text-muted-foreground/40" />
             <p className="text-base text-muted-foreground">
               Badge contract not configured.
             </p>
@@ -79,7 +79,7 @@ function BadgesContent() {
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
             Badges<span className="text-foreground">.</span>
           </h1>
-          <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+          <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
             Collect achievements and unlock special privileges.
           </p>
         </div>
@@ -96,7 +96,7 @@ function BadgesContent() {
         <Card className="mb-6 shadow-vercel-card">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Award className="h-5 w-5 text-[#0070f3]" />
+              <Award className="size-5 text-[#0070f3]" />
               <p className="text-sm text-foreground">
                 You&apos;ve earned{" "}
                 <span className="font-semibold">{ownedCount}</span> badge
@@ -121,7 +121,7 @@ function BadgesContent() {
           >
             <div className="flex items-start gap-3">
               <div
-                className={`flex h-12 w-12 items-center justify-center rounded-lg text-2xl ${
+                className={`flex size-12 items-center justify-center rounded-lg text-2xl ${
                   badge.owned ? "bg-[#0070f3]/10" : "bg-secondary grayscale"
                 }`}
               >
@@ -160,7 +160,7 @@ function BadgesContent() {
 
       {!isLoading && ownedCount === 0 && (
         <div className="mt-8 rounded-lg border border-border bg-card p-8 text-center shadow-vercel-card">
-          <Award className="mx-auto h-12 w-12 text-muted-foreground/40" />
+          <Award className="mx-auto size-12 text-muted-foreground/40" />
           <p className="mt-4 text-base text-muted-foreground">
             No badges earned yet.
           </p>

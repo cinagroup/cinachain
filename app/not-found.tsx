@@ -26,7 +26,7 @@ export default function NotFound() {
             "btn-pill"
           )}
         >
-          <Home className="mr-2 h-4 w-4" />
+          <Home className="mr-2 size-4" />
           Back Home
         </Link>
         <Link
@@ -36,7 +36,7 @@ export default function NotFound() {
             "btn-pill"
           )}
         >
-          <Compass className="mr-2 h-4 w-4" />
+          <Compass className="mr-2 size-4" />
           Explore Collection
         </Link>
         <Link
@@ -46,7 +46,7 @@ export default function NotFound() {
             "btn-pill"
           )}
         >
-          <Sparkles className="mr-2 h-4 w-4" />
+          <Sparkles className="mr-2 size-4" />
           Mint NFT
         </Link>
       </div>

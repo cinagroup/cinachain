@@ -1,9 +1,10 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { useSiwe } from "@/lib/hooks/use-siwe"
+import { modal } from "@reown/appkit/react"
 import { useAccount } from "wagmi"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+
+import { useSiwe } from "@/lib/hooks/use-siwe"
+import { Button } from "@/components/ui/button"
 
 export function SignInButton() {
   const { isConnected } = useAccount()
@@ -11,13 +12,9 @@ export function SignInButton() {
 
   if (!isConnected) {
     return (
-      <ConnectButton.Custom>
-        {({ openConnectModal }) => (
-          <Button onClick={openConnectModal} size="sm">
-            Connect Wallet
-          </Button>
-        )}
-      </ConnectButton.Custom>
+      <Button onClick={() => modal?.open({ view: "Connect" })} size="sm">
+        Connect Wallet
+      </Button>
     )
   }
 
@@ -25,7 +22,8 @@ export function SignInButton() {
     return (
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">
-          Signed in as {session?.address.slice(0, 6)}...{session?.address.slice(-4)}
+          Signed in as {session?.address.slice(0, 6)}...
+          {session?.address.slice(-4)}
         </span>
         <Button onClick={signOut} variant="outline" size="sm">
           Sign Out

@@ -75,7 +75,7 @@ export function useGitcoinPassport(options: UseGitcoinPassportOptions = {}): Use
 
   useEffect(() => {
     if (isConnected && address) {
-      fetchScore()
+      void fetchScore()
     }
   }, [isConnected, address, fetchScore])
 

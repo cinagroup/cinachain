@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useWriteContract, useWaitForTransactionReceipt, useBalance } from "wagmi"
-import { parseEther, type Hash } from "viem"
+import { formatUnits, parseEther, type Hash } from "viem"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -40,8 +40,8 @@ export default function ContractManagementPage() {
   // After a tx confirms, refresh on-chain status + contract balance (M3/M4)
   useEffect(() => {
     if (confirmed) {
-      refetchStats()
-      refetchBalance()
+      void refetchStats()
+      void refetchBalance()
     }
     if (reverted) {
       // A mined-but-reverted tx must not look successful
@@ -99,7 +99,7 @@ function trimEth(formatted: string): string {
       setTxHash(hash)
       setSuccessAction(label)
     } catch (err) {
-      const anyErr = err as unknown as { shortMessage?: string; message?: string }
+      const anyErr = err  as { shortMessage?: string; message?: string }
       setError(anyErr.shortMessage ?? anyErr.message ?? `Failed to ${label}`)
     }
   }
@@ -108,7 +108,7 @@ function trimEth(formatted: string): string {
     return (
       <div className="container max-w-[1200px] px-6 py-12">
         <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>
             NFT contract address not configured. Set NEXT_PUBLIC_CINA_NFT_CONTRACT in environment.
           </AlertDescription>
@@ -125,14 +125,14 @@ function trimEth(formatted: string): string {
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
         Contract Management<span className="text-foreground">.</span>
       </h1>
-      <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+      <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Manage your NFT contract settings and operations.
       </p>
 
       {/* Paused warning */}
       {isPaused && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>
             Minting is currently paused. Users cannot mint new NFTs.
           </AlertDescription>
@@ -142,14 +142,14 @@ function trimEth(formatted: string): string {
       {/* Transaction feedback */}
       {error && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription className="break-all">{error}</AlertDescription>
         </Alert>
       )}
 
       {confirmed && txHash && successAction && (
         <Alert className="mt-6 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-          <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
+          <CheckCircle2 className="size-4 text-[#29bc9b]" />
           <AlertDescription className="text-sm text-[#29bc9b]">
             {successAction} successful!{" "}
             <a
@@ -158,7 +158,7 @@ function trimEth(formatted: string): string {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Etherscan <ExternalLink className="h-3 w-3" />
+              View on Etherscan <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -166,7 +166,7 @@ function trimEth(formatted: string): string {
 
       {isBusy && txHash && !confirmed && !reverted && (
         <Alert className="mt-6 border-[#0070f3]/30 bg-[#0070f3]/10">
-          <Loader2 className="h-4 w-4 animate-spin text-[#0761d1]" />
+          <Loader2 className="size-4 animate-spin text-[#0761d1]" />
           <AlertDescription className="text-sm text-[#0761d1]">
             Transaction submitted. Waiting for confirmation...
           </AlertDescription>
@@ -175,7 +175,7 @@ function trimEth(formatted: string): string {
 
       {reverted && txHash && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription className="break-all">
             Transaction reverted on-chain — the action failed.{" "}
             <a
@@ -184,26 +184,26 @@ function trimEth(formatted: string): string {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Etherscan <ExternalLink className="h-3 w-3" />
+              View on Etherscan <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid gap-6 mt-6 md:grid-cols-2">
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
         {/* Pause/Unpause */}
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+              {isPaused ? <Play className="size-5" /> : <Pause className="size-5" />}
               Minting Status
             </CardTitle>
             <CardDescription>Pause or resume the minting process</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between p-4 bg-secondary rounded-md">
+            <div className="flex items-center justify-between rounded-md bg-secondary p-4">
               <span className="text-sm font-medium">Current Status:</span>
-              <span className={isPaused ? "text-red-500 font-semibold" : "text-green-500 font-semibold"}>
+              <span className={isPaused ? "font-semibold text-red-500" : "font-semibold text-green-500"}>
                 {isPaused ? "Paused" : "Active"}
               </span>
             </div>
@@ -214,11 +214,11 @@ function trimEth(formatted: string): string {
               className="mt-4 w-full"
             >
               {isBusy ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
               ) : isPaused ? (
-                <Play className="h-4 w-4 mr-2" />
+                <Play className="mr-2 size-4" />
               ) : (
-                <Pause className="h-4 w-4 mr-2" />
+                <Pause className="mr-2 size-4" />
               )}
               {isPaused ? "Resume Minting" : "Pause Minting"}
             </Button>
@@ -229,7 +229,7 @@ function trimEth(formatted: string): string {
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+              <DollarSign className="size-5" />
               Withdraw Funds
             </CardTitle>
             <CardDescription>Withdraw collected ETH from the contract</CardDescription>
@@ -238,7 +238,11 @@ function trimEth(formatted: string): string {
             <div className="mb-4 flex items-center justify-between rounded-md border border-border bg-secondary p-4">
               <span className="text-sm font-medium">Contract Balance</span>
               <span className="font-mono-tech text-sm text-foreground">
-                {contractBalance ? `${trimEth(contractBalance.formatted)} ETH` : "—"}
+                {contractBalance
+                  ? `${trimEth(
+                      formatUnits(contractBalance.value, contractBalance.decimals)
+                    )} ETH`
+                  : "—"}
               </span>
             </div>
             <Alert className="mb-4">
@@ -249,7 +253,7 @@ function trimEth(formatted: string): string {
             <Button
               onClick={() => {
                 if (window.confirm("Withdraw ALL ETH from the contract to the owner address? This cannot be undone.")) {
-                  handleAction("withdraw", "Withdrawal")
+                  void handleAction("withdraw", "Withdrawal")
                 }
               }}
               disabled={isBusy || !contractBalance || contractBalance.value === 0n}
@@ -257,9 +261,9 @@ function trimEth(formatted: string): string {
               className="w-full"
             >
               {isBusy ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <DollarSign className="h-4 w-4 mr-2" />
+                <DollarSign className="mr-2 size-4" />
               )}
               {contractBalance && contractBalance.value === 0n
                 ? "Nothing to Withdraw"
@@ -272,7 +276,7 @@ function trimEth(formatted: string): string {
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
+              <Settings className="size-5" />
               Set Mint Price
             </CardTitle>
             <CardDescription>Update the price per NFT in ETH</CardDescription>
@@ -301,7 +305,7 @@ function trimEth(formatted: string): string {
                 if (!window.confirm(`Set mint price to ${newPriceEth} ETH per NFT?`)) {
                   return
                 }
-                handleAction("setMintPrice", "Price update", [parseEther(newPriceEth)])
+                void handleAction("setMintPrice", "Price update", [parseEther(newPriceEth)])
               }}
               disabled={isBusy || !newPriceEth}
               variant="outline"
@@ -316,7 +320,7 @@ function trimEth(formatted: string): string {
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TreePine className="h-5 w-5" />
+              <TreePine className="size-5" />
               Set Merkle Root
             </CardTitle>
             <CardDescription>Enable whitelist minting with the root from Whitelist Management</CardDescription>
@@ -340,7 +344,7 @@ function trimEth(formatted: string): string {
                   setError("Invalid Merkle root — must be 32 bytes (0x + 64 hex chars)")
                   return
                 }
-                handleAction("setMerkleRoot", "Merkle root update", [newMerkleRoot])
+                void handleAction("setMerkleRoot", "Merkle root update", [newMerkleRoot])
               }}
               disabled={isBusy || !newMerkleRoot}
               variant="outline"
@@ -355,7 +359,7 @@ function trimEth(formatted: string): string {
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
+              <Settings className="size-5" />
               Set Base URI
             </CardTitle>
             <CardDescription>Update the IPFS base URI for metadata</CardDescription>
@@ -391,21 +395,21 @@ function trimEth(formatted: string): string {
         </CardHeader>
         <CardContent>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between py-2 border-b border-border">
+            <div className="flex justify-between border-b border-border py-2">
               <dt className="text-muted-foreground">Contract Address</dt>
               <dd className="font-mono-tech text-xs">{CINA_NFT_CONTRACT}</dd>
             </div>
-            <div className="flex justify-between py-2 border-b border-border">
+            <div className="flex justify-between border-b border-border py-2">
               <dt className="text-muted-foreground">Network</dt>
               <dd className="font-medium">Base</dd>
             </div>
-            <div className="flex justify-between py-2 border-b border-border">
+            <div className="flex justify-between border-b border-border py-2">
               <dt className="text-muted-foreground">Token Standard</dt>
               <dd className="font-medium">ERC-721</dd>
             </div>
             <div className="flex justify-between py-2">
               <dt className="text-muted-foreground">Contract Status</dt>
-              <dd className={isPaused ? "text-red-500 font-semibold" : "text-green-500 font-semibold"}>
+              <dd className={isPaused ? "font-semibold text-red-500" : "font-semibold text-green-500"}>
                 {isPaused ? "Paused" : "Active"}
               </dd>
             </div>
@@ -414,7 +418,7 @@ function trimEth(formatted: string): string {
       </Card>
 
       <Alert className="mt-6">
-        <AlertCircle className="h-4 w-4" />
+        <AlertCircle className="size-4" />
         <AlertDescription className="text-sm">
           <strong>Warning:</strong> These actions require the owner wallet to be connected. The smart
           contract&apos;s <code className="rounded bg-secondary px-1 text-xs">onlyOwner</code> modifier

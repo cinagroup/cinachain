@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <ScrollArea className="flex-1 py-6 pr-6 lg:py-8">
             <DashboardSidebar />
           </ScrollArea>
-          <footer className="mt-auto flex flex-col border-t pr-2 pt-4 pb-6">
+          <footer className="mt-auto flex flex-col border-t pb-6 pr-2 pt-4">
             <h3 className="font-display text-sm">{siteConfig.title}</h3>
             <Link
               href="/"
@@ -30,13 +30,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
             <div className="mt-2 flex items-center space-x-3">
               <Link href={siteConfig.links.github} className="text-muted-foreground hover:text-foreground">
-                <FaGithub className="h-4 w-4" />
+                <FaGithub className="size-4" />
               </Link>
               <Link href={siteConfig.links.twitter} className="text-muted-foreground hover:text-foreground">
-                <FaTwitter className="h-4 w-4" />
+                <FaTwitter className="size-4" />
               </Link>
               <Link href={siteConfig.links.discord} className="text-muted-foreground hover:text-foreground">
-                <FaDiscord className="h-4 w-4" />
+                <FaDiscord className="size-4" />
               </Link>
             </div>
           </footer>

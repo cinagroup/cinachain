@@ -20,7 +20,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <Card className="max-w-md mx-auto">
+        <Card className="mx-auto max-w-md">
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">Loading admin status...</p>
           </CardContent>
@@ -32,10 +32,10 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   if (!isConnected) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <Card className="max-w-md mx-auto">
+        <Card className="mx-auto max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
+              <Shield className="size-5" />
               Admin Access Required
             </CardTitle>
             <CardDescription>
@@ -53,8 +53,8 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   if (!isAdmin) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <Alert variant="destructive" className="max-w-md mx-auto">
-          <AlertCircle className="h-4 w-4" />
+        <Alert variant="destructive" className="mx-auto max-w-md">
+          <AlertCircle className="size-4" />
           <AlertTitle>Access Denied</AlertTitle>
           <AlertDescription className="mb-4">
             Your wallet address is not authorized to access the admin panel.

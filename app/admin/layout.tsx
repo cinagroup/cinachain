@@ -20,12 +20,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <AdminGuard>
-      <div className="min-h-screen flex flex-col">
+      <div className="flex min-h-screen flex-col">
         <SiteHeader />
-        <div className="flex-1 flex">
+        <div className="flex flex-1">
           {/* Sidebar */}
-          <aside className="w-64 border-r bg-muted/40 hidden md:block">
-            <nav className="p-4 space-y-2">
+          <aside className="hidden w-64 border-r bg-muted/40 md:block">
+            <nav className="space-y-2 p-4">
               {adminNav.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     )}
                   >
                     <Link href={item.href}>
-                      <Icon className="h-4 w-4" />
+                      <Icon className="size-4" />
                       {item.label}
                     </Link>
                   </Button>
@@ -50,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </aside>
 
           {/* Main Content */}
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="flex-1 overflow-auto p-6">
             {children}
           </main>
         </div>

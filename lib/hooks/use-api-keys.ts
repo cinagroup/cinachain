@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useAccount } from "wagmi"
+
 import { useSiwe } from "@/lib/hooks/use-siwe"
 
 const KEYS_STORAGE = "cinachain-api-keys"
@@ -19,7 +20,7 @@ export interface ApiKeyRecord {
  *  the billing worker stores only the SHA-256 hash of the key. */
 export function useApiKeys() {
   const { address } = useAccount()
-  const { isAuthenticated, signIn } = useSiwe()
+  const { isAuthenticated, signIn, signInError } = useSiwe()
   const [keys, setKeys] = useState<ApiKeyRecord[]>([])
 
   useEffect(() => {
@@ -28,7 +29,9 @@ export function useApiKeys() {
     setKeys([])
     if (!address) return
     try {
-      const raw = localStorage.getItem(`${KEYS_STORAGE}:${address.toLowerCase()}`)
+      const raw = localStorage.getItem(
+        `${KEYS_STORAGE}:${address.toLowerCase()}`
+      )
       if (raw) {
         const parsed = JSON.parse(raw)
         setKeys(Array.isArray(parsed) ? parsed : [])
@@ -43,7 +46,10 @@ export function useApiKeys() {
       if (!address) return
       setKeys(next)
       try {
-        localStorage.setItem(`${KEYS_STORAGE}:${address.toLowerCase()}`, JSON.stringify(next))
+        localStorage.setItem(
+          `${KEYS_STORAGE}:${address.toLowerCase()}`,
+          JSON.stringify(next)
+        )
       } catch {
         /* ignore */
       }
@@ -60,7 +66,11 @@ export function useApiKeys() {
     const raw = `cina_${crypto.randomUUID().replace(/-/g, "")}${crypto
       .getRandomValues(new Uint32Array(4))
       .join("")}`
-    const rec: ApiKeyRecord = { id: raw, prefix: raw.slice(0, 8), createdAt: Date.now() }
+    const rec: ApiKeyRecord = {
+      id: raw,
+      prefix: raw.slice(0, 8),
+      createdAt: Date.now(),
+    }
     persist([...keys, rec])
     // Register the key with the billing gateway so /v1/usage can resolve it.
     try {
@@ -69,7 +79,8 @@ export function useApiKeys() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey: raw, address }),
       })
-      if (!res.ok) throw new Error("Failed to register key with billing gateway")
+      if (!res.ok)
+        throw new Error("Failed to register key with billing gateway")
     } catch (err) {
       // Roll back the locally-created key so state stays consistent.
       persist(keys)
@@ -85,5 +96,5 @@ export function useApiKeys() {
     [keys, persist]
   )
 
-  return { keys, isAuthenticated, signIn, createKey, revokeKey }
+  return { keys, isAuthenticated, signIn, signInError, createKey, revokeKey }
 }
