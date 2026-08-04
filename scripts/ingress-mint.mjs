@@ -30,6 +30,7 @@ if (!res.ok) throw new Error(`admin/ingress ${res.status}: ${await res.text()}`)
 const { records } = await res.json()
 if (!records.length) { console.log("✔ 无待铸造入金记录"); process.exit(0) }
 
+let hadFailures = false
 for (const rec of records) {
   const amountWei = BigInt(rec.confirmedMicro) * WEI_PER_MICRO
   const hash = await wallet.writeContract({
@@ -42,11 +43,27 @@ for (const rec of records) {
     continue
   }
   console.log(`✔ 入金 ${rec.id} -> ${rec.owner} ${amountWei} wei tx=${hash}`)
-  const confirm = await fetch(`${BILLING_URL}/v1/ingress/${rec.id}/confirm`, {
-    method: "POST",
-    headers: { "X-Admin-Key": ADMIN_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ txHash: hash }),
-  })
-  if (!confirm.ok) console.warn(`⚠ confirm failed for ${rec.id}: ${await confirm.text()}`)
+  const confirmBody = JSON.stringify({ txHash: hash })
+  let confirmed = false
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const confirm = await fetch(`${BILLING_URL}/v1/ingress/${rec.id}/confirm`, {
+      method: "POST",
+      headers: { "X-Admin-Key": ADMIN_KEY, "Content-Type": "application/json" },
+      body: confirmBody,
+    })
+    if (confirm.ok) { confirmed = true; break }
+    console.warn(`⚠ confirm attempt ${attempt + 1} failed for ${rec.id} (${confirm.status}) — retrying`)
+    await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
+  }
+  // 确认失败后记录停留在 minting：重跑会按同一 confirmedMicro 再次 mintTo，必须先人工核对链上 txHash 再处理
+  if (!confirmed) {
+    hadFailures = true
+    console.error(`❌ confirm FAILED after 3 attempts for ${rec.id} — record stays minting; check tx ${hash} before re-running`)
+  }
 }
-console.log("✔ 全部入金铸造完成")
+if (hadFailures) {
+  console.error("❌ 部分入金记录确认失败 — 请人工核对 txHash 后重新运行")
+  process.exitCode = 1
+} else {
+  console.log("✔ 全部入金铸造完成")
+}
