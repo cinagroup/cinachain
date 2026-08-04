@@ -3,7 +3,6 @@
 import {
   computeUsable,
   applyConsumption,
-  estimateCost,
   getTier,
   checkQuota,
   costToWei,
@@ -12,6 +11,8 @@ import {
   tierBadgeId,
 } from "./lib/billing-core.js"
 import { runIndexer, listAllKeys } from "./lib/indexer-run.js"
+import { DEFAULT_PRICING, estimateCostWithPricing, applyPricingOverrides } from "./lib/pricing.js"
+import { ingressRecord, validateDeclaredMicro, ingressStatusTransitions, encryptKey } from "./lib/ingress.js"
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
@@ -37,6 +38,20 @@ function checkRegRateLimit(request) {
   if (n >= 5) return false
   regBuckets.set(k, n + 1)
   if (regBuckets.size > 5000) for (const [key] of regBuckets) if (!key.endsWith(`:${now}`)) regBuckets.delete(key)
+  return true
+}
+
+// Read budget for public ingress list — separate from write registrations
+// so the /keys page's list refresh doesn't exhaust the submit budget.
+const readBuckets = new Map()
+function checkReadRateLimit(request, limit = 20, windowMin = 10) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown"
+  const now = Math.floor(Date.now() / (windowMin * 60000))
+  const k = `${ip}:${now}`
+  const n = readBuckets.get(k) ?? 0
+  if (n >= limit) return false
+  readBuckets.set(k, n + 1)
+  if (readBuckets.size > 5000) for (const [key] of readBuckets) if (!key.endsWith(`:${now}`)) readBuckets.delete(key)
   return true
 }
 
@@ -100,11 +115,11 @@ async function fetchBalance(env, address) {
 // Ledger is wei-unit throughout (matches the ERC-20 on-chain balance):
 // onchainSnapshot / committedUsage / cumulativeSpend are all wei.
 // Pricing stays in micro-credit; the worker boundary converts via costToWei.
-export async function handleUsage(body, ledger) {
+export async function handleUsage(body, ledger, pricing = DEFAULT_PRICING) {
   try {
     const tokens = BigInt(body.tokens ?? 0)
     if (tokens <= 0n) return { status: 400, body: { error: "tokens must be > 0" } }
-    const costMicro = estimateCost(body.model ?? "demo", tokens, getTier(ledger.cumulativeSpend ?? 0n))
+    const costMicro = estimateCostWithPricing(pricing, body.model ?? "demo", tokens, getTier(ledger.cumulativeSpend ?? 0n))
     const costWei = costToWei(costMicro)
     const usable = computeUsable(ledger.onchainSnapshot, ledger.committedUsage)
     if (!checkQuota(usable, costWei)) {
@@ -146,8 +161,12 @@ function corsHeaders(request) {
   return headers
 }
 
+// BigInt -> Number in the wire format: JSON cannot carry BigInt, and micro
+// prices (pricing table) are the only BigInts ever put into a response body —
+// far below Number.MAX_SAFE_INTEGER, so no precision loss. Everything else is
+// already .toString()'d at the call site.
 function json(request, body, status = 200) {
-  return new Response(JSON.stringify(body), {
+  return new Response(JSON.stringify(body, (_k, v) => (typeof v === "bigint" ? Number(v) : v)), {
     status,
     headers: { ...corsHeaders(request), "Content-Type": "application/json" },
   })
@@ -173,7 +192,8 @@ export default {
       const body = await request.json().catch(() => ({}))
       const { apiKey, model, tokens } = body
       if (!apiKey) return json(request, { error: "Missing apiKey" }, 401)
-      const keyRowRaw = await env.CINA_BILLING_KV.get(`key:${await hashKey(apiKey)}`)
+      const keyHash = await hashKey(apiKey)
+      const keyRowRaw = await env.CINA_BILLING_KV.get(`key:${keyHash}`)
       const keyRow = keyRowRaw ? JSON.parse(keyRowRaw) : null
       if (!keyRow) return json(request, { error: "Invalid API key" }, 401)
 
@@ -200,7 +220,19 @@ export default {
             cumulativeSpend: BigInt(stored.cumulativeSpend ?? 0),
             mintedTierBadges: stored.mintedTierBadges ?? [],
           }
-          const res = await handleUsage({ model, tokens }, ledger)
+          // Runtime pricing (spec §7.2, grayscale): merge KV overrides onto the
+          // default table once per request, inside the ledger lock so the price
+          // a charge is metered at and the lock-held read are consistent. A
+          // corrupted/invalid blob must never block charging — fall back to
+          // defaults (fail-open on pricing, fail-closed on the ledger write).
+          let pricing = DEFAULT_PRICING
+          try {
+            const pricingRaw = await env.CINA_BILLING_KV.get("pricing")
+            if (pricingRaw) pricing = applyPricingOverrides(DEFAULT_PRICING, JSON.parse(pricingRaw))
+          } catch (err) {
+            console.error(`[billing] pricing fallback to defaults: ${err?.message ?? err}`)
+          }
+          const res = await handleUsage({ model, tokens }, ledger, pricing)
           if (res.status === 200) {
             const updated = applyConsumption(ledger, BigInt(res.body.chargedWei))
             const merged = {
@@ -210,6 +242,8 @@ export default {
               tier: res.body.tier,
               pendingTierBadges: res.body.pendingBadges,
             }
+            // COMMIT POINT — fail-closed: the ledger write lands first so a
+            // committed charge is never lost to downstream bookkeeping.
             if (keyRow.kind === "cust") {
               // balanceWei (DB) unchanged by consumption; usage is committed
               await env.CINA_BILLING_KV.put(ledgerKey, JSON.stringify(merged))
@@ -218,6 +252,52 @@ export default {
                 ...merged,
                 onchainSnapshot: snapshot.toString(),
               }))
+            }
+            // Consumption report (spec §7.2): best-effort after the commit —
+            // a history failure must not fail-closed a committed charge.
+            const histKey = keyRow.kind === "cust" ? `hist:cust:${keyRow.custId}` : `hist:${keyRow.address}`
+            try {
+              let hist = []
+              try {
+                const histRaw = await env.CINA_BILLING_KV.get(histKey)
+                hist = histRaw ? JSON.parse(histRaw) : []
+                if (!Array.isArray(hist)) hist = []
+              } catch {
+                console.error(`[billing] resetting corrupted history ${histKey}`)
+              }
+              hist.push({ ts: Date.now(), model: body.model ?? "demo", tokens: String(body.tokens ?? 0), chargedWei: res.body.chargedWei, tier: res.body.tier })
+              const trimmed = hist.slice(-100)
+              await env.CINA_BILLING_KV.put(histKey, JSON.stringify(trimmed))
+            } catch (err) {
+              console.error(`[billing] history write-back failed for ${histKey}: ${err?.message ?? err}`)
+            }
+            // Key ingress confirmation (spec §6.3): attribute this charge to
+            // a pooled key; flip to minting once confirmed >= declared.
+            // Best-effort under the ing lock (nested inside the user lock —
+            // lock order user -> ing, so no deadlock with the confirm route).
+            if (body.ingressId) {
+              await withLedgerLock(`ing:${body.ingressId}`, async () => {
+                try {
+                  const ingKey = `ing:${body.ingressId}`
+                  const ingRaw = await env.CINA_BILLING_KV.get(ingKey)
+                  if (ingRaw) {
+                    const rec = JSON.parse(ingRaw)
+                    // spec §6.3: attribution is only valid for the pooled key
+                    // that actually served this charge — skip mismatches.
+                    if (rec.keyHash !== keyHash) {
+                      console.error(`[billing] ingress key mismatch for ${body.ingressId}`)
+                      return
+                    }
+                    if (rec.status === "pending") {
+                      rec.confirmedMicro = (BigInt(rec.confirmedMicro ?? 0) + BigInt(res.body.chargedMicro)).toString()
+                      if (BigInt(rec.confirmedMicro) >= BigInt(rec.declaredMicro)) rec.status = "minting"
+                      await env.CINA_BILLING_KV.put(ingKey, JSON.stringify(rec))
+                    }
+                  }
+                } catch (err) {
+                  console.error(`[billing] ingress attribution failed for ${body.ingressId}: ${err?.message ?? err}`)
+                }
+              })
             }
           }
           return res
@@ -275,6 +355,20 @@ export default {
         }
       })
       return json(request, res)
+    }
+
+    // Consumption report (spec §7.2): last N metered charges for an address
+    if (url.pathname.startsWith("/v1/history/") && request.method === "GET") {
+      const address = url.pathname.split("/").pop().toLowerCase()
+      const rawLimit = Number(url.searchParams.get("limit") ?? 100)
+      const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 100
+      try {
+        const raw = await env.CINA_BILLING_KV.get(`hist:${address}`)
+        const entries = raw ? JSON.parse(raw) : []
+        return json(request, { address, entries: entries.slice(-limit) })
+      } catch {
+        return json(request, { error: "History data corrupted" })
+      }
     }
 
     // ── Custodial accounts (spec §6.1: hot wallet pool + DB bookkeeping) ──
@@ -371,6 +465,140 @@ export default {
         tier: getTier(BigInt(ledger.cumulativeSpend ?? 0)),
         pendingBadges: ledger.pendingTierBadges ?? [],
       })
+    }
+
+    // Key ingress submit (spec §6.3): register a key + declared amount
+    if (url.pathname === "/v1/ingress" && request.method === "POST") {
+      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+      const body = await request.json().catch(() => ({}))
+      const { apiKey, model, declaredMicro, owner } = body
+      if (!apiKey || typeof apiKey !== "string" || apiKey.length < 20) return json(request, { error: "Invalid apiKey" }, 400)
+      if (!/^0x[a-fA-F0-9]{40}$/.test(owner ?? "")) return json(request, { error: "Invalid owner" }, 400)
+      if (!model || !["demo", "gpt-4o-mini", "deepseek-v3", "hunyuan"].includes(model)) return json(request, { error: "Invalid model" }, 400)
+      let declared
+      try {
+        declared = validateDeclaredMicro(declaredMicro)
+      } catch (err) {
+        return json(request, { error: err instanceof Error ? err.message : "Invalid declaredMicro" }, 400)
+      }
+      const keyHash = await hashKey(apiKey)
+      // reject duplicate submissions of the same key
+      const existingRaw = await env.CINA_BILLING_KV.get(`keyhash:${keyHash}`)
+      if (existingRaw) return json(request, { error: "Key already registered" }, 409)
+      // optional upstream validation probe (testnet: unset -> skip)
+      if (env.INGRESS_VALIDATE_URL) {
+        try {
+          const probe = await fetch(env.INGRESS_VALIDATE_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+            body: JSON.stringify({ model }),
+            signal: AbortSignal.timeout(10_000),
+          })
+          if (!probe.ok) return json(request, { error: "Key validation failed" }, 400)
+        } catch {
+          return json(request, { error: "Key validation failed" }, 400)
+        }
+      }
+      const secretHex = env.INGRESS_ENC_KEY
+      if (!secretHex || secretHex.length !== 64 || secretHex === "0".repeat(64)) {
+        return json(request, { error: "Ingress encryption not configured" }, 500)
+      }
+      const encrypted = await encryptKey(secretHex, apiKey)
+      const id = `ing_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`
+      const rec = ingressRecord({ owner: owner.toLowerCase(), model, declaredMicro: declared, keyHash })
+      await env.CINA_BILLING_KV.put(`ing:${id}`, JSON.stringify({ ...rec, encrypted }))
+      await env.CINA_BILLING_KV.put(`keyhash:${keyHash}`, id)
+      return json(request, { ok: true, id, status: rec.status, declaredMicro: rec.declaredMicro, model: rec.model })
+    }
+
+    // Public: list own ingress records (spec §6.3: user can view pending status).
+    // Never exposes key material — id/model/micro amounts/status/createdAt only.
+    if (url.pathname === "/v1/ingress" && request.method === "GET") {
+      if (!checkReadRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+      const owner = (url.searchParams.get("owner") ?? "").toLowerCase()
+      if (!/^0x[a-fA-F0-9]{40}$/.test(owner)) return json(request, { error: "Invalid owner" }, 400)
+      const keys = await listAllKeys(env.CINA_BILLING_KV, "ing:")
+      const records = []
+      for (const { name } of keys) {
+        const raw = await env.CINA_BILLING_KV.get(name)
+        if (!raw) continue
+        let rec
+        try {
+          rec = JSON.parse(raw)
+        } catch {
+          continue
+        }
+        if (rec.owner === owner) {
+          records.push({
+            id: name.slice("ing:".length),
+            model: rec.model,
+            declaredMicro: rec.declaredMicro,
+            confirmedMicro: rec.confirmedMicro,
+            status: rec.status,
+            createdAt: rec.createdAt,
+          })
+        }
+      }
+      return json(request, { records })
+    }
+
+    // Admin: confirm an ingress mint (moves minting -> minted, records txHash)
+    const ingConfirmMatch = url.pathname.match(/^\/v1\/ingress\/([a-zA-Z0-9_]+)\/confirm$/)
+    if (ingConfirmMatch && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const [, id] = ingConfirmMatch
+      const body = await request.json().catch(() => ({}))
+      const key = `ing:${id}`
+      const res = await withLedgerLock(`ing:${id}`, async () => {
+        const raw = await env.CINA_BILLING_KV.get(key)
+        if (!raw) return { status: 404, body: { error: "Ingress record not found" } }
+        let rec
+        try {
+          rec = JSON.parse(raw)
+        } catch {
+          return { status: 400, body: { error: "Ingress record corrupted" } }
+        }
+        if (!ingressStatusTransitions(rec.status, "minted")) return { status: 400, body: { error: `Invalid transition from ${rec.status}` } }
+        rec.status = "minted"
+        rec.txHash = body.txHash ?? null
+        await env.CINA_BILLING_KV.put(key, JSON.stringify(rec))
+        return { status: 200, body: { ok: true, id, status: rec.status } }
+      })
+      return json(request, res.body, res.status)
+    }
+
+    // Admin: list ingress records (status filter optional)
+    if (url.pathname === "/v1/admin/ingress" && request.method === "GET") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const status = url.searchParams.get("status") ?? "minting"
+      const keys = await listAllKeys(env.CINA_BILLING_KV, "ing:")
+      const records = []
+      for (const { name } of keys) {
+        const raw = await env.CINA_BILLING_KV.get(name)
+        if (!raw) continue
+        let rec
+        try {
+          rec = JSON.parse(raw)
+        } catch {
+          continue
+        }
+        if (rec.status === status) {
+          records.push({
+            id: name.slice("ing:".length),
+            owner: rec.owner,
+            model: rec.model,
+            declaredMicro: rec.declaredMicro,
+            confirmedMicro: rec.confirmedMicro,
+            status: rec.status,
+            createdAt: rec.createdAt,
+          })
+        }
+      }
+      return json(request, { records })
     }
 
     // POST /v1/keys — register an API key bound to an address (self-managed)
@@ -471,6 +699,34 @@ export default {
         return { ok: true, address, tier, custId: body.custId ?? null }
       })
       return json(request, res)
+    }
+
+    // Admin: view pricing (default + overrides)
+    if (url.pathname === "/v1/admin/pricing" && request.method === "GET") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) return json(request, { error: "Unauthorized" }, 401)
+      const raw = await env.CINA_BILLING_KV.get("pricing")
+      let overrides = {}
+      try {
+        overrides = raw ? JSON.parse(raw) : {}
+      } catch {
+        return json(request, { error: "Pricing data corrupted" })
+      }
+      return json(request, { default: DEFAULT_PRICING, overrides })
+    }
+
+    // Admin: update pricing overrides (spec §7.2 — grayscale, no redeploy).
+    // Validates against the default table BEFORE persisting, so a bad override
+    // never lands in KV and never breaks the usage hot path.
+    if (url.pathname === "/v1/admin/pricing" && request.method === "PUT") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) return json(request, { error: "Unauthorized" }, 401)
+      const body = await request.json().catch(() => ({}))
+      try {
+        const merged = applyPricingOverrides(DEFAULT_PRICING, body.overrides ?? null)
+        await env.CINA_BILLING_KV.put("pricing", JSON.stringify(body.overrides ?? {}))
+        return json(request, { ok: true, merged })
+      } catch (err) {
+        return json(request, { error: err instanceof Error ? err.message : "Invalid pricing" }, 400)
+      }
     }
 
     // Manual indexer trigger (admin key; also used by tests/E2E)
