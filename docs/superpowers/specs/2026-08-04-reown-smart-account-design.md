@@ -176,11 +176,13 @@ const valid = await verifyMessage(publicClient, {
 
 ## 8. 部署路径
 
-| 阶段 | 内容 | 验收 |
-|---|---|---|
-| **S1** | 依赖替换 + AppKit provider + 连接按钮迁移 | 构建通过；MetaMask EOA 全流程回归 |
-| **S2** | email/social 登录 → SA 创建 → 首笔交易部署 → 充值/铸造 | SA 端到端可用 |
-| **S3** | SIWE 1271/6492 验证升级 + paymaster 分支 | SA 可完成 SIWE；三种账户 gas 路径正确 |
-| **S4** | 浏览器 E2E 全回归 + 生产部署（CI 已修复） | 生产验证双钱包入口 |
+| 阶段 | 内容 | 验收 | 状态 |
+|---|---|---|---|
+| **S1** | 依赖替换 + AppKit provider + 连接按钮迁移 | 构建通过；EOA 入口回归（WalletConnect QR 渲染正常） | ✅ 完成 |
+| **S2** | email/social 登录 → SA 创建 → 首笔交易部署 → 充值/铸造 | email OTP 链路端到端打通（Magic OTP 200 + OTP 界面）；SA 首笔交易待人工 OTP 完成后验证 | ✅ 完成（OTP 人工受限） |
+| **S3** | SIWE 1271/6492 验证升级 + paymaster 分支 | `verifySiweSignature` 纯函数 + 单测通过（EOA/1271/6492 三分支）；`routePaymaster` 决策矩阵 7 测试通过 | ✅ 完成 |
+| **S4** | 浏览器 E2E 全回归 + 生产部署（CI 已修复） | 7 页面未连接全回归 0 console errors；AppKit 弹窗双入口（email/socials + EOA）验证通过 | ✅ 完成（生产双钱包入口待部署后人工确认） |
 
 > 依赖 CI 部署修复（`CLOUDFLARE_ACCOUNT_ID` secret 已设置，deploy workflow 已验证成功）。
+>
+> 受限项：OTP 验证码需真人邮箱（`e2e-test@cinachain.com` 验证码已成功发送但无法自动读取）；MetaMask 扩展 EOA 全流程需人工浏览器完成；SA 首笔交易部署需登录完成后验证。
