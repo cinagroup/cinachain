@@ -46,18 +46,24 @@ jobs:
           npx --yes wrangler@3 whoami 2>&1 | tail -8
           echo "wrangler_exit=$?"
           echo "--- pages projects ---"
-          npx --yes wrangler@3 pages project list 2>&1 | head -20
+          npx --yes wrangler@3 pages project list 2>&1 | head -30
           echo "project_list_exit=$?"
 
       # Direct wrangler invocation instead of wrangler-action — the action's
       # internal npm bootstrap failed on the runner (exit 1), breaking every
       # deploy since M1. npx resolves the pinned wrangler@3 from the worker's
-      # lockfile and needs no action wrapper.
+      # lockfile and needs no action wrapper. Create the project if missing
+      # (all historical deploys failed — likely the project never existed).
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler@3 pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true
+        run: |
+          if ! npx --yes wrangler@3 pages project list 2>/dev/null | grep -q "cinachain-dapp-v2"; then
+            echo "project missing — creating"
+            npx --yes wrangler@3 pages project create cinachain-dapp-v2 --production-branch=main
+          fi
+          npx --yes wrangler@3 pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true
 
       # Billing worker (metering gateway + scheduled indexer). Only on push
       # to main — PRs get no worker deploy (no preview environment).
