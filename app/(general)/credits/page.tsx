@@ -50,6 +50,7 @@ export default function CreditsPage() {
     isLoading,
     ethToCredit,
     formatBalance,
+    formatCredit,
   } = useCreditBalance(address)
 
   const [ethAmount, setEthAmount] = useState("")
@@ -229,7 +230,7 @@ export default function CreditsPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Exchange rate</span>
                     <span className="font-medium text-foreground">
-                      1 ETH = {formatBalance(creditRate)} credit
+                      1 ETH = {formatCredit(creditRate)} credit
                     </span>
                   </div>
                   {feeBps !== undefined && (
@@ -306,7 +307,7 @@ export default function CreditsPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Gross credit</span>
                   <span className="font-medium text-foreground">
-                    {amountValid ? formatBalance(grossCredit) : "—"}
+                    {amountValid ? formatCredit(grossCredit) : "—"}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -318,13 +319,13 @@ export default function CreditsPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Fee amount</span>
                   <span className="font-medium text-foreground">
-                    {amountValid ? formatBalance(fee) : "—"}
+                    {amountValid ? formatCredit(fee) : "—"}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-border pt-3">
                   <span className="font-medium text-foreground">You receive</span>
                   <span className="font-display text-lg text-foreground">
-                    {amountValid ? formatBalance(youReceive) : "—"}
+                    {amountValid ? formatCredit(youReceive) : "—"}
                   </span>
                 </div>
               </div>

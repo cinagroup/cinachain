@@ -1,6 +1,7 @@
 "use client"
 
 import { useReadContracts } from "wagmi"
+import { parseEther } from "viem"
 import { CINA_CREDIT_CONTRACT, hasCreditContract } from "@/lib/contracts/addresses"
 import { CINA_CREDIT_ABI } from "@/lib/contracts/cina-credit"
 
@@ -32,9 +33,13 @@ export function useCreditBalance(address?: `0x${string}`) {
     isPaused,
     isLoading: result.isLoading,
     ethToCredit: (eth: number) =>
-      creditRate ? BigInt(Math.floor(eth * Number(creditRate))) : 0n,
+      creditRate
+        ? (parseEther(String(eth)) * creditRate) / 1_000_000_000_000_000_000n
+        : 0n,
     // Credit is ERC-20 with 18 decimals; display the whole "credit" number
     formatBalance: (credit?: bigint) =>
       credit === undefined ? "—" : (Number(credit) / 1e18).toLocaleString(),
+    // Raw (unscaled) credit values, e.g. ethToCredit output — show as-is
+    formatCredit: (raw?: bigint) => (raw === undefined ? "—" : raw.toString()),
   }
 }
