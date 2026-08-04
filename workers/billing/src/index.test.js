@@ -68,5 +68,18 @@ describe("M2 pending tier badges", () => {
     const res = await handleUsage({ model: "demo", tokens: 1000n }, ledger)
     expect(res.status).toBe(200)
     expect(res.body.tier).toBe("bronze") // crossed 10k credit
+    expect(res.body.pendingBadges).toEqual(["bronze"])
+  })
+
+  it("below threshold: free tier with no pending badges", async () => {
+    const ledger = {
+      onchainSnapshot: 10_000_000_000_000_000_000_000_000n,
+      committedUsage: 0n,
+      cumulativeSpend: 0n,
+    }
+    const res = await handleUsage({ model: "demo", tokens: 100n }, ledger)
+    expect(res.status).toBe(200)
+    expect(res.body.tier).toBe("free")
+    expect(res.body.pendingBadges).toEqual([])
   })
 })
