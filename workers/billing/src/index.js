@@ -207,10 +207,17 @@ export default {
           }
           // Runtime pricing (spec §7.2, grayscale): merge KV overrides onto the
           // default table once per request, inside the ledger lock so the price
-          // a charge is metered at and the lock-held read are consistent.
-          const pricingRaw = await env.CINA_BILLING_KV.get("pricing")
-          const pricing = applyPricingOverrides(DEFAULT_PRICING, pricingRaw ? JSON.parse(pricingRaw) : null)
-          const res = await handleUsage({ model, tokens, ingressId: body.ingressId }, ledger, pricing)
+          // a charge is metered at and the lock-held read are consistent. A
+          // corrupted/invalid blob must never block charging — fall back to
+          // defaults (fail-open on pricing, fail-closed on the ledger write).
+          let pricing = DEFAULT_PRICING
+          try {
+            const pricingRaw = await env.CINA_BILLING_KV.get("pricing")
+            if (pricingRaw) pricing = applyPricingOverrides(DEFAULT_PRICING, JSON.parse(pricingRaw))
+          } catch (err) {
+            console.error(`[billing] pricing fallback to defaults: ${err?.message ?? err}`)
+          }
+          const res = await handleUsage({ model, tokens }, ledger, pricing)
           if (res.status === 200) {
             const updated = applyConsumption(ledger, BigInt(res.body.chargedWei))
             const merged = {
@@ -486,6 +493,7 @@ export default {
     // Public: list own ingress records (spec §6.3: user can view pending status).
     // Never exposes key material — id/model/micro amounts/status/createdAt only.
     if (url.pathname === "/v1/ingress" && request.method === "GET") {
+      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
       const owner = (url.searchParams.get("owner") ?? "").toLowerCase()
       if (!/^0x[a-fA-F0-9]{40}$/.test(owner)) return json(request, { error: "Invalid owner" }, 400)
       const keys = await listAllKeys(env.CINA_BILLING_KV, "ing:")
@@ -676,7 +684,12 @@ export default {
     if (url.pathname === "/v1/admin/pricing" && request.method === "GET") {
       if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) return json(request, { error: "Unauthorized" }, 401)
       const raw = await env.CINA_BILLING_KV.get("pricing")
-      const overrides = raw ? JSON.parse(raw) : {}
+      let overrides = {}
+      try {
+        overrides = raw ? JSON.parse(raw) : {}
+      } catch {
+        return json(request, { error: "Pricing data corrupted" })
+      }
       return json(request, { default: DEFAULT_PRICING, overrides })
     }
 

@@ -25,6 +25,9 @@ describe("applyPricingOverrides", () => {
     expect(() => applyPricingOverrides(DEFAULT_PRICING, { demo: { perTokenMicroCredit: "0" } })).toThrow(/positive/)
     expect(() => applyPricingOverrides(DEFAULT_PRICING, { demo: { perTokenMicroCredit: "1.5" } })).toThrow(/integer/)
   })
+  it("rejects prices above Number.MAX_SAFE_INTEGER", () => {
+    expect(() => applyPricingOverrides(DEFAULT_PRICING, { demo: { perTokenMicroCredit: "9007199254740993" } })).toThrow(/too large/)
+  })
   it("accepts null overrides (no-op)", () => {
     expect(applyPricingOverrides(DEFAULT_PRICING, null)).toEqual(DEFAULT_PRICING)
   })

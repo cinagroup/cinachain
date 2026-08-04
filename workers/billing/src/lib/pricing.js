@@ -22,6 +22,9 @@ export function applyPricingOverrides(base, overrides) {
     if (!/^\d+$/.test(String(raw))) throw new Error(`price must be a positive integer: ${model}`)
     const v = BigInt(raw)
     if (v <= 0n) throw new Error(`price must be a positive integer: ${model}`)
+    // Cap at Number.MAX_SAFE_INTEGER so the admin GET/PUT wire format (BigInt
+    // -> Number serialization) is always exact.
+    if (v > 9007199254740991n) throw new Error(`price too large: ${model}`)
     merged[model] = { perTokenMicroCredit: v }
   }
   return merged

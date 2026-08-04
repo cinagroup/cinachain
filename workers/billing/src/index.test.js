@@ -535,6 +535,15 @@ describe("M3 ingress submit", () => {
     expect(body.records[0].id).toBe("ingA")
     expect(body.records[0].status).toBe("pending")
   })
+
+  it("GET /v1/ingress with invalid owner -> 400", async () => {
+    const env = makeEnv()
+    // distinct client IP keeps its own rate-limit budget (module-level limiter)
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress?owner=0x123", {
+      headers: { "CF-Connecting-IP": "203.0.113.10" },
+    }))
+    expect(res.status).toBe(400)
+  })
 })
 
 describe("M3 ingress consumption", () => {
@@ -798,6 +807,32 @@ describe("M3 pricing admin", () => {
       expect(res.status).toBe(200)
       const body = await res.json()
       expect(body.chargedMicro).toBe("200000") // 200 micro × 1000, free tier
+    } finally {
+      global.fetch = origFetch
+    }
+  })
+
+  it("usage falls back to DEFAULT pricing when the pricing blob is corrupted", async () => {
+    const env = makeEnv()
+    env.store.set("pricing", "{ not json")
+    const data = new TextEncoder().encode("pricingkey2")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "pricingkey2", model: "demo", tokens: "1000" }),
+      }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.chargedMicro).toBe("2000000") // default demo 2000 micro × 1000
     } finally {
       global.fetch = origFetch
     }
