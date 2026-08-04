@@ -371,37 +371,52 @@ export default {
     }
 
     // Admin: list addresses with pending tier badges (spec §5 minting flow)
+    // Scans both self-hosted ledgers (ledger:<address>) and custodial rows
+    // (cust:<id>) so badges accrued on custodial accounts are visible too.
     if (url.pathname === "/v1/admin/pending-badges" && request.method === "GET") {
       if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
         return json(request, { error: "Unauthorized" }, 401)
       }
-      const keys = await listAllKeys(env.CINA_BILLING_KV, "ledger:")
       const pending = []
-      for (const { name } of keys) {
-        const raw = await env.CINA_BILLING_KV.get(name)
-        if (!raw) continue
-        let ledger
-        try {
-          ledger = JSON.parse(raw)
-        } catch (err) {
-          // One malformed row (e.g. manual/console edit) must not abort the
-          // admin listing — skip it and carry on (mirrors indexer-run.js).
-          console.error(`[admin] skipping malformed ledger row ${name}:`, err?.message ?? err)
-          continue
-        }
-        const badges = (ledger.pendingTierBadges ?? []).filter((t) => tierBadgeId(t) !== null)
-        if (badges.length) {
-          pending.push({
-            address: name.slice("ledger:".length),
-            badges,
-            cumulativeSpend: ledger.cumulativeSpend ?? "0",
-          })
+      for (const prefix of ["ledger:", "cust:"]) {
+        const keys = await listAllKeys(env.CINA_BILLING_KV, prefix)
+        for (const { name } of keys) {
+          const raw = await env.CINA_BILLING_KV.get(name)
+          if (!raw) continue
+          let ledger
+          try {
+            ledger = JSON.parse(raw)
+          } catch (err) {
+            // One malformed row (e.g. manual/console edit) must not abort the
+            // admin listing — skip it and carry on (mirrors indexer-run.js).
+            console.error(`[admin] skipping malformed ${name}:`, err?.message ?? err)
+            continue
+          }
+          const badges = (ledger.pendingTierBadges ?? []).filter((t) => tierBadgeId(t) !== null)
+          if (!badges.length) continue
+          if (prefix === "cust:") {
+            pending.push({
+              address: ledger.owner,
+              custId: name.slice("cust:".length),
+              badges,
+              cumulativeSpend: ledger.cumulativeSpend ?? "0",
+            })
+          } else {
+            pending.push({
+              address: name.slice("ledger:".length),
+              badges,
+              cumulativeSpend: ledger.cumulativeSpend ?? "0",
+            })
+          }
         }
       }
       return json(request, { pending })
     }
 
-    // Admin: confirm a badge was minted on-chain (moves pending -> minted)
+    // Admin: confirm a badge was minted on-chain (moves pending -> minted).
+    // A custodial account may be confirmed by its owner address + custId in
+    // the body; the write then lands on cust:<custId> (never a phantom
+    // ledger:<address> row) and the lock uses the custId.
     const confirmMatch = url.pathname.match(/^\/v1\/admin\/badges\/(0x[a-fA-F0-9]{40})\/([a-z]+)\/confirm$/)
     if (confirmMatch && request.method === "POST") {
       if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
@@ -410,27 +425,24 @@ export default {
       const [, address, tier] = confirmMatch
       if (tierBadgeId(tier) === null) return json(request, { error: "Invalid tier" }, 400)
       const body = await request.json().catch(() => ({}))
-      const key = `ledger:${address.toLowerCase()}`
-      const res = await withLedgerLock(address.toLowerCase(), async () => {
-        const raw = await env.CINA_BILLING_KV.get(key)
+      const targetKey = body.custId ? `cust:${body.custId}` : `ledger:${address.toLowerCase()}`
+      const lockKey = body.custId ?? address.toLowerCase()
+      const res = await withLedgerLock(lockKey, async () => {
+        const raw = await env.CINA_BILLING_KV.get(targetKey)
         let ledger
-        if (raw) {
-          try {
-            ledger = JSON.parse(raw)
-          } catch {
-            return { error: "Ledger data corrupted" }
-          }
-        } else {
-          ledger = {}
+        try {
+          ledger = raw ? JSON.parse(raw) : {}
+        } catch {
+          return { error: "Ledger data corrupted" }
         }
         const minted = [...new Set([...(ledger.mintedTierBadges ?? []), tier])]
-        await env.CINA_BILLING_KV.put(key, JSON.stringify({
+        await env.CINA_BILLING_KV.put(targetKey, JSON.stringify({
           ...ledger,
           pendingTierBadges: (ledger.pendingTierBadges ?? []).filter((t) => t !== tier),
           mintedTierBadges: minted,
           badgeTxHashes: { ...(ledger.badgeTxHashes ?? {}), [tier]: body.txHash ?? null },
         }))
-        return { ok: true, address, tier }
+        return { ok: true, address, tier, custId: body.custId ?? null }
       })
       return json(request, res)
     }

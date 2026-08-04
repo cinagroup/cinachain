@@ -161,6 +161,43 @@ describe("M2 admin endpoints", () => {
     ))
     expect(res.status).toBe(400)
   })
+
+  it("pending-badges includes custodial accounts (cust: prefix)", async () => {
+    const env = makeEnv()
+    env.store.set("cust:c1", JSON.stringify({
+      owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", balanceWei: "0",
+      committedUsage: "0", cumulativeSpend: (20_000n * 10n ** 18n).toString(),
+      pendingTierBadges: ["bronze"], mintedTierBadges: [],
+    }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/admin/pending-badges", {
+      headers: { "X-Admin-Key": "test-admin" },
+    }))
+    const body = await res.json()
+    expect(body.pending).toHaveLength(1)
+    expect(body.pending[0].custId).toBe("c1")
+    expect(body.pending[0].address).toBe("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(body.pending[0].badges).toEqual(["bronze"])
+  })
+
+  it("confirm with custId updates the cust row, not a phantom ledger row", async () => {
+    const env = makeEnv()
+    env.store.set("cust:c1", JSON.stringify({
+      owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", balanceWei: "0",
+      committedUsage: "0", cumulativeSpend: (20_000n * 10n ** 18n).toString(),
+      pendingTierBadges: ["bronze"], mintedTierBadges: [],
+    }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/admin/badges/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/bronze/confirm", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ txHash: "0xabc", custId: "c1" }),
+    }))
+    expect(res.status).toBe(200)
+    const cust = JSON.parse(env.store.get("cust:c1"))
+    expect(cust.mintedTierBadges).toEqual(["bronze"])
+    expect(cust.pendingTierBadges).toEqual([])
+    // no phantom ledger row created
+    expect(env.store.has("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).toBe(false)
+  })
 })
 
 describe("M2 custodial accounts", () => {
