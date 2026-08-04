@@ -12,6 +12,7 @@ import {
   tierBadgeId,
 } from "./lib/billing-core.js"
 import { runIndexer, listAllKeys } from "./lib/indexer-run.js"
+import { DEFAULT_PRICING, estimateCostWithPricing } from "./lib/pricing.js"
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
@@ -100,11 +101,11 @@ async function fetchBalance(env, address) {
 // Ledger is wei-unit throughout (matches the ERC-20 on-chain balance):
 // onchainSnapshot / committedUsage / cumulativeSpend are all wei.
 // Pricing stays in micro-credit; the worker boundary converts via costToWei.
-export async function handleUsage(body, ledger) {
+export async function handleUsage(body, ledger, pricing = DEFAULT_PRICING) {
   try {
     const tokens = BigInt(body.tokens ?? 0)
     if (tokens <= 0n) return { status: 400, body: { error: "tokens must be > 0" } }
-    const costMicro = estimateCost(body.model ?? "demo", tokens, getTier(ledger.cumulativeSpend ?? 0n))
+    const costMicro = estimateCostWithPricing(pricing, body.model ?? "demo", tokens, getTier(ledger.cumulativeSpend ?? 0n))
     const costWei = costToWei(costMicro)
     const usable = computeUsable(ledger.onchainSnapshot, ledger.committedUsage)
     if (!checkQuota(usable, costWei)) {

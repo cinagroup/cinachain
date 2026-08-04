@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { computePendingBadges, handleUsage } from "./index.js"
 import billingWorker from "./index.js"
+import { applyPricingOverrides, DEFAULT_PRICING } from "./lib/pricing.js"
 
 // Ledger is wei-unit: 10 credit = 10e18 wei
 const baseLedger = { onchainSnapshot: 10_000_000_000_000_000_000n, committedUsage: 0n, cumulativeSpend: 0n }
@@ -346,5 +347,17 @@ describe("M2 custodial accounts", () => {
       body: JSON.stringify({ id: "test1", amountWei: "1" }),
     }))
     expect(res.status).toBe(401)
+  })
+})
+
+// 追加到 index.test.js — 验证 usage 应用定价覆盖层
+describe("M3 pricing override in handleUsage", () => {
+  it("applies a merged pricing table", async () => {
+    const merged = applyPricingOverrides(DEFAULT_PRICING, { "gpt-4o-mini": { perTokenMicroCredit: "200" } })
+    const ledger = { onchainSnapshot: 10_000_000_000_000_000_000n, committedUsage: 0n, cumulativeSpend: 0n }
+    const res = await handleUsage({ model: "gpt-4o-mini", tokens: 1000n }, ledger, merged)
+    expect(res.status).toBe(200)
+    expect(res.body.chargedMicro).toBe("200000") // 200 micro × 1000
+    expect(res.body.tier).toBe("free")
   })
 })
