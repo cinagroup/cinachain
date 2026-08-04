@@ -83,6 +83,17 @@ export async function listAllKeys(kv, prefix) {
  * every ledger row we track. Returns {scanned, updated, cursor}.
  * Cold start (no cursor yet): seed cursor at latest, no backfill — existing
  * balances are covered by the request-path RPC snapshot (refreshSnapshot).
+ *
+ * Accepted caveats (spec §4.3 known limits):
+ * - New-ledger double-application window: a ledger row created at request
+ *   time via refreshSnapshot carries a snapshot already as-of its creation
+ *   block N > cursor, so deltas for (cursor, N] would apply twice. Transient
+ *   — the next request-path usage re-syncs from RPC. Future fix: persist an
+ *   asOfBlock on the ledger row and skip ranges already covered by it.
+ * - No mutual exclusion with itself or the request path: overlapping runs
+ *   may double-apply deltas, but identical-value last-write-wins makes that
+ *   benign. Same accepted cross-isolate KV stance as withLedgerLock
+ *   (see index.js:19-22).
  */
 export async function runIndexer(env) {
   const kv = env.CINA_BILLING_KV
@@ -101,13 +112,19 @@ export async function runIndexer(env) {
     const addr = name.slice("ledger:".length)
     const raw = await kv.get(name)
     if (!raw) continue
-    const ledger = JSON.parse(raw)
-    const current = BigInt(ledger.onchainSnapshot ?? 0)
-    const next = applyLogsToSnapshot(logs, addr, current)
-    if (next !== current) {
-      ledger.onchainSnapshot = next.toString()
-      await kv.put(name, JSON.stringify(ledger))
-      updated++
+    try {
+      const ledger = JSON.parse(raw)
+      const current = BigInt(ledger.onchainSnapshot ?? 0)
+      const next = applyLogsToSnapshot(logs, addr, current)
+      if (next !== current) {
+        ledger.onchainSnapshot = next.toString()
+        await kv.put(name, JSON.stringify(ledger))
+        updated++
+      }
+    } catch (err) {
+      // One malformed row (e.g. manual/console edit) must not abort the run
+      // before the cursor write-back — skip it and carry on.
+      console.error(`[indexer] skipping malformed ledger row ${name}:`, err?.message ?? err)
     }
   }
   await kv.put("idx:lastBlock", range.to.toString())

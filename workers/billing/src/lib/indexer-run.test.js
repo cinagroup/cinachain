@@ -106,6 +106,7 @@ describe("runIndexer", () => {
     }
     // latest = 0x10, one transfer-out of 200 wei from 0xaaa
     const calls = []
+    const getLogsParams = []
     global.fetch = async (url, opts) => {
       const body = JSON.parse(opts.body)
       calls.push(body.method)
@@ -113,6 +114,7 @@ describe("runIndexer", () => {
         return { json: async () => ({ result: "0x10" }) }
       }
       if (body.method === "eth_getLogs") {
+        getLogsParams.push(body.params)
         return { json: async () => ({ result: [{
           topics: [
             "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3f",
@@ -127,6 +129,10 @@ describe("runIndexer", () => {
     }
     const res = await runIndexer(fakeEnv)
     expect(calls).toContain("eth_blockNumber")
+    expect(calls).toHaveLength(2) // eth_blockNumber + eth_getLogs, no other RPCs
+    expect(getLogsParams).toHaveLength(1)
+    expect(getLogsParams[0][0].fromBlock).toBe("0x1")
+    expect(getLogsParams[0][0].toBlock).toBe("0x10")
     expect(res.updated).toBe(1)
     const stored = JSON.parse(kv.store.get("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
     expect(stored.onchainSnapshot).toBe("999999999999999800") // 1e18 - 200
