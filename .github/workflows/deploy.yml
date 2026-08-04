@@ -45,6 +45,9 @@ jobs:
           echo "account_present=${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}"
           npx --yes wrangler@3 whoami 2>&1 | tail -8
           echo "wrangler_exit=$?"
+          echo "--- pages projects ---"
+          npx --yes wrangler@3 pages project list 2>&1 | head -20
+          echo "project_list_exit=$?"
 
       # Direct wrangler invocation instead of wrangler-action — the action's
       # internal npm bootstrap failed on the runner (exit 1), breaking every
