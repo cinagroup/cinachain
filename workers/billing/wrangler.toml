@@ -1,0 +1,10 @@
+name = "cinachain-billing"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[kv_namespaces]]
+binding = "CINA_BILLING_KV"
+id = "b7aaab94dc9f438c919ec40c53112d68"
+
+[vars]
+API_VERSION = "v1"
