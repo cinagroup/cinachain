@@ -40,3 +40,14 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true
+
+      # Billing worker (metering gateway + scheduled indexer). Only on push
+      # to main — PRs get no worker deploy (no preview environment).
+      - name: Deploy billing worker
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/billing
+          command: deploy
