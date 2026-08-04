@@ -65,6 +65,10 @@ async function deploy(name, abi, bytecode, args) {
   return receipt.contractAddress
 }
 
+// ─── CinaCredit deploy config (shared by credit-only and full flows) ───
+// owner, rate, treasury, feeBps — 与 .env / 前端费率展示保持一致
+// 实现于 main() 内的 creditArgs()（需要 account.address，无法在模块顶层定义）
+
 // ─── Check balance ───
 async function main() {
   console.log("═══════════════════════════════════════════════")
@@ -84,19 +88,17 @@ async function main() {
     process.exit(1)
   }
 
+  // ─── CinaCredit deploy config (shared by credit-only and full flows) ───
+  const creditArt = loadArtifact("CinaCredit")
+  const creditArgs = () => [account.address, 1000000n, account.address, 200n]
+
   // ─── CinaCredit-only deployment (avoids re-deploying NFT/Badge) ───
   if (process.env.DEPLOY_CREDIT_ONLY === "1") {
-    const creditArt = loadArtifact("CinaCredit")
     const creditAddress = await deploy(
       "CinaCredit",
       creditArt.abi,
       creditArt.bytecode,
-      [
-        account.address,          // initial owner
-        1000000n,                 // ethToCreditRate: 1 ETH = 1,000,000 credit
-        account.address,          // treasury
-        200n,                     // platformFeeBps: 2%
-      ]
+      creditArgs()
     )
     console.log(`\n📋 CinaCredit: ${creditAddress}`)
     console.log(`   Explorer:   ${chain.blockExplorers?.default?.url}/address/${creditAddress}`)
@@ -132,17 +134,11 @@ async function main() {
   )
 
   // ─── Deploy CinaCredit ───
-  const creditArt = loadArtifact("CinaCredit")
   const creditAddress = await deploy(
     "CinaCredit",
     creditArt.abi,
     creditArt.bytecode,
-    [
-      account.address,          // initial owner
-      1000000n,                 // ethToCreditRate: 1 ETH = 1,000,000 credit
-      account.address,          // treasury
-      200n,                     // platformFeeBps: 2%
-    ]
+    creditArgs()
   )
 
   // ─── Summary ───

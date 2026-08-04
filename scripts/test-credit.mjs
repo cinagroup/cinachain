@@ -1,4 +1,4 @@
-// On-chain verification of CinaCredit: rate/fee minting, onlyOwner, zero-amount guard
+// On-chain verification of CinaCredit: rate/fee minting, onlyOwner, zero-amount guard, paused state
 import { readFileSync } from "fs"
 import { resolve } from "path"
 import { createWalletClient, createPublicClient, http, parseEther } from "viem"
@@ -28,6 +28,8 @@ async function main() {
   assert(rate === RATE, `rate = ${rate}`)
   const fee = await pc.readContract({ address: ADDR, abi: [f("platformFeeBps", [], [{ type: "uint256" }])], functionName: "platformFeeBps" })
   assert(fee === 200n, `fee = ${fee}`)
+  const paused = await pc.readContract({ address: ADDR, abi: [f("paused", [], [{ type: "bool" }])], functionName: "paused" })
+  assert(paused === false, "contract not paused")
 
   const balOf = (addr) => pc.readContract({ address: ADDR, abi: [f("balanceOf", [{ type: "address" }], [{ type: "uint256" }])], functionName: "balanceOf", args: [addr] })
   const before = await balOf(acct.address)
@@ -43,6 +45,12 @@ async function main() {
     await pc.simulateContract({ address: ADDR, abi: credit.abi, functionName: "mintTo", args: [acct.address, 1n], account: "0x3cA605BF725C64B3C5e38dbA21F25EBcFd1Fcf28" })
     assert(false, "mintTo from non-owner should revert")
   } catch { assert(true, "mintTo non-owner reverts") }
+
+  // zero-amount mintTo must revert (prevents noise events for the indexer)
+  try {
+    await pc.simulateContract({ address: ADDR, abi: credit.abi, functionName: "mintTo", args: [acct.address, 0n], account: acct.address })
+    assert(false, "mintTo with 0 amount should revert")
+  } catch { assert(true, "mintTo zero-amount reverts") }
 
   const tx2 = await wc.writeContract({ address: ADDR, abi: credit.abi, functionName: "mintTo", args: [acct.address, 100n * WEI] })
   await pc.waitForTransactionReceipt({ hash: tx2 })
