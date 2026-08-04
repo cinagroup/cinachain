@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { parseEther, type Hash } from "viem"
 import {
   useSendCalls,
+  useWaitForCallsStatus,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi"
@@ -92,8 +93,22 @@ export function useMintContract(): UseMintContractResult {
     usePaymasterCapabilities()
 
   const [txHash, setTxHash] = useState<Hash | null>(null)
+  const [callsId, setCallsId] = useState<string | null>(null)
   const [status, setStatus] = useState<MintStatus>("idle")
   const [error, setError] = useState<string | null>(null)
+
+  // EIP-5792: sendCalls returns an opaque batch id, not a tx hash. For the
+  // Coinbase Smart Wallet gasless path we must poll wallet_getCallsStatus and
+  // only then resolve the real on-chain transaction hash from the receipts.
+  const {
+    data: callsStatus,
+    isSuccess: callsResolved,
+    isError: callsStatusFailed,
+    error: callsStatusError,
+  } = useWaitForCallsStatus({
+    id: callsId ?? undefined,
+    query: { enabled: !!callsId },
+  })
 
   const {
     isSuccess: receiptConfirmed,
@@ -112,6 +127,47 @@ export function useMintContract(): UseMintContractResult {
       setError(receiptError?.message ?? "Transaction reverted")
     }
   }, [receiptConfirmed, receiptFailed, receiptError, status])
+
+  // EIP-5792 batch resolution: map wallet_getCallsStatus to our states. A
+  // "success" batch may still contain a reverted receipt (e.g. a mint that
+  // failed in the contract but was sponsored through); surface it as such.
+  useEffect(() => {
+    if (!callsResolved || !callsId) return
+    if (callsStatus?.status === "failure") {
+      if (status === "submitted") {
+        setStatus("reverted")
+        setError("Calls failed — no transactions were confirmed")
+      }
+      return
+    }
+    if (callsStatus?.status === "success") {
+      const receipt = callsStatus.receipts?.[0]
+      if (receipt?.status === "reverted") {
+        if (status === "submitted") {
+          setStatus("reverted")
+          setError("Transaction reverted on-chain — no NFT was minted")
+        }
+        return
+      }
+      // Resolve the real transaction hash for the explorer link + receipt
+      // wait. The receipt already exists on-chain, so the wait resolves
+      // immediately; keeping txHash also preserves the basescan link.
+      if (receipt?.transactionHash) {
+        setTxHash(receipt.transactionHash)
+      } else if (status === "submitted") {
+        // Batch succeeded but the wallet didn't surface receipts — still a
+        // successful submission, don't let it linger as "submitted" forever.
+        setStatus("confirmed")
+      }
+    }
+  }, [callsResolved, callsStatus, callsId, status])
+
+  useEffect(() => {
+    if (callsStatusFailed && status === "submitted") {
+      setStatus("reverted")
+      setError(callsStatusError?.message ?? "Failed to confirm calls")
+    }
+  }, [callsStatusFailed, callsStatusError, status])
 
   const extractError = (err: unknown): string => {
     if (err instanceof Error) {
@@ -163,21 +219,30 @@ export function useMintContract(): UseMintContractResult {
         // plain write path (EOA pays gas normally; Reown smart accounts are
         // routed through writeContract too — the iframe converts it to a
         // UserOp with AppKit's internal paymaster).
-        const hash =
-          isPaymasterSupported && !viaSmartAccount
-            ? await sendCallsAsync({
-                calls: [call],
-                capabilities,
-              })
-            : await writeContractAsync({
-                address: call.to,
-                abi: call.abi,
-                functionName: call.functionName,
-                args: call.args,
-              })
-        setTxHash(hash as Hash)
+        // sendCalls resolves to an EIP-5792 batch id — the real tx hash is
+        // obtained from wallet_getCallsStatus (see the effect above).
+        let batchId: string | undefined
+        let hash: Hash | undefined
+        if (isPaymasterSupported && !viaSmartAccount) {
+          const sent = (await sendCallsAsync({
+            calls: [call],
+            capabilities,
+          })) as { id: string }
+          batchId = sent.id
+        } else {
+          hash = await writeContractAsync({
+            address: call.to,
+            abi: call.abi,
+            functionName: call.functionName,
+            args: call.args,
+          })
+        }
+        if (batchId) setCallsId(batchId)
+        if (hash) setTxHash(hash)
         setStatus("submitted")
-        return hash as Hash | undefined
+        // For the EIP-5792 path the real hash is not known until
+        // wallet_getCallsStatus resolves; return the batch id for now.
+        return (batchId ?? hash) as Hash | undefined
       } catch (err) {
         setStatus("error")
         setError(extractError(err))
@@ -223,22 +288,29 @@ export function useMintContract(): UseMintContractResult {
           args: [BigInt(quantity)] as [bigint],
           value: priceWei * BigInt(quantity),
         }
-        const hash =
-          isPaymasterSupported && !viaSmartAccount
-            ? await sendCallsAsync({
-                calls: [call],
-                capabilities,
-              })
-            : await writeContractAsync({
-                address: call.to,
-                abi: call.abi,
-                functionName: call.functionName,
-                args: call.args,
-                value: call.value,
-              })
-        setTxHash(hash as Hash)
+        let batchId: string | undefined
+        let hash: Hash | undefined
+        if (isPaymasterSupported && !viaSmartAccount) {
+          const sent = (await sendCallsAsync({
+            calls: [call],
+            capabilities,
+          })) as { id: string }
+          batchId = sent.id
+        } else {
+          hash = await writeContractAsync({
+            address: call.to,
+            abi: call.abi,
+            functionName: call.functionName,
+            args: call.args,
+            value: call.value,
+          })
+        }
+        if (batchId) setCallsId(batchId)
+        if (hash) setTxHash(hash)
         setStatus("submitted")
-        return hash as Hash | undefined
+        // For the EIP-5792 path the real hash is not known until
+        // wallet_getCallsStatus resolves; return the batch id for now.
+        return (batchId ?? hash) as Hash | undefined
       } catch (err) {
         setStatus("error")
         setError(extractError(err))
@@ -256,6 +328,7 @@ export function useMintContract(): UseMintContractResult {
 
   const reset = useCallback(() => {
     setTxHash(null)
+    setCallsId(null)
     setStatus("idle")
     setError(null)
   }, [])
