@@ -15,18 +15,39 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
 ])
 
+// Per-address in-flight mutex: serializes read-modify-write on the same
+// ledger key within this isolate. KV itself is eventually consistent
+// across colos, so cross-isolate races remain a documented limitation
+// (M2: Durable Object / queue for strict serialization).
+const inflight = new Map()
+
+function withLedgerLock(address, fn) {
+  const prev = inflight.get(address) ?? Promise.resolve()
+  const next = prev.then(fn, fn)
+  inflight.set(address, next.catch(() => {}))
+  // GC: drop the resolved entry
+  next.finally(() => {
+    if (inflight.get(address) === next) inflight.delete(address)
+  })
+  return next
+}
+
 export async function handleUsage(body, ledger) {
-  const tokens = BigInt(body.tokens ?? 0)
-  if (tokens <= 0n) return { status: 400, body: { error: "tokens must be > 0" } }
-  const tier = getTier(ledger.cumulativeSpend ?? 0n)
-  const cost = estimateCost(body.model ?? "demo", tokens, tier)
-  const usable = computeUsable(ledger.onchainSnapshot, ledger.committedUsage)
-  if (!checkQuota(usable, cost)) {
-    return { status: 429, body: { error: "Credit Insufficient", usableMicro: usable.toString() } }
+  try {
+    const tokens = BigInt(body.tokens ?? 0)
+    if (tokens <= 0n) return { status: 400, body: { error: "tokens must be > 0" } }
+    const tier = getTier(ledger.cumulativeSpend ?? 0n)
+    const cost = estimateCost(body.model ?? "demo", tokens, tier)
+    const usable = computeUsable(ledger.onchainSnapshot, ledger.committedUsage)
+    if (!checkQuota(usable, cost)) {
+      return { status: 429, body: { error: "Credit Insufficient", usableMicro: usable.toString() } }
+    }
+    const updated = applyConsumption(ledger, cost)
+    const remaining = computeUsable(ledger.onchainSnapshot, updated.committedUsage)
+    return { status: 200, body: { tier, chargedMicro: cost.toString(), remainingMicro: remaining.toString(), remaining: Number(remaining) / Number(MICRO) } }
+  } catch (err) {
+    return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
   }
-  const updated = applyConsumption(ledger, cost)
-  const remaining = computeUsable(ledger.onchainSnapshot, updated.committedUsage)
-  return { status: 200, body: { tier, chargedMicro: cost.toString(), remainingMicro: remaining.toString(), remaining: Number(remaining) / Number(MICRO) } }
 }
 
 async function hashKey(apiKey) {
@@ -70,25 +91,34 @@ export default {
       const keyRow = keyRowRaw ? JSON.parse(keyRowRaw) : null
       if (!keyRow) return json(request, { error: "Invalid API key" }, 401)
 
-      const ledgerRaw = await env.CINA_BILLING_KV.get(`ledger:${keyRow.address}`)
-      const stored = ledgerRaw ? JSON.parse(ledgerRaw) : {}
-      const ledger = {
-        onchainSnapshot: BigInt(stored.onchainSnapshot ?? 0),
-        committedUsage: BigInt(stored.committedUsage ?? 0),
-        cumulativeSpend: BigInt(stored.cumulativeSpend ?? 0),
-      }
-      const res = await handleUsage({ model, tokens }, ledger)
-      if (res.status === 200) {
-        const updated = applyConsumption(ledger, BigInt(res.body.chargedMicro))
-        await env.CINA_BILLING_KV.put(
-          `ledger:${keyRow.address}`,
-          JSON.stringify({
-            onchainSnapshot: stored.onchainSnapshot ?? "0",
-            committedUsage: updated.committedUsage.toString(),
-            cumulativeSpend: updated.cumulativeSpend.toString(),
-          })
-        )
-      }
+      // Read-modify-write on the ledger key is serialized per address;
+      // the fetch layer only maps unexpected KV/JSON errors to 400.
+      const res = await withLedgerLock(keyRow.address, async () => {
+        try {
+          const ledgerRaw = await env.CINA_BILLING_KV.get(`ledger:${keyRow.address}`)
+          const stored = ledgerRaw ? JSON.parse(ledgerRaw) : {}
+          const ledger = {
+            onchainSnapshot: BigInt(stored.onchainSnapshot ?? 0),
+            committedUsage: BigInt(stored.committedUsage ?? 0),
+            cumulativeSpend: BigInt(stored.cumulativeSpend ?? 0),
+          }
+          const res = await handleUsage({ model, tokens }, ledger)
+          if (res.status === 200) {
+            const updated = applyConsumption(ledger, BigInt(res.body.chargedMicro))
+            await env.CINA_BILLING_KV.put(
+              `ledger:${keyRow.address}`,
+              JSON.stringify({
+                onchainSnapshot: stored.onchainSnapshot ?? "0",
+                committedUsage: updated.committedUsage.toString(),
+                cumulativeSpend: updated.cumulativeSpend.toString(),
+              })
+            )
+          }
+          return res
+        } catch (err) {
+          return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+        }
+      })
       return json(request, res.body, res.status)
     }
 

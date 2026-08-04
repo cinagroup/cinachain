@@ -20,3 +20,14 @@ describe("handleUsage", () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe("error paths", () => {
+  it("unknown model -> 400", async () => {
+    const res = await handleUsage({ model: "nope", tokens: 100n }, baseLedger)
+    expect(res.status).toBe(400)
+  })
+  it("decimal tokens -> 400", async () => {
+    const res = await handleUsage({ model: "demo", tokens: 1.5 }, baseLedger)
+    expect(res.status).toBe(400)
+  })
+})
