@@ -162,3 +162,87 @@ describe("M2 admin endpoints", () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe("M2 custodial accounts", () => {
+  it("POST /v1/custodial/accounts creates a DB-backed account", async () => {
+    const env = makeEnv()
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/accounts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }),
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.id).toMatch(/^cust_[a-f0-9]{16}$/)
+    const stored = JSON.parse(env.store.get(`cust:${body.id}`))
+    expect(stored.owner).toBe("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(stored.balanceWei).toBe("0")
+  })
+
+  it("admin credits a custodial account (pool funds already on-chain)", async () => {
+    const env = makeEnv()
+    env.store.set("cust:test1", JSON.stringify({ owner: "0xaaa", balanceWei: "0", committedUsage: "0", cumulativeSpend: "0" }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/credit", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "test1", amountWei: (100n * 10n ** 18n).toString() }),
+    }))
+    expect(res.status).toBe(200)
+    const stored = JSON.parse(env.store.get("cust:test1"))
+    expect(stored.balanceWei).toBe((100n * 10n ** 18n).toString())
+  })
+
+  it("rejects crediting a custodial account without admin key", async () => {
+    const env = makeEnv()
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/credit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "test1", amountWei: "1" }),
+    }))
+    expect(res.status).toBe(401)
+  })
+
+  it("usage accepts a key bound to a custodial account", async () => {
+    const env = makeEnv()
+    env.store.set("cust:c1", JSON.stringify({
+      owner: "0xaaa", balanceWei: (10n * 10n ** 18n).toString(),
+      committedUsage: "0", cumulativeSpend: "0",
+    }))
+    // keyRow stores the SHA-256 HASH of the raw api key (never the raw key)
+    const data = new TextEncoder().encode("keyvalue")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "cust", custId: "c1" }))
+
+    const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: "keyvalue", model: "demo", tokens: "1000" }),
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    // 10 credit balance, 2 credit charge -> 8 credit remaining (8e18 wei)
+    expect(body.remainingWei).toBe("8000000000000000000")
+    const stored = JSON.parse(env.store.get("cust:c1"))
+    expect(stored.committedUsage).toBe("2000000000000000000")
+    // DB balance itself unchanged — usage is committed server-side
+    expect(stored.balanceWei).toBe((10n * 10n ** 18n).toString())
+  })
+
+  it("GET /v1/custodial/:id returns account state", async () => {
+    const env = makeEnv()
+    env.store.set("cust:c1", JSON.stringify({
+      owner: "0xaaa", balanceWei: (10n * 10n ** 18n).toString(),
+      committedUsage: (2n * 10n ** 18n).toString(),
+      cumulativeSpend: (2n * 10n ** 18n).toString(),
+      pendingTierBadges: [], mintedTierBadges: [],
+    }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/c1"))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.id).toBe("c1")
+    expect(body.usableCredit).toBe(8)
+    expect(body.tier).toBe("free")
+    expect(body.pendingBadges).toEqual([])
+  })
+})
