@@ -1,15 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
+import { useAccount, useReadContracts, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { parseEther, type Hash } from "viem"
+import { formatEther, parseEther, type Hash } from "viem"
 import { AlertCircle, CheckCircle2, ExternalLink, Loader2 } from "lucide-react"
 
 import { CINA_CREDIT_CONTRACT, hasCreditContract } from "@/lib/contracts/addresses"
 import { CINA_CREDIT_ABI } from "@/lib/contracts/cina-credit"
 import { useCreditBalance } from "@/lib/hooks/use-credit-balance"
+import { cn } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -57,6 +58,11 @@ export default function CreditsPage() {
   const [localError, setLocalError] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<Hash | undefined>(undefined)
   const [confirmed, setConfirmed] = useState(false)
+  const [lastAction, setLastAction] = useState<"topup" | "redeem">("topup")
+  const [redeemAmount, setRedeemAmount] = useState("")
+  const [redeemBusy, setRedeemBusy] = useState(false)
+  const [redeemMsg, setRedeemMsg] = useState<string | null>(null)
+  const [redeemError, setRedeemError] = useState<string | null>(null)
 
   const { writeContractAsync, isPending } = useWriteContract()
   const {
@@ -67,7 +73,7 @@ export default function CreditsPage() {
     query: { enabled: !!txHash },
   })
 
-  // After a confirmed top-up: clear the form and refresh the balance
+  // After a confirmed tx (top-up or redeem): clear the form and refresh the balance
   useEffect(() => {
     if (txConfirmed) {
       setConfirmed(true)
@@ -77,6 +83,21 @@ export default function CreditsPage() {
       queryClient.invalidateQueries({ queryKey: ["balance"] })
     }
   }, [txConfirmed, queryClient])
+
+  // Redeem reads: enabled flag + treasury credit held by the contract
+  const { data: redeemData } = useReadContracts({
+    contracts: [
+      { address: CINA_CREDIT_CONTRACT, abi: CINA_CREDIT_ABI, functionName: "redeemEnabled" },
+      { address: CINA_CREDIT_CONTRACT, abi: CINA_CREDIT_ABI, functionName: "balanceOf", args: [CINA_CREDIT_CONTRACT] },
+    ],
+    query: { enabled: hasCreditContract },
+  })
+  const redeemEnabled = redeemData?.[0]?.status === "success" && redeemData[0].result === true
+  const treasuryCredit = redeemData?.[1]?.status === "success" ? (redeemData[1].result as bigint) : undefined
+  // redeem 金额单位是 credit（合约 redeem(uint256 creditAmount)，1e18 缩放）；预计 ETH = creditWei / rate
+  const WEI_PER_CREDIT = 1_000_000_000_000_000_000n
+  const redeemWei = /^\d+$/.test(redeemAmount) ? BigInt(redeemAmount) * WEI_PER_CREDIT : 0n
+  const ethOut = creditRate && redeemWei > 0n ? redeemWei / creditRate : undefined
 
   const trimmedAmount = ethAmount.trim()
   const ethNum = Number(trimmedAmount)
@@ -93,6 +114,7 @@ export default function CreditsPage() {
   const handleTopUp = async () => {
     setLocalError(null)
     setConfirmed(false)
+    setLastAction("topup")
     if (!formatValid) {
       setLocalError("Enter a valid ETH amount (e.g. 0.05)")
       return
@@ -122,6 +144,35 @@ export default function CreditsPage() {
       setTxHash(hash)
     } catch (err) {
       setLocalError(extractError(err))
+    }
+  }
+
+  const handleRedeem = async () => {
+    setRedeemError(null)
+    setRedeemMsg(null)
+    setConfirmed(false)
+    setLastAction("redeem")
+    if (!/^\d+$/.test(redeemAmount) || redeemWei <= 0n) {
+      setRedeemError("Enter a positive credit amount")
+      return
+    }
+    if (!redeemEnabled) {
+      setRedeemError("Redemption is currently disabled")
+      return
+    }
+    setRedeemBusy(true)
+    try {
+      const hash = await writeContractAsync({
+        address: CINA_CREDIT_CONTRACT,
+        abi: CINA_CREDIT_ABI,
+        functionName: "redeem",
+        args: [redeemWei],
+      })
+      setTxHash(hash)
+    } catch (err) {
+      setRedeemError(extractError(err))
+    } finally {
+      setRedeemBusy(false)
     }
   }
 
@@ -267,7 +318,8 @@ export default function CreditsPage() {
                 <Alert className="bg-[#aaffec] border-[#50e3c2]/20">
                   <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
                   <AlertDescription className="text-sm text-[#29bc9b]">
-                    Top-up confirmed! Your credit balance has been updated.{" "}
+                    {lastAction === "redeem" ? "Redeem confirmed!" : "Top-up confirmed!"} Your
+                    credit balance has been updated.{" "}
                     <a
                       href={`https://sepolia.basescan.org/tx/${txHash}`}
                       target="_blank"
@@ -345,6 +397,52 @@ export default function CreditsPage() {
                 ) : (
                   "Top Up"
                 )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Redeem card */}
+          <Card className="shadow-vercel-card">
+            <CardHeader>
+              <CardTitle>Redeem</CardTitle>
+              <CardDescription>
+                Burn CinaCredit for ETH at the current rate (treasury-funded)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-2 text-sm">
+                <span
+                  className={cn(
+                    "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold",
+                    redeemEnabled ? "bg-[#50e3c2]/20 text-[#29bc9b]" : "bg-secondary text-muted-foreground"
+                  )}
+                >
+                  {redeemEnabled ? "Enabled" : "Disabled"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Treasury: {treasuryCredit === undefined ? "—" : formatBalance(treasuryCredit)} credit
+                </span>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="redeemAmount">Credit to redeem</Label>
+                <Input
+                  id="redeemAmount"
+                  type="number"
+                  min="1"
+                  value={redeemAmount}
+                  onChange={(e) => setRedeemAmount(e.target.value)}
+                  disabled={redeemBusy}
+                />
+              </div>
+              {ethOut !== undefined && redeemWei > 0n && (
+                <p className="text-xs text-muted-foreground">
+                  ≈ {formatEther(ethOut)} ETH
+                </p>
+              )}
+              {redeemError && <p className="text-sm text-destructive">{redeemError}</p>}
+              {redeemMsg && <p className="text-sm text-[#29bc9b]">{redeemMsg}</p>}
+              <Button onClick={handleRedeem} disabled={redeemBusy || !redeemAmount} className="w-full" variant="outline">
+                {redeemBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Redeem"}
               </Button>
             </CardContent>
           </Card>

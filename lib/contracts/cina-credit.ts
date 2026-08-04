@@ -12,4 +12,6 @@ export const CINA_CREDIT_ABI = [
   { name: "pause", type: "function", stateMutability: "nonpayable", inputs: [], outputs: [] },
   { name: "unpause", type: "function", stateMutability: "nonpayable", inputs: [], outputs: [] },
   { name: "setRedeemEnabled", type: "function", stateMutability: "nonpayable", inputs: [{ name: "enabled", type: "bool" }], outputs: [] },
+  { name: "redeem", type: "function", stateMutability: "nonpayable", inputs: [{ name: "creditAmount", type: "uint256" }], outputs: [] },
+  { name: "redeemEnabled", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "bool" }] },
 ] as const
