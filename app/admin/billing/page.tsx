@@ -165,11 +165,14 @@ export default function BillingManagementPage() {
           functionName: "mint",
           args: [item.address as Address, TIER_IDS[tier], 1n],
         })
-        await fetch(`${BILLING_API_URL}/v1/admin/badges/${item.address}/${tier}/confirm`, {
+        const confirmRes = await fetch(`${BILLING_API_URL}/v1/admin/badges/${item.address}/${tier}/confirm`, {
           method: "POST",
           headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
           body: JSON.stringify({ txHash: hash }),
         })
+        if (!confirmRes.ok) {
+          throw new Error(`confirm failed: ${confirmRes.status}`)
+        }
       }
       setSuccessAction("Tier badges minted")
       await fetchPending()

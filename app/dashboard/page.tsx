@@ -91,7 +91,7 @@ function TierProgressCard({ address }: { address?: Address }) {
                   />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {((Number(data.nextThreshold ?? 0) / 1e18) / 10000).toLocaleString()} credit to{" "}
+                  {(Number(data.nextThreshold ?? 0) / 1e18).toLocaleString()} credit to{" "}
                   {TIER_LABEL[data.nextTier] ?? data.nextTier}
                 </p>
               </>
