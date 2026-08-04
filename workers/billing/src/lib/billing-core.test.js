@@ -9,6 +9,7 @@ import {
   microToCredit,
   tiersEarned,
   tierProgress,
+  tierBadgeId,
   TIER_BADGE_IDS,
 } from "./billing-core.js"
 
@@ -118,5 +119,16 @@ describe("M2 tier engine", () => {
     const tier = getTier(100_000_000n * 10n ** 18n)
     const cost = estimateCost("demo", 1000n, tier)
     expect(cost).toBe(2_000_000n) // 2000 micro × 1000 tokens, no discount
+  })
+  it("tierProgress floor edge: exactly at next threshold is 0 bps", () => {
+    const p = tierProgress(100_000n * 10n ** 18n) // exactly silver floor
+    expect(p.tier).toBe("silver")
+    expect(p.progressBps).toBe(0)
+    expect(p.nextTier).toBe("gold")
+  })
+  it("tierBadgeId returns null for free and unknown tiers", () => {
+    expect(tierBadgeId("free")).toBeNull()
+    expect(tierBadgeId("bogus")).toBeNull()
+    expect(tierBadgeId("bronze")).toBe(100n)
   })
 })

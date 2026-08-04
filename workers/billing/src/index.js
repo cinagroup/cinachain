@@ -7,6 +7,9 @@ import {
   getTier,
   checkQuota,
   costToWei,
+  tiersEarned,
+  tierProgress,
+  tierBadgeId,
 } from "./lib/billing-core.js"
 import { runIndexer } from "./lib/indexer-run.js"
 
@@ -35,6 +38,11 @@ function checkRegRateLimit(request) {
   regBuckets.set(k, n + 1)
   if (regBuckets.size > 5000) for (const [key] of regBuckets) if (!key.endsWith(`:${now}`)) regBuckets.delete(key)
   return true
+}
+
+/** Tiers earned but not yet minted (spec §5: platform mints on crossing) */
+export function computePendingBadges(cumulativeSpend, mintedTierBadges = []) {
+  return tiersEarned(cumulativeSpend).filter((t) => !mintedTierBadges.includes(t))
 }
 
 function withLedgerLock(address, fn) {
@@ -96,19 +104,20 @@ export async function handleUsage(body, ledger) {
   try {
     const tokens = BigInt(body.tokens ?? 0)
     if (tokens <= 0n) return { status: 400, body: { error: "tokens must be > 0" } }
-    const tier = getTier(ledger.cumulativeSpend ?? 0n)
-    const costMicro = estimateCost(body.model ?? "demo", tokens, tier)
+    const costMicro = estimateCost(body.model ?? "demo", tokens, getTier(ledger.cumulativeSpend ?? 0n))
     const costWei = costToWei(costMicro)
     const usable = computeUsable(ledger.onchainSnapshot, ledger.committedUsage)
     if (!checkQuota(usable, costWei)) {
       return { status: 429, body: { error: "Credit Insufficient", usableWei: usable.toString() } }
     }
     const updated = applyConsumption(ledger, costWei)
+    const tier = getTier(updated.cumulativeSpend)
     const remaining = computeUsable(ledger.onchainSnapshot, updated.committedUsage)
     return {
       status: 200,
       body: {
         tier,
+        pendingBadges: computePendingBadges(updated.cumulativeSpend, ledger.mintedTierBadges ?? []),
         chargedWei: costWei.toString(),
         chargedMicro: costMicro.toString(),
         remainingWei: remaining.toString(),
@@ -179,6 +188,7 @@ export default {
             onchainSnapshot: snapshot,
             committedUsage: BigInt(stored.committedUsage ?? 0),
             cumulativeSpend: BigInt(stored.cumulativeSpend ?? 0),
+            mintedTierBadges: stored.mintedTierBadges ?? [],
           }
           const res = await handleUsage({ model, tokens }, ledger)
           if (res.status === 200) {
@@ -190,6 +200,8 @@ export default {
                 onchainSnapshot: snapshot.toString(),
                 committedUsage: updated.committedUsage.toString(),
                 cumulativeSpend: updated.cumulativeSpend.toString(),
+                tier: res.body.tier,
+                pendingTierBadges: res.body.pendingBadges,
               })
             )
           }
@@ -217,6 +229,31 @@ export default {
             usable: usable.toString(),
             cumulativeSpend: ledger?.cumulativeSpend ?? "0",
             usableCredit: Number(usable) / 1e18,
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : "Invalid request" }
+        }
+      })
+      return json(request, res)
+    }
+
+    if (url.pathname.startsWith("/v1/tier/") && request.method === "GET") {
+      const address = url.pathname.split("/").pop().toLowerCase()
+      const res = await withLedgerLock(address, async () => {
+        try {
+          const raw = await env.CINA_BILLING_KV.get(`ledger:${address}`)
+          const ledger = raw ? JSON.parse(raw) : null
+          const spend = ledger ? BigInt(ledger.cumulativeSpend ?? 0) : 0n
+          const progress = tierProgress(spend)
+          return {
+            address,
+            tier: progress.tier,
+            cumulativeSpend: spend.toString(),
+            nextTier: progress.nextTier,
+            nextThreshold: progress.nextMin,
+            progressBps: progress.progressBps,
+            pendingBadges: ledger?.pendingTierBadges ?? [],
+            mintedBadges: ledger?.mintedTierBadges ?? [],
           }
         } catch (err) {
           return { error: err instanceof Error ? err.message : "Invalid request" }

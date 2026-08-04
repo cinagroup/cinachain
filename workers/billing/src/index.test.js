@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { handleUsage } from "./index.js"
+import { computePendingBadges, handleUsage } from "./index.js"
 import billingWorker from "./index.js"
 
 // Ledger is wei-unit: 10 credit = 10e18 wei
@@ -45,5 +45,28 @@ describe("error paths", () => {
 describe("billing worker", () => {
   it("exposes a scheduled handler for the indexer cron", () => {
     expect(typeof billingWorker.scheduled).toBe("function")
+  })
+})
+
+describe("M2 pending tier badges", () => {
+  it("marks newly earned tiers as pending", () => {
+    const spend = 5_000n * 10n ** 18n // below bronze
+    expect(computePendingBadges(spend, [])).toEqual([])
+    const crossed = 10_500n * 10n ** 18n // bronze crossed
+    expect(computePendingBadges(crossed, [])).toEqual(["bronze"])
+    // silver also crossed, bronze already minted
+    const both = 105_000n * 10n ** 18n
+    expect(computePendingBadges(both, ["bronze"])).toEqual(["silver"])
+  })
+
+  it("usage response exposes tier after crossing", async () => {
+    const ledger = {
+      onchainSnapshot: 10_000_000_000_000_000_000_000_000n, // 10M credit
+      committedUsage: 0n,
+      cumulativeSpend: 9_999n * 10n ** 18n,
+    }
+    const res = await handleUsage({ model: "demo", tokens: 1000n }, ledger)
+    expect(res.status).toBe(200)
+    expect(res.body.tier).toBe("bronze") // crossed 10k credit
   })
 })

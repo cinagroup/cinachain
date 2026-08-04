@@ -58,6 +58,8 @@ export const TIER_DISCOUNT_BPS = {
 // Tier thresholds are in wei units (aligned with the ledger — cumulativeSpend
 // is wei; 1 credit = 1e18 wei). Spec §5 defines thresholds as credit counts:
 // bronze 10k credits, silver 100k, gold 1M, diamond 10M, whale 100M.
+// ⚠ Ordering is load-bearing: must stay strictly descending — getTier's
+// find() and tierProgress's idx-1 both rely on it.
 export const TIER_THRESHOLDS = [
   { tier: "whale", min: 100_000_000n * 10n ** 18n }, // 1 亿 credit
   { tier: "diamond", min: 10_000_000n * 10n ** 18n }, // 1000 万 credit
