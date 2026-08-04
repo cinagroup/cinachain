@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/strip-nulls.mjs",
     "start": "next start",
     "lint": "eslint '**/*.{ts,tsx}'",
     "lint-fix": "eslint '**/*.{ts,tsx}' --fix",

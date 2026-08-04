@@ -19,18 +19,12 @@ const nextConfig = {
     mode: process.env.NODE_ENV,
   },
   typescript: {
-    // Upstream bug: `ox` (viem transitive dep) ships a .ts file
-    // (tempo/KeyAuthorization.ts) with a type error that we cannot fix.
-    // All app-level type errors have been fixed. Re-enable once
-    // https://github.com/wevm/ox is patched or viem updates its dep.
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: false,
   },
   webpack: (config) => {
-    // Ignore optional peer deps from @base-org/account (x402 protocol).
-    // These are only used for HTTP 402 payment flows which we don't use.
     config.externals = config.externals || []
     config.externals.push({
       "@x402/evm/upto/client": "commonjs @x402/evm/upto/client",

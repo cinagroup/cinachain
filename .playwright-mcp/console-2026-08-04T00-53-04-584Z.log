@@ -1,0 +1,4 @@
+[   20920ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0:0
+[   20950ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0:0
+[   44560ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0:0
+[   44568ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0:0

@@ -1,0 +1,19 @@
+[    3486ms] [ERROR] Failed to load resource: the server responded with a status of 522 () @ https://87cd7ea2.cinachain-dapp-v2.pages.dev/manifest.json:0
+[    3489ms] [ERROR] Manifest fetch from https://87cd7ea2.cinachain-dapp-v2.pages.dev/manifest.json failed, code 522 @ https://87cd7ea2.cinachain-dapp-v2.pages.dev/:0
+[    4936ms] [ERROR] Connecting to 'https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0' violates the following Content Security Policy directive: "connect-src 'self' https://*.cinachain.com https://*.basescan.org https://sepolia.base.org https://base-sepolia.publicnode.com https://cloudflare-ipfs.com https://ipfs.io https://*.walletconnect.com https://verify.walletconnect.com wss://*.walletconnect.com". The action has been blocked. @ https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/368.e41c70730f43e2ee.js:13
+[    4937ms] [ERROR] Fetch API cannot load https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0. Refused to connect because it violates the document's Content Security Policy. @ https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/368.e41c70730f43e2ee.js:13
+[    4943ms] [ERROR] Connecting to 'https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0' violates the following Content Security Policy directive: "connect-src 'self' https://*.cinachain.com https://*.basescan.org https://sepolia.base.org https://base-sepolia.publicnode.com https://cloudflare-ipfs.com https://ipfs.io https://*.walletconnect.com https://verify.walletconnect.com wss://*.walletconnect.com". The action has been blocked. @ https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/368.e41c70730f43e2ee.js:13
+[    4943ms] [ERROR] Fetch API cannot load https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0. Refused to connect because it violates the document's Content Security Policy. @ https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/368.e41c70730f43e2ee.js:13
+[   51580ms] [LOG] [PWA] Service Worker registered: https://87cd7ea2.cinachain-dapp-v2.pages.dev/ @ https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/app/layout-b49d346f205e939e.js:0
+[   60413ms] [ERROR] Failed to load resource: net::ERR_NETWORK_CHANGED @ https://explorer-api.walletconnect.com/w3m/v1/getDesktopListings?projectId=c8867b3035029c2152dd54b3c9d0ae80&sdkType=wcm&sdkVersion=js-2.7.0&page=1&entries=9&version=2:0
+[   60414ms] [ERROR] TypeError: Failed to fetch
+    at T (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/8465.47d2c05feded8643.js:1:8761)
+    at Object.getDesktopListings (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/8465.47d2c05feded8643.js:1:8821)
+    at Object.getRecomendedWallets (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/8465.47d2c05feded8643.js:1:10336)
+    at rZ.preloadListings (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/9601.f8834a6fc712a1b1.js:22:53118)
+    at rZ.preloadData (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/9601.f8834a6fc712a1b1.js:22:53482)
+    at new rZ (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/9601.f8834a6fc712a1b1.js:22:52839)
+    at X.u (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/9601.f8834a6fc712a1b1.js:6:2888)
+    at J.g (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/9601.f8834a6fc712a1b1.js:6:4516)
+    at J._$AI (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/9601.f8834a6fc712a1b1.js:6:3997)
+    at en (https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/9601.f8834a6fc712a1b1.js:6:7278) @ https://87cd7ea2.cinachain-dapp-v2.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:0

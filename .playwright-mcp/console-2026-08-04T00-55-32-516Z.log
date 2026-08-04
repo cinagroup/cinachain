@@ -1,0 +1,3 @@
+[     691ms] [LOG] [PWA] Service Worker registered: https://5b4dbd39.cinachain-dapp-v2.pages.dev/ @ https://5b4dbd39.cinachain-dapp-v2.pages.dev/_next/static/chunks/app/layout-349448e53ca6ff7a.js:0
+[    1891ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0:0
+[    1891ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://pulse.walletconnect.org/batch?projectId=c8867b3035029c2152dd54b3c9d0ae80&st=events_sdk&sv=js-2.17.0:0

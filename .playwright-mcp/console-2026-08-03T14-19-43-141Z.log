@@ -1,0 +1,33 @@
+[    7162ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/3257-53ae1f4279a43484.js:0
+[    7167ms] [ERROR] ChunkLoadError: Loading chunk 3257 failed.
+(error: https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/3257-53ae1f4279a43484.js)
+    at b.f.j (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/webpack-04fca586d365b229.js:1:5037)
+    at https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/webpack-04fca586d365b229.js:1:1437
+    at Array.reduce (<anonymous>)
+    at b.e (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/webpack-04fca586d365b229.js:1:1403)
+    at https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:1:85956
+    at https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:1:86158
+    at t (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:1:86361) @ https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:0
+[    7169ms] Error: Minified React error #423; visit https://reactjs.org/docs/error-decoder.html?invariant=423 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at iU (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/fd9d1056-f3c495b1cda3be05.js:1:117436)
+    at o2 (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/fd9d1056-f3c495b1cda3be05.js:1:94371)
+    at https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/fd9d1056-f3c495b1cda3be05.js:1:94193
+    at o1 (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/fd9d1056-f3c495b1cda3be05.js:1:94200)
+    at oV (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/fd9d1056-f3c495b1cda3be05.js:1:91687)
+    at oB (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/fd9d1056-f3c495b1cda3be05.js:1:91112)
+    at MessagePort.C (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:1:99543)
+[    7169ms] ChunkLoadError: Loading chunk 3257 failed.
+(error: https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/3257-53ae1f4279a43484.js)
+    at b.f.j (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/webpack-04fca586d365b229.js:1:5037)
+    at https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/webpack-04fca586d365b229.js:1:1437
+    at Array.reduce (<anonymous>)
+    at b.e (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/webpack-04fca586d365b229.js:1:1403)
+    at https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:1:85956
+    at https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:1:86158
+    at t (https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/2472-220de3a327fdd7f9.js:1:86361)
+[  120503ms] [ERROR] Failed to load resource: net::ERR_QUIC_PROTOCOL_ERROR @ https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/7133-5e173216a5036e4d.js:0
+[  120503ms] [ERROR] Failed to load resource: net::ERR_QUIC_PROTOCOL_ERROR @ https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/8804-0f1600110b529b1e.js:0
+[  120504ms] [ERROR] Failed to load resource: net::ERR_QUIC_PROTOCOL_ERROR @ https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/9510-9c256a4d153bd572.js:0
+[  157756ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/app/(general)/page-e4dede717b75c6a2.js:0
+[  168105ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_RESET @ https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/6386-106bc0ff5ad0204e.js:0
+[  168148ms] [ERROR] Failed to load resource: net::ERR_NETWORK_CHANGED @ https://0e95479f.cinachain-nft-dapp.pages.dev/_next/static/chunks/app/(general)/layout-3ec3a1e05b1b56dd.js:0
