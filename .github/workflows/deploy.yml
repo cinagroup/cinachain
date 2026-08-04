@@ -34,54 +34,35 @@ jobs:
       - name: Strip null bytes (Windows-safe webpack output)
         run: node scripts/strip-nulls.mjs
 
-      # Debug: confirm secrets are present and wrangler can authenticate.
-      # Secrets are masked in logs; this only checks presence + whoami.
-      - name: Verify Cloudflare auth
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # Both Cloudflare secrets are REQUIRED. Missing CLOUDFLARE_ACCOUNT_ID
+      # broke every deploy since M1 (wrangler called /accounts//pages/...).
+      - name: Check Cloudflare secrets
         run: |
-          echo "token_present=${{ secrets.CLOUDFLARE_API_TOKEN != '' }}"
-          echo "account_present=${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}"
-          npx --yes wrangler@3 whoami 2>&1 | tail -8
-          echo "wrangler_exit=$?"
-          echo "--- pages projects ---"
-          npx --yes wrangler@3 pages project list 2>&1 | head -30
-          echo "project_list_exit=$?"
+          if [ "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" = "" ]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID secret is not set — add it in"
+            echo "::error::repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          if [ "${{ secrets.CLOUDFLARE_API_TOKEN }}" = "" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret is not set — add it in"
+            echo "::error::repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
 
       # Direct wrangler invocation instead of wrangler-action — the action's
-      # internal npm bootstrap failed on the runner (exit 1), breaking every
-      # deploy since M1. npx resolves the pinned wrangler@3 from the worker's
-      # lockfile and needs no action wrapper. Create the project if missing
-      # (all historical deploys failed — likely the project never existed).
-      # Diagnostic: dump wrangler output to an artifact (API-downloadable
-      # without login) so CI errors are visible to automation.
+      # internal npm bootstrap failed on the runner (exit 1). npx resolves the
+      # pinned wrangler@3 from the worker's lockfile; no action wrapper needed.
+      # Create the Pages project if it does not exist yet (it never deployed).
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          {
-            echo "=== account id ==="
-            echo "account_present=${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}"
-            echo "=== whoami ==="
-            npx --yes wrangler@3 whoami 2>&1 | head -10
-            echo "=== project list ==="
-            npx --yes wrangler@3 pages project list 2>&1 | head -20
-            echo "=== deploy ==="
-            npx --yes wrangler@3 pages project list 2>/dev/null | grep -q "cinachain-dapp-v2" || npx --yes wrangler@3 pages project create cinachain-dapp-v2 --production-branch=main 2>&1 | head -10
-            npx --yes wrangler@3 pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true 2>&1
-            echo "=== deploy_exit=$? ==="
-          } > /tmp/cf-deploy.log 2>&1
-          cat /tmp/cf-deploy.log
-          exit 1
-
-      - name: Upload deploy log artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cf-deploy-log
-          path: /tmp/cf-deploy.log
+          if ! npx --yes wrangler@3 pages project list 2>/dev/null | grep -q "cinachain-dapp-v2"; then
+            echo "Pages project missing — creating cinachain-dapp-v2"
+            npx --yes wrangler@3 pages project create cinachain-dapp-v2 --production-branch=main
+          fi
+          npx --yes wrangler@3 pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true
 
       # Billing worker (metering gateway + scheduled indexer). Only on push
       # to main — PRs get no worker deploy (no preview environment).
