@@ -51,7 +51,7 @@ export default function AdminOverviewPage() {
     return (
       <div className="container max-w-[1200px] px-6 py-12">
         <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>
             NFT contract address not configured. Set NEXT_PUBLIC_CINA_NFT_CONTRACT in environment variables.
           </AlertDescription>
@@ -71,7 +71,7 @@ export default function AdminOverviewPage() {
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
             Admin Dashboard<span className="text-foreground">.</span>
           </h1>
-          <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+          <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
             Overview of your NFT collection and minting statistics.
           </p>
         </div>
@@ -95,7 +95,7 @@ export default function AdminOverviewPage() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     {stat.title}
                   </CardTitle>
-                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  <Icon className="size-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="font-display text-2xl text-foreground">
@@ -120,31 +120,31 @@ export default function AdminOverviewPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <QuickAction
                 href="/admin/badges"
-                icon={<Award className="h-5 w-5" />}
+                icon={<Award className="size-5" />}
                 title="Mint Badges"
                 description="Award achievement badges to community members"
               />
               <QuickAction
                 href="/admin/whitelist"
-                icon={<FileText className="h-5 w-5" />}
+                icon={<FileText className="size-5" />}
                 title="Manage Whitelist"
                 description="Upload CSV files and manage whitelist addresses"
               />
               <QuickAction
                 href="/admin/stats"
-                icon={<BarChart3 className="h-5 w-5" />}
+                icon={<BarChart3 className="size-5" />}
                 title="View Statistics"
                 description="Detailed minting analytics and revenue tracking"
               />
               <QuickAction
                 href="/admin/contract"
-                icon={<Settings className="h-5 w-5" />}
+                icon={<Settings className="size-5" />}
                 title="Contract Settings"
                 description="Pause, update prices, withdraw funds"
               />
               <QuickAction
                 href="/admin/billing"
-                icon={<Coins className="h-5 w-5" />}
+                icon={<Coins className="size-5" />}
                 title="Billing Settings"
                 description="Exchange rate, credit issuance, ledger"
               />
@@ -170,16 +170,16 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className="group rounded-lg border border-border bg-card p-4 transition-all hover:shadow-vercel-md hover:-translate-y-0.5"
+      className="group rounded-lg border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-vercel-md"
     >
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-foreground">
+      <div className="mb-3 flex size-9 items-center justify-center rounded-md bg-secondary text-foreground">
         {icon}
       </div>
       <h3 className="text-sm font-medium text-foreground">{title}</h3>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
       <span className="mt-2 inline-flex items-center gap-1 text-xs text-link">
         Open
-        <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+        <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
       </span>
     </Link>
   )

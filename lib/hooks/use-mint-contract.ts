@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from "react"
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
-import { useSendCalls } from "wagmi/experimental"
+import { useSendCalls, useWriteContract, useWaitForTransactionReceipt } from "wagmi"
 import { parseEther, type Hash } from "viem"
 import { CINA_NFT_CONTRACT, MINT_PRICE_ETH } from "@/lib/contracts/addresses"
 import { usePaymasterCapabilities } from "@/lib/hooks/use-paymaster"
@@ -122,8 +121,8 @@ export function useMintContract(): UseMintContractResult {
       setStatus("awaiting-wallet")
       setError(null)
       try {
-        const request = {
-          address: CINA_NFT_CONTRACT,
+        const call = {
+          to: CINA_NFT_CONTRACT,
           abi: MINT_ABI,
           functionName: "mintWhitelist" as const,
           args: [proof as readonly `0x${string}`[], BigInt(quantity)] as [
@@ -135,10 +134,15 @@ export function useMintContract(): UseMintContractResult {
         // plain write path (EOA pays gas normally).
         const hash = isPaymasterSupported
           ? await sendCallsAsync({
-              calls: [request],
+              calls: [call],
               capabilities,
             })
-          : await writeContractAsync(request)
+          : await writeContractAsync({
+              address: call.to,
+              abi: call.abi,
+              functionName: call.functionName,
+              args: call.args,
+            })
         setTxHash(hash as Hash)
         setStatus("submitted")
         return hash as Hash | undefined
@@ -165,8 +169,8 @@ export function useMintContract(): UseMintContractResult {
         // Prefer the on-chain mintPrice (passed by the mint page); fall back
         // to the env constant so the sent value always matches the contract.
         const priceWei = pricePerNftWei ?? parseEther(String(MINT_PRICE_ETH))
-        const request = {
-          address: CINA_NFT_CONTRACT,
+        const call = {
+          to: CINA_NFT_CONTRACT,
           abi: MINT_ABI,
           functionName: "mintPublic" as const,
           args: [BigInt(quantity)] as [bigint],
@@ -174,10 +178,16 @@ export function useMintContract(): UseMintContractResult {
         }
         const hash = isPaymasterSupported
           ? await sendCallsAsync({
-              calls: [request],
+              calls: [call],
               capabilities,
             })
-          : await writeContractAsync(request)
+          : await writeContractAsync({
+              address: call.to,
+              abi: call.abi,
+              functionName: call.functionName,
+              args: call.args,
+              value: call.value,
+            })
         setTxHash(hash as Hash)
         setStatus("submitted")
         return hash as Hash | undefined

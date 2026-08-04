@@ -1,8 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { useAccount } from "wagmi"
-import { useCapabilities } from "wagmi/experimental"
+import { useAccount, useCapabilities } from "wagmi"
 
 /**
  * Detects if the connected wallet supports EIP-5792 paymaster service

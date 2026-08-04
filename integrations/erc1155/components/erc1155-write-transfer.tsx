@@ -79,7 +79,7 @@ export function Erc1155WriteTransfer({ address }: Erc1155WriteTransferProps) {
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="flex items-center justify-between text-sm">
             <label>Use different from address</label>
-            <div className="h-6 w-6">
+            <div className="size-6">
               <input
                 {...register("differentFromAddress")}
                 className="input"

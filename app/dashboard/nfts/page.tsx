@@ -40,7 +40,7 @@ export default function MyNftsPage() {
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
             My NFTs<span className="text-foreground">.</span>
           </h1>
-          <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+          <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
             Your CinaChain NFT collection.
           </p>
         </div>
@@ -88,7 +88,7 @@ export default function MyNftsPage() {
                   disabled={tokensLoading}
                 >
                   {tokensLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 size-4 animate-spin" />
                   ) : null}
                   Load More ({count - offset - tokenIds.length} more)
                 </Button>
@@ -105,7 +105,7 @@ export default function MyNftsPage() {
         {/* Empty state — also catches enumeration failure */}
         {!isLoading && tokenIds.length === 0 && (
           <div className="rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
-            <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/40" />
+            <PackageOpen className="mx-auto size-12 text-muted-foreground/40" />
             <p className="mt-4 text-base text-muted-foreground">
               You don&apos;t own any CinaChain NFTs yet.
             </p>

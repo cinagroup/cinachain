@@ -1,7 +1,7 @@
 "use client"
 
 import { HTMLAttributes } from "react"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { AppKitButton } from "@reown/appkit/react"
 import { formatUnits, type Address } from "viem"
 import { useAccount } from "wagmi"
 
@@ -31,7 +31,7 @@ export function ERC20Image({ address, ...props }: ERC20Props) {
   return (
     <img
       alt={`Token ${address} icon`}
-      className="mx-auto h-12 w-12 rounded-full border-2 border-white shadow-vercel-md"
+      className="mx-auto size-12 rounded-full border-2 border-white shadow-vercel-md"
       src={`https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/${address}/logo.png`}
       {...props}
     />
@@ -170,7 +170,7 @@ export function ERC20Read({
                 {showImage && (
                   <ERC20Image
                     address={address}
-                    className="mx-auto h-12 w-12 rounded-full border-2 border-white shadow-vercel-md"
+                    className="mx-auto size-12 rounded-full border-2 border-white shadow-vercel-md"
                   />
                 )}
                 <ERC20Name address={address} />
@@ -216,7 +216,7 @@ export function ERC20Read({
       </IsWalletConnected>
       <IsWalletDisconnected>
         <div className="flex items-center justify-center gap-10">
-          <ConnectButton />
+          <AppKitButton balance="hide" />
         </div>
       </IsWalletDisconnected>
     </>

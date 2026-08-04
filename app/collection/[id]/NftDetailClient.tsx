@@ -99,14 +99,14 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
           <div className="relative aspect-square overflow-hidden rounded-lg bg-card shadow-vercel-card">
             {isLoading && (
               <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/40" />
+                <Loader2 className="size-8 animate-spin text-muted-foreground/40" />
               </div>
             )}
             {!isLoading && image && (
               <CinaNftImage ipfsCidUrl={image} alt={name || `NFT #${tokenId}`} />
             )}
             {!isLoading && !image && (
-              <div className="flex h-full w-full items-center justify-center">
+              <div className="flex size-full items-center justify-center">
                 <span className="font-display text-6xl text-muted-foreground/30">
                   #{tokenId}
                 </span>
@@ -128,7 +128,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Etherscan <ExternalLink className="ml-1 h-3 w-3" />
+                Etherscan <ExternalLink className="ml-1 size-3" />
               </Link>
             </Button>
             <Button asChild variant="outline" className="flex-1">
@@ -137,7 +137,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                OpenSea <ExternalLink className="ml-1 h-3 w-3" />
+                OpenSea <ExternalLink className="ml-1 size-3" />
               </Link>
             </Button>
           </div>
@@ -171,7 +171,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                   href={`https://sepolia.basescan.org/address/${owner}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="break-all font-mono-tech text-sm text-link transition-colors hover:text-link-deep"
+                  className="font-mono-tech break-all text-sm text-link transition-colors hover:text-link-deep"
                 >
                   {owner}
                 </Link>

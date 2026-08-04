@@ -6,6 +6,7 @@ import { motion, MotionProps } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { fadeUpVariant } from "@/lib/utils/motion"
 import { buttonVariants } from "@/components/ui/button"
+import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 import { WalletAddress } from "@/components/blockchain/wallet-address"
 import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { PageSectionGrid } from "@/components/layout/page-section"
@@ -51,17 +52,12 @@ const demos = [
     ),
   },
   {
-    title: "Rainbowkit",
+    title: "Reown AppKit",
     description:
-      "The best way to connect a wallet. Designed for everyone. Built for developers.",
+      "One modal for EOA wallets (injected, WalletConnect, Coinbase) and email/social smart accounts.",
     demo: (
-      <div className="flex items-center justify-center space-x-20">
-        <img
-          alt="Rainbow logo"
-          height={100}
-          src="/integrations/rainbowkit.svg"
-          width={100}
-        />
+      <div className="flex items-center justify-center">
+        <AppKitConnectButton />
       </div>
     ),
   },
@@ -136,7 +132,7 @@ function DemoCard({ title, description, href, demo, large }: DemoCardProps) {
     >
       <div className="flex h-60 items-center justify-center">{demo}</div>
       <div className="mx-auto max-w-xl text-center">
-        <h2 className="mb-3 bg-gradient-to-br from-black to-stone-500 bg-clip-text text-xl font-display text-transparent dark:from-stone-100 dark:to-emerald-200 md:text-3xl md:font-normal">
+        <h2 className="font-display mb-3 bg-gradient-to-br from-black to-stone-500 bg-clip-text text-xl text-transparent dark:from-stone-100 dark:to-emerald-200 md:text-3xl md:font-normal">
           {title}
         </h2>
         <p className="-mt-2 text-sm leading-normal text-muted-foreground">

@@ -50,12 +50,12 @@ export default function HomePage() {
           />
         </div>
 
-        <div className="container mx-auto max-w-[960px] px-6 pt-32 pb-20 text-center">
+        <div className="container mx-auto max-w-[960px] px-6 pb-20 pt-32 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 shadow-vercel-sm">
             <span className="text-xs font-medium text-foreground/60">
               Building on Base L2
             </span>
-            <span className="inline-flex h-4 items-center rounded-full bg-violet/10 px-2 text-[10px] font-semibold text-violet">
+            <span className="bg-violet/10 inline-flex h-4 items-center rounded-full px-2 text-[10px] font-semibold text-violet">
               Live
             </span>
           </div>
@@ -78,7 +78,7 @@ export default function HomePage() {
                 "btn-pill"
               )}
             >
-              <Sparkles className="mr-2 h-4 w-4" />
+              <Sparkles className="mr-2 size-4" />
               Explore NFT DApp
             </Link>
             <Link
@@ -103,7 +103,7 @@ export default function HomePage() {
 
           {/* Live Stats */}
           {!isLoading && mintedCount > 0 && (
-            <div className="mx-auto mt-12 flex max-w-[640px] items-center justify-center gap-8 rounded-lg border border-border bg-card px-6 py-4 shadow-vercel-sm">
+            <div className="mx-auto mt-12 flex max-w-screen-sm items-center justify-center gap-8 rounded-lg border border-border bg-card px-6 py-4 shadow-vercel-sm">
               <HeroStat label="NFTs Minted" value={mintedCount.toLocaleString()} />
               <Divider />
               <HeroStat label="Max Supply" value={maxCount.toLocaleString()} />
@@ -125,7 +125,7 @@ export default function HomePage() {
 
           <div className="mt-12 grid gap-4 md:grid-cols-2">
             <ProductCard
-              icon={<Layers className="h-6 w-6" />}
+              icon={<Layers className="size-6" />}
               name="CinaChain NFT"
               tag="ERC-721"
               description="10,000 unique collectibles with whitelist + public mint phases. Full enumerable support for dashboard integration."
@@ -134,7 +134,7 @@ export default function HomePage() {
               status="Live"
             />
             <ProductCard
-              icon={<Award className="h-6 w-6" />}
+              icon={<Award className="size-6" />}
               name="CinaBadge"
               tag="ERC-1155"
               description="Soulbound achievement badges, event tickets, and membership tiers. Batch minting and airdrop support."
@@ -143,7 +143,7 @@ export default function HomePage() {
               status="Live"
             />
             <ProductCard
-              icon={<Zap className="h-6 w-6" />}
+              icon={<Zap className="size-6" />}
               name="Gasless Minting"
               tag="CDP Paymaster"
               description="Coinbase Smart Wallet integration with passkey-based onboarding. Users mint without holding ETH."
@@ -152,7 +152,7 @@ export default function HomePage() {
               status="Beta"
             />
             <ProductCard
-              icon={<Server className="h-6 w-6" />}
+              icon={<Server className="size-6" />}
               name="Edge API"
               tag="Cloudflare Workers"
               description="Whitelist verification and paymaster proxy running on Cloudflare's global edge network."
@@ -176,22 +176,22 @@ export default function HomePage() {
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <TechCard
-              icon={<Shield className="h-5 w-5" />}
+              icon={<Shield className="size-5" />}
               title="Base L2"
               description="Coinbase's Ethereum L2. 100-500x lower gas than mainnet."
             />
             <TechCard
-              icon={<Globe className="h-5 w-5" />}
+              icon={<Globe className="size-5" />}
               title="IPFS"
               description="Decentralized metadata with 3-gateway fallback for reliability."
             />
             <TechCard
-              icon={<Wallet className="h-5 w-5" />}
+              icon={<Wallet className="size-5" />}
               title="Smart Wallet"
               description="Passkey-based wallets. No seed phrases. Gasless transactions."
             />
             <TechCard
-              icon={<Code className="h-5 w-5" />}
+              icon={<Code className="size-5" />}
               title="Cloudflare"
               description="Edge-deployed Pages + Workers. Sub-50ms global latency."
             />
@@ -269,7 +269,7 @@ export default function HomePage() {
               className={cn(buttonVariants({ size: "lg" }), "btn-pill")}
             >
               Mint Your First NFT
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="ml-2 size-4" />
             </Link>
             <Link
               href={siteConfig.links.discord}
@@ -277,7 +277,7 @@ export default function HomePage() {
               rel="noreferrer noopener"
               className="inline-flex h-12 items-center gap-2 rounded-full bg-[#7289da] px-6 text-base font-medium text-white transition-opacity hover:opacity-90"
             >
-              <FaDiscord className="h-4 w-4" />
+              <FaDiscord className="size-4" />
               Join Discord
             </Link>
           </div>
@@ -289,7 +289,7 @@ export default function HomePage() {
               rel="noreferrer noopener"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              <FaGithub className="h-5 w-5" />
+              <FaGithub className="size-5" />
             </Link>
             <Link
               href={siteConfig.links.twitter}
@@ -297,7 +297,7 @@ export default function HomePage() {
               rel="noreferrer noopener"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              <FaTwitter className="h-5 w-5" />
+              <FaTwitter className="size-5" />
             </Link>
             <Link
               href={siteConfig.links.discord}
@@ -305,12 +305,12 @@ export default function HomePage() {
               rel="noreferrer noopener"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              <FaDiscord className="h-5 w-5" />
+              <FaDiscord className="size-5" />
             </Link>
           </div>
 
           <div className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <Lock className="h-3 w-3" />
+            <Lock className="size-3" />
             <span>Built on Base · Powered by Cloudflare</span>
           </div>
         </div>
@@ -383,10 +383,10 @@ function ProductCard({
     <Link
       href={href}
       {...(external ? { target: "_blank", rel: "noreferrer noopener" } : {})}
-      className="group block rounded-xl border border-border bg-card p-6 shadow-vercel-card transition-all hover:shadow-vercel-md hover:-translate-y-0.5"
+      className="group block rounded-xl border border-border bg-card p-6 shadow-vercel-card transition-all hover:-translate-y-0.5 hover:shadow-vercel-md"
     >
       <div className="flex items-start justify-between">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary text-foreground">
+        <div className="flex size-12 items-center justify-center rounded-lg bg-secondary text-foreground">
           {icon}
         </div>
         <div className="flex items-center gap-2">
@@ -413,7 +413,7 @@ function ProductCard({
       </p>
       <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-link transition-colors hover:text-link-deep">
         {cta}
-        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
       </span>
     </Link>
   )
@@ -430,7 +430,7 @@ function TechCard({
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-vercel-sm">
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-foreground">
+      <div className="mb-3 flex size-9 items-center justify-center rounded-md bg-secondary text-foreground">
         {icon}
       </div>
       <h3 className="text-sm font-medium text-foreground">{title}</h3>
@@ -460,12 +460,12 @@ function RoadmapCard({
         </span>
         {status === "done" ? (
           <span className="flex items-center gap-1 text-xs font-medium text-[#29bc9b]">
-            <CheckCircle2 className="h-3.5 w-3.5" />
+            <CheckCircle2 className="size-3.5" />
             Done
           </span>
         ) : (
           <span className="flex items-center gap-1 text-xs font-medium text-violet">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="size-3.5" />
             In Progress
           </span>
         )}
@@ -478,7 +478,7 @@ function RoadmapCard({
           <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
             <span
               className={cn(
-                "mt-1 h-1 w-1 shrink-0 rounded-full",
+                "mt-1 size-1 shrink-0 rounded-full",
                 status === "done" ? "bg-[#29bc9b]" : "bg-violet"
               )}
             />
@@ -493,7 +493,7 @@ function RoadmapCard({
 function TeamCard({ name, role }: { name: string; role: string }) {
   return (
     <div className="rounded-xl border border-border bg-card p-6 text-center shadow-vercel-sm">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#7928ca] to-[#0070f3] text-xl font-display text-white">
+      <div className="font-display mx-auto flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-[#7928ca] to-[#0070f3] text-xl text-white">
         {name.charAt(0)}
       </div>
       <h3 className="font-display mt-4 text-base tracking-tight text-foreground">

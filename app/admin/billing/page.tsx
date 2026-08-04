@@ -83,8 +83,8 @@ export default function BillingManagementPage() {
   // reads under these query keys) and re-pull the ledger.
   useEffect(() => {
     if (confirmed) {
-      queryClient.invalidateQueries({ queryKey: ["readContracts"] })
-      refetchLedger()
+      void queryClient.invalidateQueries({ queryKey: ["readContracts"] })
+      void refetchLedger()
     }
     if (reverted) {
       // A mined-but-reverted tx must not look successful
@@ -131,7 +131,7 @@ export default function BillingManagementPage() {
       setTxHash(hash)
       setSuccessAction(label)
     } catch (err) {
-      const anyErr = err as unknown as { shortMessage?: string; message?: string }
+      const anyErr = err  as { shortMessage?: string; message?: string }
       setError(anyErr.shortMessage ?? anyErr.message ?? `Failed to ${label}`)
     }
   }
@@ -185,7 +185,7 @@ export default function BillingManagementPage() {
       setSuccessAction("Tier badges minted")
       await fetchPending()
     } catch (err) {
-      const anyErr = err as unknown as { shortMessage?: string; message?: string }
+      const anyErr = err  as { shortMessage?: string; message?: string }
       setBadgeError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge")
     }
   }
@@ -202,7 +202,7 @@ export default function BillingManagementPage() {
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? `${op} failed: ${res.status}`)
-      setCustMsg(`${op} ok — balanceWei ${body.balanceWei}`)
+      setCustMsg(`${op} ok — balanceWei ${String(body.balanceWei)}`)
     } catch (err) {
       setBadgeError(err instanceof Error ? err.message : "Custodial operation failed")
     }
@@ -212,7 +212,7 @@ export default function BillingManagementPage() {
     return (
       <div className="container max-w-[1200px] px-6 py-12">
         <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>
             Credit contract address not configured. Set NEXT_PUBLIC_CINA_CREDIT_CONTRACT in environment.
           </AlertDescription>
@@ -233,7 +233,7 @@ export default function BillingManagementPage() {
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
         Billing Management<span className="text-foreground">.</span>
       </h1>
-      <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+      <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Manage the CinaCredit exchange rate, issue credit, inspect the ledger, and control emergency
         top-up operations.
       </p>
@@ -241,7 +241,7 @@ export default function BillingManagementPage() {
       {/* Paused warning */}
       {isPaused && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>
             Credit top-ups are currently paused. Users cannot top up with ETH.
           </AlertDescription>
@@ -251,14 +251,14 @@ export default function BillingManagementPage() {
       {/* Transaction feedback */}
       {error && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription className="break-all">{error}</AlertDescription>
         </Alert>
       )}
 
       {confirmed && txHash && successAction && (
         <Alert className="mt-6 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-          <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
+          <CheckCircle2 className="size-4 text-[#29bc9b]" />
           <AlertDescription className="text-sm text-[#29bc9b]">
             {successAction} successful!{" "}
             <a
@@ -267,7 +267,7 @@ export default function BillingManagementPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Etherscan <ExternalLink className="h-3 w-3" />
+              View on Etherscan <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -275,7 +275,7 @@ export default function BillingManagementPage() {
 
       {isBusy && txHash && !confirmed && !reverted && (
         <Alert className="mt-6 border-[#0070f3]/30 bg-[#0070f3]/10">
-          <Loader2 className="h-4 w-4 animate-spin text-[#0761d1]" />
+          <Loader2 className="size-4 animate-spin text-[#0761d1]" />
           <AlertDescription className="text-sm text-[#0761d1]">
             Transaction submitted. Waiting for confirmation...
           </AlertDescription>
@@ -284,7 +284,7 @@ export default function BillingManagementPage() {
 
       {reverted && txHash && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription className="break-all">
             Transaction reverted on-chain — the action failed.{" "}
             <a
@@ -293,18 +293,18 @@ export default function BillingManagementPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Etherscan <ExternalLink className="h-3 w-3" />
+              View on Etherscan <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid gap-6 mt-6 md:grid-cols-2">
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
         {/* Exchange Rate */}
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowLeftRight className="h-5 w-5" />
+              <ArrowLeftRight className="size-5" />
               Exchange Rate
             </CardTitle>
             <CardDescription>Set how many credit 1 ETH mints</CardDescription>
@@ -340,7 +340,7 @@ export default function BillingManagementPage() {
                 if (!window.confirm(`Set exchange rate to ${newRate.trim()} credit per 1 ETH?`)) {
                   return
                 }
-                runWrite("setRate", "Rate update", [BigInt(newRate.trim())])
+                void runWrite("setRate", "Rate update", [BigInt(newRate.trim())])
               }}
               disabled={isBusy || !newRate.trim()}
               variant="outline"
@@ -355,7 +355,7 @@ export default function BillingManagementPage() {
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Coins className="h-5 w-5" />
+              <Coins className="size-5" />
               Issue Credit
             </CardTitle>
             <CardDescription>Mint credit directly to a recipient address</CardDescription>
@@ -404,7 +404,7 @@ export default function BillingManagementPage() {
                 if (!window.confirm(`Issue ${amount} credit (${weiAmount} wei units) to ${recipient}?`)) {
                   return
                 }
-                runWrite("mintTo", "Credit issuance", [recipient, weiAmount])
+                void runWrite("mintTo", "Credit issuance", [recipient, weiAmount])
               }}
               disabled={isBusy || !recipient || !amount.trim()}
               variant="outline"
@@ -419,7 +419,7 @@ export default function BillingManagementPage() {
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
+              <BookOpen className="size-5" />
               Ledger
             </CardTitle>
             <CardDescription>Credit ledger for the connected admin address</CardDescription>
@@ -427,34 +427,34 @@ export default function BillingManagementPage() {
           <CardContent>
             {ledgerError ? (
               <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-sm break-all">
+                <AlertCircle className="size-4" />
+                <AlertDescription className="break-all text-sm">
                   Ledger unavailable
                 </AlertDescription>
               </Alert>
             ) : (
               <dl className="space-y-3 text-sm">
-                <div className="flex justify-between py-2 border-b border-border">
+                <div className="flex justify-between border-b border-border py-2">
                   <dt className="text-muted-foreground">On-chain snapshot</dt>
-                  <dd className="font-mono-tech text-xs break-all">
+                  <dd className="font-mono-tech break-all text-xs">
                     {ledger ? ledger.onchainSnapshot : "…"}
                   </dd>
                 </div>
-                <div className="flex justify-between py-2 border-b border-border">
+                <div className="flex justify-between border-b border-border py-2">
                   <dt className="text-muted-foreground">Committed usage</dt>
-                  <dd className="font-mono-tech text-xs break-all">
+                  <dd className="font-mono-tech break-all text-xs">
                     {ledger ? ledger.committedUsage : "…"}
                   </dd>
                 </div>
-                <div className="flex justify-between py-2 border-b border-border">
+                <div className="flex justify-between border-b border-border py-2">
                   <dt className="text-muted-foreground">Usable</dt>
-                  <dd className="font-mono-tech text-xs break-all">
+                  <dd className="font-mono-tech break-all text-xs">
                     {ledger ? ledger.usable : "…"}
                   </dd>
                 </div>
                 <div className="flex justify-between py-2">
                   <dt className="text-muted-foreground">Cumulative spend</dt>
-                  <dd className="font-mono-tech text-xs break-all">
+                  <dd className="font-mono-tech break-all text-xs">
                     {ledger ? ledger.cumulativeSpend : "…"}
                   </dd>
                 </div>
@@ -467,7 +467,7 @@ export default function BillingManagementPage() {
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5" />
+              <ShieldAlert className="size-5" />
               Emergency Controls
             </CardTitle>
             <CardDescription>Pause, resume, or enable redemption</CardDescription>
@@ -475,14 +475,14 @@ export default function BillingManagementPage() {
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between rounded-md border border-border bg-secondary p-4">
               <span className="text-sm font-medium">Top-ups Status</span>
-              <span className={isPaused ? "text-red-500 font-semibold" : "text-green-500 font-semibold"}>
+              <span className={isPaused ? "font-semibold text-red-500" : "font-semibold text-green-500"}>
                 {creditLoading ? "…" : isPaused ? "Paused" : "Active"}
               </span>
             </div>
             <Button
               onClick={() => {
                 if (window.confirm("Pause all credit top-ups immediately?")) {
-                  runWrite("pause", "Pause top-ups")
+                  void runWrite("pause", "Pause top-ups")
                 }
               }}
               disabled={isBusy}
@@ -490,16 +490,16 @@ export default function BillingManagementPage() {
               className="w-full"
             >
               {isBusy ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <Pause className="h-4 w-4 mr-2" />
+                <Pause className="mr-2 size-4" />
               )}
               Pause Top-Ups
             </Button>
             <Button
               onClick={() => {
                 if (window.confirm("Resume credit top-ups?")) {
-                  runWrite("unpause", "Resume top-ups")
+                  void runWrite("unpause", "Resume top-ups")
                 }
               }}
               disabled={isBusy}
@@ -507,16 +507,16 @@ export default function BillingManagementPage() {
               className="w-full"
             >
               {isBusy ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <Play className="h-4 w-4 mr-2" />
+                <Play className="mr-2 size-4" />
               )}
               Resume Top-Ups
             </Button>
             <Button
               onClick={() => {
                 if (window.confirm("Enable credit redemption?")) {
-                  runWrite("setRedeemEnabled", "Enable redemption", [true])
+                  void runWrite("setRedeemEnabled", "Enable redemption", [true])
                 }
               }}
               disabled={isBusy}
@@ -524,9 +524,9 @@ export default function BillingManagementPage() {
               className="w-full"
             >
               {isBusy ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
               ) : (
-                <BadgeCheck className="h-4 w-4 mr-2" />
+                <BadgeCheck className="mr-2 size-4" />
               )}
               Enable Redemption
             </Button>
@@ -538,7 +538,7 @@ export default function BillingManagementPage() {
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BadgeCheck className="h-5 w-5" />
+            <BadgeCheck className="size-5" />
             Tier Badge Minting
           </CardTitle>
           <CardDescription>
@@ -555,7 +555,7 @@ export default function BillingManagementPage() {
               className="max-w-[240px]"
             />
             <Button variant="outline" size="sm" onClick={fetchPending} disabled={isFetchingPending}>
-              {isFetchingPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+              {isFetchingPending ? <Loader2 className="size-4 animate-spin" /> : "Refresh"}
             </Button>
           </div>
           {badgeError && (
@@ -589,7 +589,7 @@ export default function BillingManagementPage() {
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Coins className="h-5 w-5" />
+            <Coins className="size-5" />
             Custodial Accounts
           </CardTitle>
           <CardDescription>

@@ -1,4 +1,6 @@
 /* eslint-env node */
+const path = require("path")
+
 module.exports = {
   root: true,
   extends: [
@@ -29,7 +31,9 @@ module.exports = {
   settings: {
     tailwindcss: {
       callees: ["cn"],
-      config: "tailwind.config.js",
+      // Absolute path — the plugin resolves `tailwindcss` from the config's
+      // directory, and a relative path (".") breaks package resolution.
+      config: path.resolve(__dirname, "tailwind.config.js"),
     },
     next: {
       rootDir: true,

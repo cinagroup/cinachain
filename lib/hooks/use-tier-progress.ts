@@ -22,9 +22,9 @@ export function useTierProgress(address?: Address) {
   return useQuery({
     queryKey: ["tier", address],
     queryFn: async (): Promise<TierProgress> => {
-      const res = await fetch(`${BILLING_API_URL}/v1/tier/${address}`)
+      const res = await fetch(`${BILLING_API_URL}/v1/tier/${address ?? ""}`)
       if (!res.ok) throw new Error(`tier lookup failed: ${res.status}`)
-      return res.json()
+      return (await res.json()) as TierProgress
     },
     enabled: !!address,
     staleTime: 60_000,

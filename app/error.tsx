@@ -18,7 +18,7 @@ export default function Error({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
-      <AlertTriangle className="h-12 w-12 text-foreground/40" />
+      <AlertTriangle className="size-12 text-foreground/40" />
       <h2 className="font-display mt-6 text-2xl tracking-tight text-foreground">
         Something went wrong<span className="text-muted-foreground">.</span>
       </h2>
@@ -26,7 +26,7 @@ export default function Error({
         {error.message || "An unexpected error occurred. Please try again."}
       </p>
       {error.digest && (
-        <p className="mt-2 font-mono-tech text-xs text-muted-foreground/60">
+        <p className="font-mono-tech mt-2 text-xs text-muted-foreground/60">
           Error ID: {error.digest}
         </p>
       )}
@@ -34,7 +34,7 @@ export default function Error({
         onClick={reset}
         className={cn(buttonVariants({ size: "lg" }), "btn-pill mt-8")}
       >
-        <RotateCcw className="mr-2 h-4 w-4" />
+        <RotateCcw className="mr-2 size-4" />
         Try Again
       </button>
     </div>

@@ -75,7 +75,7 @@ export default function WhitelistManagementPage() {
         }
 
         if (isNaN(limit) || limit < 1 || limit > 3) {
-          throw new Error(`Invalid mint limit at line ${i + 1}: ${parts[1]} (must be 1-3, the contract's whitelist cap)`)
+          throw new Error(`Invalid mint limit at line ${i + 1}: ${parts[1]} (must be 1-3, the contract&apos;s whitelist cap)`)
         }
 
         // Dedupe on lowercase address — first occurrence wins
@@ -180,14 +180,14 @@ export default function WhitelistManagementPage() {
         <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
           Whitelist Management<span className="text-foreground">.</span>
         </h1>
-        <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+        <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
           Upload and manage whitelist addresses for the minting process.
         </p>
 
         <Card className="mt-8 shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
+              <Upload className="size-5" />
               Upload Whitelist CSV
             </CardTitle>
             <CardDescription>
@@ -195,26 +195,26 @@ export default function WhitelistManagementPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+            <div className="rounded-lg border-2 border-dashed p-8 text-center">
               <Input
                 type="file"
                 accept=".csv"
                 onChange={handleFileUpload}
                 disabled={isProcessing}
-                className="max-w-xs mx-auto"
+                className="mx-auto max-w-xs"
               />
-              <p className="text-sm text-muted-foreground mt-4">
-                CSV format: <code className="bg-muted px-2 py-1 rounded">address,limit</code>
+              <p className="mt-4 text-sm text-muted-foreground">
+                CSV format: <code className="rounded bg-muted px-2 py-1">address,limit</code>
                 <br />
-                Example: <code className="bg-muted px-2 py-1 rounded">0x123...abc,3</code>
+                Example: <code className="rounded bg-muted px-2 py-1">0x123...abc,3</code>
                 <br />
-                    <span className="text-xs opacity-80">Limit must be 1-3 (the contract's whitelist cap). Duplicate addresses are ignored.</span>
+                    <span className="text-xs opacity-80">Limit must be 1-3 (the contract&apos;s whitelist cap). Duplicate addresses are ignored.</span>
               </p>
             </div>
 
             {uploadStatus === "success" && (
               <Alert>
-                <CheckCircle className="h-4 w-4" />
+                <CheckCircle className="size-4" />
                 <AlertDescription>
                   Successfully parsed {entries.length} addresses from CSV file
                 </AlertDescription>
@@ -223,7 +223,7 @@ export default function WhitelistManagementPage() {
 
             {uploadStatus === "error" && (
               <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="size-4" />
                 <AlertDescription>{errorMessage}</AlertDescription>
               </Alert>
             )}
@@ -234,7 +234,7 @@ export default function WhitelistManagementPage() {
           <Card className="shadow-vercel-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+                <FileText className="size-5" />
                 Preview ({entries.length} addresses)
               </CardTitle>
               <CardDescription>
@@ -245,7 +245,7 @@ export default function WhitelistManagementPage() {
               {/* Admin token input */}
               <div className="mb-4 space-y-2">
                 <Label htmlFor="admin-token" className="flex items-center gap-2 text-sm font-medium">
-                  <KeyRound className="h-4 w-4 text-muted-foreground" />
+                  <KeyRound className="size-4 text-muted-foreground" />
                   Admin Token
                 </Label>
                 <Input
@@ -264,7 +264,7 @@ export default function WhitelistManagementPage() {
 
               {deployStatus === "success" && (
                 <Alert className="mb-4 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-                  <CheckCircle className="h-4 w-4 text-[#29bc9b]" />
+                  <CheckCircle className="size-4 text-[#29bc9b]" />
                   <AlertDescription className="text-sm text-[#29bc9b]">
                     Whitelist deployed successfully!{" "}
                     {activeCount !== null ? activeCount : entries.length} addresses are now active.
@@ -273,7 +273,7 @@ export default function WhitelistManagementPage() {
               )}
               {deployStatus === "error" && (
                 <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
+                  <AlertCircle className="size-4" />
                   <AlertDescription>{errorMessage}</AlertDescription>
                 </Alert>
               )}
@@ -281,7 +281,7 @@ export default function WhitelistManagementPage() {
               {/* Merkle root — must be set on the contract by the owner */}
               {merkleRoot && (
                 <Alert className="mb-4 border-[#0070f3]/20 bg-[#d3e5ff]/40">
-                  <Link2 className="h-4 w-4 text-[#0761d1]" />
+                  <Link2 className="size-4 text-[#0761d1]" />
                   <AlertDescription className="text-sm">
                     <span className="font-medium text-[#0761d1]">Merkle Root generated.</span>{" "}
                     <span className="text-[#0761d1]/80">
@@ -290,7 +290,7 @@ export default function WhitelistManagementPage() {
                       (owner wallet required) to enable whitelist minting.
                     </span>
                     <div className="mt-2 flex items-center gap-2">
-                      <code className="flex-1 break-all rounded bg-muted px-2 py-1 font-mono-tech text-xs">
+                      <code className="font-mono-tech flex-1 break-all rounded bg-muted px-2 py-1 text-xs">
                         {merkleRoot}
                       </code>
                       <Button
@@ -299,7 +299,7 @@ export default function WhitelistManagementPage() {
                         onClick={copyRoot}
                         className="shrink-0"
                       >
-                        <Copy className="mr-1 h-3 w-3" />
+                        <Copy className="mr-1 size-3" />
                         {copied ? "Copied!" : "Copy"}
                       </Button>
                     </div>
@@ -327,7 +327,7 @@ export default function WhitelistManagementPage() {
                   </tbody>
                 </table>
                 {entries.length > 100 && (
-                  <div className="p-4 text-center text-sm text-muted-foreground border-t">
+                  <div className="border-t p-4 text-center text-sm text-muted-foreground">
                     Showing first 100 of {entries.length} addresses
                   </div>
                 )}
@@ -341,7 +341,7 @@ export default function WhitelistManagementPage() {
                 >
                   {isDeploying ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 size-4 animate-spin" />
                       Deploying...
                     </>
                   ) : (
@@ -369,14 +369,14 @@ export default function WhitelistManagementPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
-              <h3 className="font-semibold mb-1">1. CSV Format</h3>
+              <h3 className="mb-1 font-semibold">1. CSV Format</h3>
               <p className="text-muted-foreground">
                 Prepare a CSV file with Ethereum addresses and their mint limits.
                 One address per line, separated by comma.
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-1">2. Merkle Tree Generation</h3>
+              <h3 className="mb-1 font-semibold">2. Merkle Tree Generation</h3>
               <p className="text-muted-foreground">
                 On deploy, the worker builds a Merkle tree (leaf = keccak256 of the
                 address, matching the contract) and computes the Merkle Root.
@@ -384,14 +384,14 @@ export default function WhitelistManagementPage() {
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-1">3. Contract Update</h3>
+              <h3 className="mb-1 font-semibold">3. Contract Update</h3>
               <p className="text-muted-foreground">
                 Copy the generated Merkle Root into Contract Management → Set Merkle Root
                 (owner wallet). Whitelist minting is only enabled once the root is set on-chain.
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-1">4. KV Storage</h3>
+              <h3 className="mb-1 font-semibold">4. KV Storage</h3>
               <p className="text-muted-foreground">
                 Address data, limits, and proofs are stored in Cloudflare Workers KV
                 and served to the mint page.

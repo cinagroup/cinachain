@@ -1,5 +1,6 @@
 import { HTMLAttributes } from "react"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { modal } from "@reown/appkit/react"
+import { useAccount } from "wagmi"
 
 import { Button } from "../ui/button"
 
@@ -17,73 +18,47 @@ export const WalletConnectCustom = ({
   labelWrongNetwork = "Wrong Network",
   ...props
 }: WalletConnectCustomProps) => {
+  const { isConnected, chain } = useAccount()
+  // wagmi only resolves `chain` for networks in the config (Base Sepolia),
+  // so a connected wallet on any other network reports no chain -> wrong
+  // network state (wagmi v3 dropped the RainbowKit-era `chain.unsupported`).
+  const wrongNetwork = isConnected && !chain
+
+  if (!isConnected) {
+    return (
+      <div className={className} {...props}>
+        <Button
+          variant="default"
+          onClick={() => modal?.open({ view: "Connect" })}
+        >
+          {labelConnect}
+        </Button>
+      </div>
+    )
+  }
+
+  if (wrongNetwork) {
+    return (
+      <div className={className} {...props}>
+        <Button
+          variant="destructive"
+          onClick={() => modal?.open({ view: "Networks" })}
+        >
+          {labelWrongNetwork}
+        </Button>
+      </div>
+    )
+  }
+
   return (
-    <ConnectButton.Custom>
-      {({
-        account,
-        chain,
-        openChainModal,
-        openConnectModal,
-        authenticationStatus,
-      }) => {
-        const connected =
-          account &&
-          chain &&
-          (!authenticationStatus || authenticationStatus === "authenticated")
-
-        return (
-          <div className={className} {...props}>
-            {(() => {
-              if (!connected) {
-                return (
-                  <>
-                    <Button variant="default" onClick={openConnectModal}>
-                      {labelConnect}
-                    </Button>
-                  </>
-                )
-              }
-
-              if (chain.unsupported) {
-                return (
-                  <Button variant="destructive" onClick={openChainModal}>
-                    {labelWrongNetwork}
-                  </Button>
-                )
-              }
-
-              return (
-                <div>
-                  <Button variant="default" onClick={openChainModal}>
-                    {chain.hasIcon && (
-                      <div
-                        style={{
-                          background: chain.iconBackground,
-                          width: 18,
-                          height: 18,
-                          borderRadius: 999,
-                          overflow: "hidden",
-                          marginRight: 4,
-                        }}
-                      >
-                        {chain.iconUrl && (
-                          <img
-                            alt={chain.name ?? "Chain icon"}
-                            src={chain.iconUrl}
-                            style={{ width: 18, height: 18 }}
-                          />
-                        )}
-                      </div>
-                    )}
-                    <span className="ml-1 text-lg lowercase">{chain.name}</span>
-                  </Button>
-                </div>
-              )
-            })()}
-          </div>
-        )
-      }}
-    </ConnectButton.Custom>
+    <div className={className} {...props}>
+      <Button
+        variant="default"
+        onClick={() => modal?.open({ view: "Networks" })}
+      >
+        {chain?.name}
+      </Button>
+    </div>
   )
 }
 

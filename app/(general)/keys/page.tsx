@@ -45,7 +45,7 @@ export default function KeysPage() {
     setError(null)
     setSuccess(null)
     setApiKey("")
-    loadRecords()
+    void loadRecords()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address])
 
@@ -81,7 +81,7 @@ export default function KeysPage() {
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? `submit failed: ${res.status}`)
-      setSuccess(`Ingress registered: ${body.id} (${body.status})`)
+      setSuccess(`Ingress registered: ${String(body.id)} (${String(body.status)})`)
       setApiKey("")
       await loadRecords()
     } catch (err) {
@@ -106,13 +106,13 @@ export default function KeysPage() {
 
       {error && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {success && (
         <Alert className="mt-6 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-          <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
+          <CheckCircle2 className="size-4 text-[#29bc9b]" />
           <AlertDescription className="text-sm text-[#29bc9b]">{success}</AlertDescription>
         </Alert>
       )}
@@ -120,7 +120,7 @@ export default function KeysPage() {
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5" />
+            <KeyRound className="size-5" />
             Submit API Key
           </CardTitle>
           <CardDescription>
@@ -168,7 +168,7 @@ export default function KeysPage() {
             </div>
           </div>
           <Button onClick={handleSubmit} disabled={submitting || !address} className="w-full" size="lg">
-            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}
             Submit Key
           </Button>
         </CardContent>

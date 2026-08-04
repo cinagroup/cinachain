@@ -31,11 +31,11 @@ export function NftCard({
 
   return (
     <Link href={`/collection/${tokenId}`} className="group block">
-      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-vercel-card transition-all hover:shadow-vercel-md hover:-translate-y-0.5">
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-vercel-card transition-all hover:-translate-y-0.5 hover:shadow-vercel-md">
         <div className="relative aspect-square bg-secondary">
           {isLoading && (
             <div className="flex h-full items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40" />
+              <Loader2 className="size-6 animate-spin text-muted-foreground/40" />
             </div>
           )}
 
@@ -88,7 +88,7 @@ export function NftCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card shadow-vercel-card">
       <div className="aspect-square animate-pulse bg-secondary" />
-      <div className="p-3 space-y-2">
+      <div className="space-y-2 p-3">
         <div className="h-4 w-20 animate-pulse rounded bg-secondary" />
         <div className="h-3 w-32 animate-pulse rounded bg-secondary" />
       </div>

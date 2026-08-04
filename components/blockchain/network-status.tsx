@@ -35,7 +35,7 @@ export function NetworkStatus() {
     >
       <Badge
         className={cn(
-          "rounded-full py-2 text-xs font-display uppercase leading-none tracking-wider",
+          "font-display rounded-full py-2 text-xs uppercase leading-none tracking-wider",
           badgeVariants[GetNetworkColor(chain.name)]
         )}
       >

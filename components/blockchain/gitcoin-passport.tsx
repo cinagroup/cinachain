@@ -37,7 +37,7 @@ export function GitcoinPassport({
     <Card className="shadow-vercel-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Shield className="h-5 w-5" />
+          <Shield className="size-5" />
           Gitcoin Passport
         </CardTitle>
         <CardDescription>
@@ -47,14 +47,14 @@ export function GitcoinPassport({
       <CardContent className="space-y-4">
         {isLoading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
             Checking passport score...
           </div>
         )}
 
         {error && (
           <div className="flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="size-4" />
             {error}
           </div>
         )}
@@ -74,12 +74,12 @@ export function GitcoinPassport({
                   >
                     {isEligible ? (
                       <>
-                        <CheckCircle className="h-3 w-3 mr-1" />
+                        <CheckCircle className="mr-1 size-3" />
                         Eligible
                       </>
                     ) : (
                       <>
-                        <AlertCircle className="h-3 w-3 mr-1" />
+                        <AlertCircle className="mr-1 size-3" />
                         Below Threshold
                       </>
                     )}

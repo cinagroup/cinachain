@@ -26,7 +26,7 @@ export default function FavoritesPage() {
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
             Favorites<span className="text-foreground">.</span>
           </h1>
-          <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+          <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
             NFTs you&apos;ve saved for later.
           </p>
         </div>
@@ -49,7 +49,7 @@ export default function FavoritesPage() {
       {mounted && !gridLoading && favorites.length === 0 ? (
         <Card className="shadow-vercel-card">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Heart className="mb-4 h-12 w-12 text-muted-foreground" />
+            <Heart className="mb-4 size-12 text-muted-foreground" />
             <h2 className="mb-2 text-xl font-semibold">No Favorites Yet</h2>
             <p className="mb-4 text-center text-muted-foreground">
               Start exploring and tap the heart icon to save NFTs you like.

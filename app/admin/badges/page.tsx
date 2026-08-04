@@ -71,7 +71,7 @@ export default function AdminBadgesPage() {
       })
       setTxHash(hash)
     } catch (err) {
-      const anyErr = err as unknown as { shortMessage?: string; message?: string }
+      const anyErr = err  as { shortMessage?: string; message?: string }
       setError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge")
     }
   }
@@ -80,7 +80,7 @@ export default function AdminBadgesPage() {
     return (
       <div className="container max-w-[1200px] px-6 py-12">
         <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>
             Badge contract not configured. Set NEXT_PUBLIC_CINA_ERC1155_CONTRACT.
           </AlertDescription>
@@ -97,20 +97,20 @@ export default function AdminBadgesPage() {
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
         Badge Management<span className="text-foreground">.</span>
       </h1>
-      <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+      <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Award badges and achievements to community members.
       </p>
 
       {/* Feedback */}
       {error && (
         <Alert variant="destructive" className="mt-6">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription className="break-all">{error}</AlertDescription>
         </Alert>
       )}
       {confirmed && txHash && (
         <Alert className="mt-6 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-          <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
+          <CheckCircle2 className="size-4 text-[#29bc9b]" />
           <AlertDescription className="text-sm text-[#29bc9b]">
             Badge minted!{" "}
             <a
@@ -119,14 +119,14 @@ export default function AdminBadgesPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Basescan <ExternalLink className="h-3 w-3" />
+              View on Basescan <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
       )}
       {isBusy && txHash && !confirmed && !reverted && (
         <Alert className="mt-6 border-[#0070f3]/30 bg-[#0070f3]/10">
-          <Loader2 className="h-4 w-4 animate-spin text-[#0761d1]" />
+          <Loader2 className="size-4 animate-spin text-[#0761d1]" />
           <AlertDescription className="text-sm text-[#0761d1]">
             Transaction submitted. Waiting for confirmation...
           </AlertDescription>
@@ -136,7 +136,7 @@ export default function AdminBadgesPage() {
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Award className="h-5 w-5" />
+            <Award className="size-5" />
             Mint Badge
           </CardTitle>
           <CardDescription>Award a badge to a specific address</CardDescription>
@@ -193,12 +193,12 @@ export default function AdminBadgesPage() {
           >
             {isBusy ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
                 Minting...
               </>
             ) : (
               <>
-                <Award className="mr-2 h-4 w-4" />
+                <Award className="mr-2 size-4" />
                 Mint Badge
               </>
             )}

@@ -32,7 +32,7 @@ export function MobileNav() {
             variant="ghost"
             className="px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
           >
-            <LuMenu className="h-5 w-5" />
+            <LuMenu className="size-5" />
             <span className="sr-only">Toggle Menu</span>
           </Button>
         </SheetTrigger>

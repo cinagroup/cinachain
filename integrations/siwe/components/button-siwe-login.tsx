@@ -42,7 +42,7 @@ export const ButtonSIWELogin = ({
       onClick={() => void signIn()}
       {...props}
     >
-      {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+      {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
       {children || label}
     </Button>
   )

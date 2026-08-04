@@ -17,7 +17,7 @@ import { useWhitelist } from "@/lib/hooks/use-whitelist"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
 import { useTierProgress } from "@/lib/hooks/use-tier-progress"
 import { trimFormattedBalance } from "@/lib/utils"
-import type { Address } from "viem"
+import { formatUnits, type Address } from "viem"
 
 function StatCard({
   label,
@@ -40,7 +40,7 @@ function StatCard({
       <CardContent>
         <div className="font-display text-2xl text-foreground">
           {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
           ) : (
             value
           )}
@@ -73,7 +73,7 @@ function TierProgressCard({ address }: { address?: Address }) {
         {isError ? (
           <p className="text-xs text-muted-foreground">Tier data unavailable</p>
         ) : isLoading || !data ? (
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
         ) : (
           <>
             <div className="flex items-center justify-between">
@@ -120,7 +120,7 @@ export default function PageDashboard() {
   const { mintedCount, maxCount } = useContractStats()
 
   const balanceStr = balance
-    ? trimFormattedBalance(balance.formatted, 4)
+    ? trimFormattedBalance(formatUnits(balance.value, balance.decimals), 4)
     : "0"
 
   const whitelistStatus = whitelistLoading
@@ -145,7 +145,7 @@ export default function PageDashboard() {
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
               Welcome back, <WalletEnsName /><span className="text-foreground">.</span>
             </h1>
-            <WalletAddress className="mt-2 block font-mono-tech text-sm text-muted-foreground" />
+            <WalletAddress className="font-mono-tech mt-2 block text-sm text-muted-foreground" />
           </div>
 
           {/* Stats Grid */}
@@ -181,7 +181,7 @@ export default function PageDashboard() {
 
           {/* Quick Actions */}
           <div className="mt-8">
-            <h2 className="font-display text-lg text-foreground mb-4">Quick Actions</h2>
+            <h2 className="font-display mb-4 text-lg text-foreground">Quick Actions</h2>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="flex-1">
                 <Link href="/mint">Mint NFT</Link>
@@ -209,7 +209,7 @@ export default function PageDashboard() {
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground">
               Connect your wallet<span className="text-foreground">.</span>
             </h1>
-            <p className="mt-4 text-base text-muted-foreground max-w-md">
+            <p className="mt-4 max-w-md text-base text-muted-foreground">
               Connect your wallet to view your personalized dashboard, manage your NFTs, and access exclusive features.
             </p>
             <div className="mt-8">

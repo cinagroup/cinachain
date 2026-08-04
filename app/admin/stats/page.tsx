@@ -22,7 +22,7 @@ export default function StatsPage() {
     return (
       <div className="container max-w-[1200px] px-6 py-12">
         <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertDescription>
             NFT contract address not configured.
           </AlertDescription>
@@ -40,7 +40,7 @@ export default function StatsPage() {
         <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
           Minting Statistics<span className="text-foreground">.</span>
         </h1>
-        <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
+        <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
           Detailed analytics and revenue tracking for your NFT collection.
         </p>
 
@@ -51,7 +51,7 @@ export default function StatsPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Minted
               </CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <Package className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="font-display text-2xl text-foreground">
@@ -68,7 +68,7 @@ export default function StatsPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Mint Price
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="font-display text-2xl text-foreground">
@@ -83,7 +83,7 @@ export default function StatsPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Est. Revenue
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <TrendingUp className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="font-display text-2xl text-foreground">
@@ -100,7 +100,7 @@ export default function StatsPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Progress
               </CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <BarChart3 className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="font-display text-2xl text-foreground">

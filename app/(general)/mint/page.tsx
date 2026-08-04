@@ -1,21 +1,38 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useAccount, useReadContracts } from "wagmi"
+import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useWhitelist } from "@/lib/hooks/use-whitelist"
-import { useMintContract } from "@/lib/hooks/use-mint-contract"
+import {
+  AlertCircle,
+  CheckCircle2,
+  ExternalLink,
+  Info,
+  Loader2,
+} from "lucide-react"
+import { formatEther } from "viem"
+import { useAccount, useReadContracts } from "wagmi"
+
+import { CINA_NFT_ABI } from "@/lib/contracts/abi"
+import {
+  CINA_NFT_CONTRACT,
+  hasNftContract,
+  MINT_PRICE_ETH,
+} from "@/lib/contracts/addresses"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { useMintContract } from "@/lib/hooks/use-mint-contract"
+import { useWhitelist } from "@/lib/hooks/use-whitelist"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { CheckCircle2, ExternalLink, AlertCircle, Loader2, Info } from "lucide-react"
-import { formatEther } from "viem"
-import { MINT_PRICE_ETH, CINA_NFT_CONTRACT, hasNftContract } from "@/lib/contracts/addresses"
-import { CINA_NFT_ABI } from "@/lib/contracts/abi"
+import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 
 const MAX_PUBLIC_PER_TX = 10
 
@@ -31,7 +48,9 @@ export default function MintPage() {
   const isPaused = paused?.data === true
 
   const [quantity, setQuantity] = useState(1)
-  const [mintPhase, setMintPhase] = useState<"whitelist" | "public" | "inactive">("inactive")
+  const [mintPhase, setMintPhase] = useState<
+    "whitelist" | "public" | "inactive"
+  >("inactive")
   const [localError, setLocalError] = useState<string | null>(null)
 
   // Cumulative per-address mint counts (contract caps are cumulative, not per-tx)
@@ -111,11 +130,11 @@ export default function MintPage() {
   useEffect(() => {
     if (isConfirmed) {
       setQuantity(1)
-      queryClient.invalidateQueries({ queryKey: ["whitelist"] })
+      void queryClient.invalidateQueries({ queryKey: ["whitelist"] })
       // wagmi registers contract reads under these prefixes (I2 fix)
-      queryClient.invalidateQueries({ queryKey: ["readContract"] })
-      queryClient.invalidateQueries({ queryKey: ["readContracts"] })
-      queryClient.invalidateQueries({ queryKey: ["balance"] })
+      void queryClient.invalidateQueries({ queryKey: ["readContract"] })
+      void queryClient.invalidateQueries({ queryKey: ["readContracts"] })
+      void queryClient.invalidateQueries({ queryKey: ["balance"] })
     }
   }, [isConfirmed, queryClient])
 
@@ -178,7 +197,7 @@ export default function MintPage() {
               <CardDescription>Connect your wallet to mint</CardDescription>
             </CardHeader>
             <CardContent>
-              <ConnectButton />
+              <AppKitConnectButton />
             </CardContent>
           </Card>
         </div>
@@ -194,7 +213,7 @@ export default function MintPage() {
           <Card className="max-w-md shadow-vercel-card">
             <CardContent className="pt-6">
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
                 Checking mint status...
               </div>
             </CardContent>
@@ -226,9 +245,11 @@ export default function MintPage() {
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
             Mint CinaChain NFT<span className="text-foreground">.</span>
           </h1>
-          <p className="mt-3 text-base text-muted-foreground max-w-[560px]">
-            {mintPhase === "whitelist" && "Exclusive whitelist minting is now active."}
-            {mintPhase === "public" && "Public minting is now open to everyone."}
+          <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
+            {mintPhase === "whitelist" &&
+              "Exclusive whitelist minting is now active."}
+            {mintPhase === "public" &&
+              "Public minting is now open to everyone."}
             {mintPhase === "inactive" && "Minting is not currently active."}
           </p>
         </div>
@@ -236,10 +257,10 @@ export default function MintPage() {
         {/* Whitelist service degraded — soft warning, mint still available */}
         {whitelistError && (
           <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="size-4" />
             <AlertDescription>
-              Whitelist service is temporarily unavailable. Showing public mint status —
-              whitelist minting may be affected.
+              Whitelist service is temporarily unavailable. Showing public mint
+              status — whitelist minting may be affected.
             </AlertDescription>
           </Alert>
         )}
@@ -247,10 +268,10 @@ export default function MintPage() {
         {/* Whitelist deployed but address not on it — public mint still open */}
         {notWhitelisted && (
           <Alert className="mb-6 border-[#0070f3]/20 bg-[#d3e5ff]/40">
-            <Info className="h-4 w-4 text-[#0761d1]" />
+            <Info className="size-4 text-[#0761d1]" />
             <AlertDescription className="text-sm text-[#0761d1]">
-              This address is not on the whitelist. Public minting is still open — you can
-              mint at the regular price.
+              This address is not on the whitelist. Public minting is still open
+              — you can mint at the regular price.
             </AlertDescription>
           </Alert>
         )}
@@ -275,19 +296,23 @@ export default function MintPage() {
             <CardContent className="space-y-6">
               {/* Status Alerts */}
               {mintPhase === "whitelist" && whitelistData && (
-                <Alert className="bg-[#d3e5ff] border-[#0070f3]/20">
+                <Alert className="border-[#0070f3]/20 bg-[#d3e5ff]">
                   <AlertDescription className="text-sm text-[#0761d1]">
                     You are on the whitelist! You can mint up to{" "}
-                    <span className="font-semibold">{whitelistData.mintLimit}</span> NFTs.
+                    <span className="font-semibold">
+                      {whitelistData.mintLimit}
+                    </span>{" "}
+                    NFTs.
                   </AlertDescription>
                 </Alert>
               )}
 
               {mintPhase === "public" && (
-                <Alert className="bg-[#aaffec] border-[#50e3c2]/20">
+                <Alert className="border-[#50e3c2]/20 bg-[#aaffec]">
                   <AlertDescription className="text-sm text-[#29bc9b]">
                     Public mint active. Price:{" "}
-                    <span className="font-semibold">{priceDisplay} ETH</span> per NFT.
+                    <span className="font-semibold">{priceDisplay} ETH</span>{" "}
+                    per NFT.
                   </AlertDescription>
                 </Alert>
               )}
@@ -303,14 +328,16 @@ export default function MintPage() {
               {/* Transaction feedback */}
               {(localError || error) && (
                 <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-sm break-all">{localError ?? error}</AlertDescription>
+                  <AlertCircle className="size-4" />
+                  <AlertDescription className="break-all text-sm">
+                    {localError ?? error}
+                  </AlertDescription>
                 </Alert>
               )}
 
               {isConfirmed && txHash && (
-                <Alert className="bg-[#aaffec] border-[#50e3c2]/20">
-                  <CheckCircle2 className="h-4 w-4 text-[#29bc9b]" />
+                <Alert className="border-[#50e3c2]/20 bg-[#aaffec]">
+                  <CheckCircle2 className="size-4 text-[#29bc9b]" />
                   <AlertDescription className="text-sm text-[#29bc9b]">
                     Mint successful!{" "}
                     <a
@@ -319,7 +346,7 @@ export default function MintPage() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 underline"
                     >
-                      View on Etherscan <ExternalLink className="h-3 w-3" />
+                      View on Etherscan <ExternalLink className="size-3" />
                     </a>
                   </AlertDescription>
                 </Alert>
@@ -329,7 +356,10 @@ export default function MintPage() {
               {mintPhase !== "inactive" && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="quantity" className="text-sm font-medium text-foreground">
+                    <Label
+                      htmlFor="quantity"
+                      className="text-sm font-medium text-foreground"
+                    >
                       Quantity
                     </Label>
                     <Input
@@ -352,18 +382,22 @@ export default function MintPage() {
                   </div>
 
                   {/* Price Summary */}
-                  <div className="rounded-md border border-border bg-secondary p-4 space-y-3">
+                  <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Price per NFT</span>
+                      <span className="text-muted-foreground">
+                        Price per NFT
+                      </span>
                       <span className="font-medium text-foreground">
                         {priceDisplay} ETH
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Quantity</span>
-                      <span className="font-medium text-foreground">{quantity}</span>
+                      <span className="font-medium text-foreground">
+                        {quantity}
+                      </span>
                     </div>
-                    <div className="border-t border-border pt-3 flex justify-between">
+                    <div className="flex justify-between border-t border-border pt-3">
                       <span className="font-medium text-foreground">Total</span>
                       <span className="font-display text-lg text-foreground">
                         {totalDisplay} ETH
@@ -381,7 +415,8 @@ export default function MintPage() {
                       <div className="flex justify-between text-xs text-muted-foreground">
                         <span>Whitelist mints by you</span>
                         <span>
-                          {mintedWhitelistCount} / {whitelistData?.mintLimit ?? 3}
+                          {mintedWhitelistCount} /{" "}
+                          {whitelistData?.mintLimit ?? 3}
                         </span>
                       </div>
                     )}
@@ -403,12 +438,12 @@ export default function MintPage() {
                       "Mint Limit Reached"
                     ) : isPending && status === "awaiting-wallet" ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="mr-2 size-4 animate-spin" />
                         {buttonLabel}
                       </>
                     ) : isPending ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="mr-2 size-4 animate-spin" />
                         {buttonLabel}
                       </>
                     ) : (

@@ -68,7 +68,7 @@ export default function ExplorePage() {
       {/* Empty state */}
       {hasNftContract && !isLoading && mintedCount === 0 && (
         <div className="mt-12 rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
-          <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/40" />
+          <PackageOpen className="mx-auto size-12 text-muted-foreground/40" />
           <p className="mt-4 text-base text-muted-foreground">
             No NFTs minted yet.
           </p>

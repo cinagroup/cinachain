@@ -98,7 +98,7 @@ export default function SettingsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5" />
+                <KeyRound className="size-5" />
                 Sign In
               </CardTitle>
               <CardDescription>
@@ -112,7 +112,7 @@ export default function SettingsPage() {
                 className="w-full sm:w-auto"
               >
                 {signingIn ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : null}
                 Sign In with Ethereum
               </Button>
@@ -128,7 +128,7 @@ export default function SettingsPage() {
             {/* Error */}
             {error ? (
               <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="size-4" />
                 <AlertTitle>Error</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
@@ -137,7 +137,7 @@ export default function SettingsPage() {
             {/* Newly created key */}
             {newKey ? (
               <Alert className="border-emerald-500/50 [&>svg]:text-emerald-500">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="size-4" />
                 <AlertTitle>API Key Created</AlertTitle>
                 <AlertDescription>
                   <p>
@@ -157,9 +157,9 @@ export default function SettingsPage() {
                       className="shrink-0"
                     >
                       {copied ? (
-                        <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" />
+                        <CheckCircle2 className="mr-2 size-4 text-emerald-500" />
                       ) : (
-                        <Copy className="mr-2 h-4 w-4" />
+                        <Copy className="mr-2 size-4" />
                       )}
                       {copied ? "Copied" : "Copy"}
                     </Button>
@@ -171,7 +171,7 @@ export default function SettingsPage() {
             <Card className="shadow-vercel-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <KeyRound className="h-5 w-5" />
+                  <KeyRound className="size-5" />
                   API Keys
                 </CardTitle>
                 <CardDescription>
@@ -186,9 +186,9 @@ export default function SettingsPage() {
                   disabled={creating}
                 >
                   {creating ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 size-4 animate-spin" />
                   ) : (
-                    <KeyRound className="mr-2 h-4 w-4" />
+                    <KeyRound className="mr-2 size-4" />
                   )}
                   Create API Key
                 </Button>
@@ -214,11 +214,11 @@ export default function SettingsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                          className="size-8 shrink-0 text-destructive hover:text-destructive"
                           aria-label={`Revoke API key ${key.prefix}`}
                           onClick={() => revokeKey(key.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="size-4" />
                         </Button>
                       </li>
                     ))}
