@@ -178,8 +178,10 @@ export default {
       if (!keyRow) return json(request, { error: "Invalid API key" }, 401)
 
       const ledgerKey = keyRow.kind === "cust" ? `cust:${keyRow.custId}` : `ledger:${keyRow.address}`
-      // lock on the same key space the write path uses (ledger:addr / cust:id)
-      const lockKey = ledgerKey
+      // lock: bare (lowercased) address for self keys — matches the
+      // /v1/credits, /v1/tier and /v1/admin/badges confirm locks;
+      // cust:<id> for custodial — matches the POST /v1/custodial/credit lock
+      const lockKey = keyRow.kind === "cust" ? `cust:${keyRow.custId}` : keyRow.address
 
       const res = await withLedgerLock(lockKey, async () => {
         try {
@@ -277,6 +279,7 @@ export default {
 
     // ── Custodial accounts (spec §6.1: hot wallet pool + DB bookkeeping) ──
     if (url.pathname === "/v1/custodial/accounts" && request.method === "POST") {
+      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
       const body = await request.json().catch(() => ({}))
       const { owner } = body
       if (!/^0x[a-fA-F0-9]{40}$/.test(owner ?? "")) return json(request, { error: "Invalid owner" }, 400)
@@ -301,23 +304,33 @@ export default {
       const { id, amountWei } = body
       const key = `cust:${id ?? ""}`
       const res = await withLedgerLock(key, async () => {
-        const raw = await env.CINA_BILLING_KV.get(key)
-        const ledger = raw ? JSON.parse(raw) : null
-        if (!ledger) return { error: "Account not found" }
-        const add = BigInt(amountWei ?? 0)
-        if (add <= 0n) return { error: "amountWei must be > 0" }
-        ledger.balanceWei = (BigInt(ledger.balanceWei ?? 0) + add).toString()
-        await env.CINA_BILLING_KV.put(key, JSON.stringify(ledger))
-        return { ok: true, balanceWei: ledger.balanceWei }
+        try {
+          const raw = await env.CINA_BILLING_KV.get(key)
+          const ledger = raw ? JSON.parse(raw) : null
+          if (!ledger) return { status: 404, body: { error: "Account not found" } }
+          const add = BigInt(amountWei ?? 0)
+          if (add <= 0n) return { status: 400, body: { error: "amountWei must be > 0" } }
+          ledger.balanceWei = (BigInt(ledger.balanceWei ?? 0) + add).toString()
+          await env.CINA_BILLING_KV.put(key, JSON.stringify(ledger))
+          return { status: 200, body: { ok: true, balanceWei: ledger.balanceWei } }
+        } catch (err) {
+          return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+        }
       })
-      return json(request, res)
+      return json(request, res.body, res.status)
     }
 
     if (url.pathname.startsWith("/v1/custodial/") && request.method === "GET") {
       const id = url.pathname.split("/").pop()
       const raw = await env.CINA_BILLING_KV.get(`cust:${id}`)
       if (!raw) return json(request, { error: "Account not found" }, 404)
-      const ledger = JSON.parse(raw)
+      let ledger
+      try {
+        ledger = JSON.parse(raw)
+      } catch {
+        // one malformed row must not 500 the read path (mirrors credits/tier)
+        return json(request, { error: "Account data corrupted" })
+      }
       const balance = BigInt(ledger.balanceWei ?? 0)
       const committed = BigInt(ledger.committedUsage ?? 0)
       const usable = computeUsable(balance, committed)

@@ -245,4 +245,35 @@ describe("M2 custodial accounts", () => {
     expect(body.tier).toBe("free")
     expect(body.pendingBadges).toEqual([])
   })
+
+  it("crediting a missing custodial account returns 404", async () => {
+    const env = makeEnv()
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/credit", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "missing", amountWei: "100" }),
+    }))
+    expect(res.status).toBe(404)
+  })
+
+  it("crediting with malformed amountWei returns 400", async () => {
+    const env = makeEnv()
+    env.store.set("cust:test1", JSON.stringify({ owner: "0xaaa", balanceWei: "0", committedUsage: "0", cumulativeSpend: "0" }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/custodial/credit", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ id: "test1", amountWei: "abc" }),
+    }))
+    expect(res.status).toBe(400)
+  })
+
+  it("/v1/keys with unknown custId returns 404", async () => {
+    const env = makeEnv()
+    const res = await callWorker(env, new Request("https://billing.test/v1/keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: "012345678901234567890123", custId: "does-not-exist" }),
+    }))
+    expect(res.status).toBe(404)
+  })
 })
