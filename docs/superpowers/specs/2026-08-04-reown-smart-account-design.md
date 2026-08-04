@@ -69,7 +69,7 @@
 ```tsx
 import { createAppKit } from "@reown/appkit/react"
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
-import { mainnet, baseSepolia } from "@reown/appkit/networks"
+import { baseSepolia } from "@reown/appkit/networks"
 
 const projectId = env.NEXT_PUBLIC_REOWN_PROJECT_ID
 
