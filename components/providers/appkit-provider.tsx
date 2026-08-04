@@ -1,16 +1,16 @@
 "use client"
 
-import { useMemo, type ReactNode } from "react"
+import { useEffect, useMemo, type ReactNode } from "react"
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
 import { baseSepolia } from "@reown/appkit/networks"
 import { createAppKit } from "@reown/appkit/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createStorage, noopStorage } from "@wagmi/core"
+import { useTheme } from "next-themes"
 import { WagmiProvider } from "wagmi"
 
 import { transports } from "@/config/networks"
 import { siteConfig } from "@/config/site"
-import { useColorMode } from "@/lib/state/color-mode"
 
 const PROJECT_ID =
   process.env.NEXT_PUBLIC_REOWN_PROJECT_ID &&
@@ -63,7 +63,7 @@ export const appKit = createAppKit({
 })
 
 export function AppKitProvider({ children }: { children: ReactNode }) {
-  const [colorMode] = useColorMode()
+  const { resolvedTheme } = useTheme()
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -77,11 +77,18 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
     []
   )
 
-  // Keep AppKit's modal theme in sync with the app's color mode (the
-  // themeMode passed to createAppKit only sets the initial value).
-  if (typeof window !== "undefined") {
-    appKit.setThemeMode(colorMode === "dark" ? "dark" : "light")
-  }
+  // Keep AppKit's modal theme in sync with next-themes (the themeMode
+  // passed to createAppKit only sets the initial value). resolvedTheme
+  // resolves "system" to dark/light at runtime, so the modal follows the
+  // actually rendered theme. AppKitProvider sits inside next-themes'
+  // ThemeProvider (root-provider.tsx), so useTheme() is available here.
+  useEffect(() => {
+    try {
+      appKit.setThemeMode?.(resolvedTheme === "dark" ? "dark" : "light")
+    } catch {
+      /* ignore */
+    }
+  }, [resolvedTheme])
 
   return (
     <QueryClientProvider client={queryClient}>

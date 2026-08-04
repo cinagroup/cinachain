@@ -5,15 +5,19 @@ import { useAccount, useCapabilities } from "wagmi"
 
 /**
  * Detects if the connected wallet supports EIP-5792 paymaster service
- * (Coinbase Smart Wallet on Base). Returns capabilities object to attach
- * to writeContract calls for gasless transactions.
+ * (Coinbase Smart Wallet on Base). Returns capabilities to attach to
+ * sendCalls for gasless transactions (see use-mint-contract).
  *
  * For EOA wallets (MetaMask, etc.), returns empty capabilities —
  * the user pays gas normally. No behavior change.
  */
 export function usePaymasterCapabilities() {
   const { address, chainId } = useAccount()
-  const { data: available } = useCapabilities({ account: address })
+  const { data: available } = useCapabilities({
+    account: address,
+    // Skip the RPC capabilities probe entirely while disconnected.
+    query: { enabled: !!address },
+  })
 
   const paymasterProxyUrl = process.env.NEXT_PUBLIC_PAYMASTER_PROXY_URL
 
