@@ -21,6 +21,21 @@ const ALLOWED_ORIGINS = new Set([
 // (M2: Durable Object / queue for strict serialization).
 const inflight = new Map()
 
+// In-memory registration rate limit: max 5 key registrations per IP per
+// 10-minute window. Per-isolate only; adequate for a demo provisioning
+// endpoint behind Cloudflare's global network.
+const regBuckets = new Map()
+function checkRegRateLimit(request) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown"
+  const now = Math.floor(Date.now() / 600000) // 10-min window
+  const k = `${ip}:${now}`
+  const n = regBuckets.get(k) ?? 0
+  if (n >= 5) return false
+  regBuckets.set(k, n + 1)
+  if (regBuckets.size > 5000) for (const [key] of regBuckets) if (!key.endsWith(`:${now}`)) regBuckets.delete(key)
+  return true
+}
+
 function withLedgerLock(address, fn) {
   const prev = inflight.get(address) ?? Promise.resolve()
   const next = prev.then(fn, fn)
@@ -135,6 +150,19 @@ export default {
         usable: computeUsable(onchain, committed).toString(),
         cumulativeSpend: ledger?.cumulativeSpend ?? "0",
       })
+    }
+
+    // POST /v1/keys — register an API key for an address (demo provisioning;
+    // production requires SIWE-signed proof of address ownership)
+    if (url.pathname === "/v1/keys" && request.method === "POST") {
+      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+      const body = await request.json().catch(() => ({}))
+      const { apiKey, address } = body
+      if (!apiKey || typeof apiKey !== "string" || apiKey.length < 20) return json(request, { error: "Invalid apiKey" }, 400)
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address ?? "")) return json(request, { error: "Invalid address" }, 400)
+      const hash = await hashKey(apiKey)
+      await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ address: address.toLowerCase() }))
+      return json(request, { ok: true, address: address.toLowerCase() })
     }
 
     return json(request, { error: "Not found" }, 404)

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useAccount } from "wagmi"
 import {
   AlertCircle,
   CheckCircle2,
@@ -23,16 +24,29 @@ import { useApiKeys } from "@/lib/hooks/use-api-keys"
 
 export default function SettingsPage() {
   const { keys, isAuthenticated, signIn, createKey, revokeKey } = useApiKeys()
+  const { address } = useAccount()
   const [error, setError] = useState<string | null>(null)
   const [newKey, setNewKey] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  // Clear transient state when the connected account changes so a key
+  // created under one address never leaks into another address's view.
+  useEffect(() => {
+    setNewKey(null)
+    setError(null)
+    setCopied(false)
+  }, [address])
+
   const handleSignIn = async () => {
     setSigningIn(true)
+    setError(null)
     try {
-      await signIn()
+      const ok = await signIn()
+      if (!ok) setError("Sign-in failed — connect a wallet first")
+    } catch {
+      setError("Sign-in failed — connect a wallet first")
     } finally {
       setSigningIn(false)
     }
@@ -91,7 +105,7 @@ export default function SettingsPage() {
                 Sign in with your wallet to manage API keys.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <Button
                 onClick={() => void handleSignIn()}
                 disabled={signingIn}
@@ -102,6 +116,11 @@ export default function SettingsPage() {
                 ) : null}
                 Sign In with Ethereum
               </Button>
+              {!address ? (
+                <p className="text-sm text-muted-foreground">
+                  Connect a wallet first, then sign in with Ethereum to manage API keys.
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         ) : (
