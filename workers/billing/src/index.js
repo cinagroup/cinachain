@@ -426,7 +426,7 @@ export default {
       if (tierBadgeId(tier) === null) return json(request, { error: "Invalid tier" }, 400)
       const body = await request.json().catch(() => ({}))
       const targetKey = body.custId ? `cust:${body.custId}` : `ledger:${address.toLowerCase()}`
-      const lockKey = body.custId ?? address.toLowerCase()
+      const lockKey = body.custId ? `cust:${body.custId}` : address.toLowerCase()
       const res = await withLedgerLock(lockKey, async () => {
         const raw = await env.CINA_BILLING_KV.get(targetKey)
         let ledger
