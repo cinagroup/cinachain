@@ -41,6 +41,20 @@ function checkRegRateLimit(request) {
   return true
 }
 
+// Read budget for public ingress list — separate from write registrations
+// so the /keys page's list refresh doesn't exhaust the submit budget.
+const readBuckets = new Map()
+function checkReadRateLimit(request, limit = 20, windowMin = 10) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown"
+  const now = Math.floor(Date.now() / (windowMin * 60000))
+  const k = `${ip}:${now}`
+  const n = readBuckets.get(k) ?? 0
+  if (n >= limit) return false
+  readBuckets.set(k, n + 1)
+  if (readBuckets.size > 5000) for (const [key] of readBuckets) if (!key.endsWith(`:${now}`)) readBuckets.delete(key)
+  return true
+}
+
 /** Tiers earned but not yet minted (spec §5: platform mints on crossing) */
 export function computePendingBadges(cumulativeSpend, mintedTierBadges = []) {
   return tiersEarned(cumulativeSpend).filter((t) => !mintedTierBadges.includes(t))
@@ -178,7 +192,8 @@ export default {
       const body = await request.json().catch(() => ({}))
       const { apiKey, model, tokens } = body
       if (!apiKey) return json(request, { error: "Missing apiKey" }, 401)
-      const keyRowRaw = await env.CINA_BILLING_KV.get(`key:${await hashKey(apiKey)}`)
+      const keyHash = await hashKey(apiKey)
+      const keyRowRaw = await env.CINA_BILLING_KV.get(`key:${keyHash}`)
       const keyRow = keyRowRaw ? JSON.parse(keyRowRaw) : null
       if (!keyRow) return json(request, { error: "Invalid API key" }, 401)
 
@@ -267,6 +282,12 @@ export default {
                   const ingRaw = await env.CINA_BILLING_KV.get(ingKey)
                   if (ingRaw) {
                     const rec = JSON.parse(ingRaw)
+                    // spec §6.3: attribution is only valid for the pooled key
+                    // that actually served this charge — skip mismatches.
+                    if (rec.keyHash !== keyHash) {
+                      console.error(`[billing] ingress key mismatch for ${body.ingressId}`)
+                      return
+                    }
                     if (rec.status === "pending") {
                       rec.confirmedMicro = (BigInt(rec.confirmedMicro ?? 0) + BigInt(res.body.chargedMicro)).toString()
                       if (BigInt(rec.confirmedMicro) >= BigInt(rec.declaredMicro)) rec.status = "minting"
@@ -493,7 +514,7 @@ export default {
     // Public: list own ingress records (spec §6.3: user can view pending status).
     // Never exposes key material — id/model/micro amounts/status/createdAt only.
     if (url.pathname === "/v1/ingress" && request.method === "GET") {
-      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+      if (!checkReadRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
       const owner = (url.searchParams.get("owner") ?? "").toLowerCase()
       if (!/^0x[a-fA-F0-9]{40}$/.test(owner)) return json(request, { error: "Invalid owner" }, 400)
       const keys = await listAllKeys(env.CINA_BILLING_KV, "ing:")

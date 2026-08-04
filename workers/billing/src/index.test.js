@@ -549,15 +549,15 @@ describe("M3 ingress submit", () => {
 describe("M3 ingress consumption", () => {
   it("usage with ingressId accumulates confirmedMicro; flips to minting at declared", async () => {
     const env = makeEnv()
-    env.store.set("ing:ing1", JSON.stringify({
-      owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", model: "demo",
-      declaredMicro: "2000000", confirmedMicro: "0", status: "pending",
-      keyHash: "0xabc", createdAt: 1, encrypted: { iv: "00", cipher: "00" },
-    }))
     // self key flow with ingressId
     const data = new TextEncoder().encode("ingresskey1")
     const digest = await crypto.subtle.digest("SHA-256", data)
     const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", model: "demo",
+      declaredMicro: "2000000", confirmedMicro: "0", status: "pending",
+      keyHash: hash, createdAt: 1, encrypted: { iv: "00", cipher: "00" },
+    }))
     env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
     env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
       onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
@@ -707,7 +707,7 @@ describe("M3 ingress consumption", () => {
     const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
     env.store.set(`key:${hash}`, JSON.stringify({ kind: "cust", custId: "c1" }))
     env.store.set("ing:ing1", JSON.stringify({
-      owner: "0xaaa", model: "demo", declaredMicro: "1000000", confirmedMicro: "0", status: "pending", keyHash: "0xabc", createdAt: 1,
+      owner: "0xaaa", model: "demo", declaredMicro: "1000000", confirmedMicro: "0", status: "pending", keyHash: hash, createdAt: 1,
     }))
     const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
       method: "POST",
@@ -722,12 +722,12 @@ describe("M3 ingress consumption", () => {
 
   it("usage after flip to minting is not attributed again (status guard)", async () => {
     const env = makeEnv()
-    env.store.set("ing:ing1", JSON.stringify({
-      owner: "0xaaa", model: "demo", declaredMicro: "2000000", confirmedMicro: "2000000", status: "minting", keyHash: "0xabc", createdAt: 1,
-    }))
     const data = new TextEncoder().encode("ingresskey4")
     const digest = await crypto.subtle.digest("SHA-256", data)
     const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaa", model: "demo", declaredMicro: "2000000", confirmedMicro: "2000000", status: "minting", keyHash: hash, createdAt: 1,
+    }))
     env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
     env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
       onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
@@ -747,6 +747,38 @@ describe("M3 ingress consumption", () => {
     const rec = JSON.parse(env.store.get("ing:ing1"))
     expect(rec.confirmedMicro).toBe("2000000") // unchanged
     expect(rec.status).toBe("minting") // unchanged
+  })
+
+  it("usage with a mismatched key does NOT attribute to the ingress record", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", model: "demo",
+      declaredMicro: "2000000", confirmedMicro: "0", status: "pending",
+      keyHash: "0xcorrectkeyhash", createdAt: 1,
+    }))
+    // self key flow — this key's hash differs from the record's keyHash
+    const data = new TextEncoder().encode("ingresskey_mismatch_0123456789ab")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "ingresskey_mismatch_0123456789ab", model: "demo", tokens: "1000", ingressId: "ing1" }),
+      }))
+      expect(res.status).toBe(200)
+    } finally {
+      global.fetch = origFetch
+    }
+    const rec = JSON.parse(env.store.get("ing:ing1"))
+    expect(rec.confirmedMicro).toBe("0") // not attributed
+    expect(rec.status).toBe("pending")
   })
 })
 
