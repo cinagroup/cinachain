@@ -54,7 +54,7 @@ function StatCard({
 }
 
 function TierProgressCard({ address }: { address?: Address }) {
-  const { data, isLoading } = useTierProgress(address)
+  const { data, isLoading, isError } = useTierProgress(address)
   const TIER_LABEL: Record<string, string> = {
     free: "Free", bronze: "Bronze", silver: "Silver",
     gold: "Gold", diamond: "Diamond", whale: "Whale",
@@ -70,7 +70,9 @@ function TierProgressCard({ address }: { address?: Address }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading || !data ? (
+        {isError ? (
+          <p className="text-xs text-muted-foreground">Tier data unavailable</p>
+        ) : isLoading || !data ? (
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         ) : (
           <>
@@ -91,7 +93,7 @@ function TierProgressCard({ address }: { address?: Address }) {
                   />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {(Number(data.nextThreshold ?? 0) / 1e18).toLocaleString()} credit to{" "}
+                  {((Number(data.nextThreshold ?? 0) - Number(data.cumulativeSpend)) / 1e18).toLocaleString()} credit to{" "}
                   {TIER_LABEL[data.nextTier] ?? data.nextTier}
                 </p>
               </>

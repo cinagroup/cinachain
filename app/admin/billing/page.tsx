@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
+import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
 import type { Address, Hash } from "viem"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -45,6 +45,7 @@ interface LedgerData {
 export default function BillingManagementPage() {
   const { address } = useAccount()
   const queryClient = useQueryClient()
+  const publicClient = usePublicClient()
   const { creditRate, isPaused, isLoading: creditLoading, formatCredit } = useCreditBalance(address)
 
   const { writeContractAsync, isPending } = useWriteContract()
@@ -158,6 +159,7 @@ export default function BillingManagementPage() {
   const mintPending = async (item: { address: string; badges: string[] }) => {
     setBadgeError(null)
     try {
+      if (!publicClient) throw new Error("No public client available")
       for (const tier of item.badges) {
         const hash = await writeContractAsync({
           address: BADGE_CONTRACT as Address,
@@ -165,14 +167,15 @@ export default function BillingManagementPage() {
           functionName: "mint",
           args: [item.address as Address, TIER_IDS[tier], 1n],
         })
+        // wait for mining before confirming in the ledger (review: gate on receipt)
+        const receipt = await publicClient.waitForTransactionReceipt({ hash })
+        if (receipt.status !== "success") throw new Error(`mint reverted for ${tier}`)
         const confirmRes = await fetch(`${BILLING_API_URL}/v1/admin/badges/${item.address}/${tier}/confirm`, {
           method: "POST",
           headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
           body: JSON.stringify({ txHash: hash }),
         })
-        if (!confirmRes.ok) {
-          throw new Error(`confirm failed: ${confirmRes.status}`)
-        }
+        if (!confirmRes.ok) throw new Error(`confirm failed: ${confirmRes.status}`)
       }
       setSuccessAction("Tier badges minted")
       await fetchPending()

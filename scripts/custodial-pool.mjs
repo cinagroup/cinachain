@@ -36,7 +36,11 @@ if (MODE === "fund") {
   const pool = process.argv[3]
   const credits = parseEther(process.argv[4] ?? "1") // 1 credit = 1e18
   const hash = await wallet.writeContract({ address: CREDIT, abi: CREDIT_ABI, functionName: "mintTo", args: [pool, credits] })
-  await publicClient.waitForTransactionReceipt({ hash })
+  const receipt = await publicClient.waitForTransactionReceipt({ hash })
+  if (receipt.status === "reverted") {
+    console.error(`❌ 交易回滚（检查 owner key / 暂停状态）`)
+    process.exit(1)
+  }
   console.log(`✔ 已向池 ${pool} 注资 ${process.argv[4] ?? "1"} credit tx=${hash}`)
 } else if (MODE === "withdraw") {
   const poolKey = process.argv[3]
@@ -45,7 +49,11 @@ if (MODE === "fund") {
   const pool = privateKeyToAccount(poolKey)
   const poolWallet = createWalletClient({ account: pool, chain, transport: http(RPC) })
   const hash = await poolWallet.writeContract({ address: CREDIT, abi: CREDIT_ABI, functionName: "transfer", args: [to, credits] })
-  await publicClient.waitForTransactionReceipt({ hash })
+  const receipt = await publicClient.waitForTransactionReceipt({ hash })
+  if (receipt.status === "reverted") {
+    console.error(`❌ 交易回滚（检查 owner key / 暂停状态）`)
+    process.exit(1)
+  }
   console.log(`✔ 池已转 ${process.argv[5] ?? "1"} credit -> ${to} tx=${hash}`)
   // 提示：链上转账后应调用 POST /v1/custodial/debit 扣减 DB 余额（见 admin UI）
 } else {
