@@ -7,7 +7,11 @@ import {
   getTier,
   checkQuota,
   costToWei,
+  tiersEarned,
+  tierProgress,
+  tierBadgeId,
 } from "./lib/billing-core.js"
+import { runIndexer, listAllKeys } from "./lib/indexer-run.js"
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
@@ -34,6 +38,11 @@ function checkRegRateLimit(request) {
   regBuckets.set(k, n + 1)
   if (regBuckets.size > 5000) for (const [key] of regBuckets) if (!key.endsWith(`:${now}`)) regBuckets.delete(key)
   return true
+}
+
+/** Tiers earned but not yet minted (spec §5: platform mints on crossing) */
+export function computePendingBadges(cumulativeSpend, mintedTierBadges = []) {
+  return tiersEarned(cumulativeSpend).filter((t) => !mintedTierBadges.includes(t))
 }
 
 function withLedgerLock(address, fn) {
@@ -95,19 +104,20 @@ export async function handleUsage(body, ledger) {
   try {
     const tokens = BigInt(body.tokens ?? 0)
     if (tokens <= 0n) return { status: 400, body: { error: "tokens must be > 0" } }
-    const tier = getTier(ledger.cumulativeSpend ?? 0n)
-    const costMicro = estimateCost(body.model ?? "demo", tokens, tier)
+    const costMicro = estimateCost(body.model ?? "demo", tokens, getTier(ledger.cumulativeSpend ?? 0n))
     const costWei = costToWei(costMicro)
     const usable = computeUsable(ledger.onchainSnapshot, ledger.committedUsage)
     if (!checkQuota(usable, costWei)) {
       return { status: 429, body: { error: "Credit Insufficient", usableWei: usable.toString() } }
     }
     const updated = applyConsumption(ledger, costWei)
+    const tier = getTier(updated.cumulativeSpend)
     const remaining = computeUsable(ledger.onchainSnapshot, updated.committedUsage)
     return {
       status: 200,
       body: {
         tier,
+        pendingBadges: computePendingBadges(updated.cumulativeSpend, ledger.mintedTierBadges ?? []),
         chargedWei: costWei.toString(),
         chargedMicro: costMicro.toString(),
         remainingWei: remaining.toString(),
@@ -131,7 +141,7 @@ function corsHeaders(request) {
   if (ALLOWED_ORIGINS.has(origin)) {
     headers["Access-Control-Allow-Origin"] = origin
     headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    headers["Access-Control-Allow-Headers"] = "Content-Type"
+    headers["Access-Control-Allow-Headers"] = "Content-Type, X-Admin-Key"
   }
   return headers
 }
@@ -144,6 +154,13 @@ function json(request, body, status = 200) {
 }
 
 export default {
+  /** Spec §4.3: cron-driven indexer keeps ledger snapshots in sync */
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(
+      runIndexer(env).catch((err) => console.error("[indexer] failed:", err?.message ?? err))
+    )
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url)
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) })
@@ -160,30 +177,48 @@ export default {
       const keyRow = keyRowRaw ? JSON.parse(keyRowRaw) : null
       if (!keyRow) return json(request, { error: "Invalid API key" }, 401)
 
-      // Read-modify-write on the ledger key is serialized per address;
-      // the fetch layer only maps unexpected KV/JSON errors to 400.
-      const res = await withLedgerLock(keyRow.address, async () => {
+      const ledgerKey = keyRow.kind === "cust" ? `cust:${keyRow.custId}` : `ledger:${keyRow.address}`
+      // lock: bare (lowercased) address for self keys — matches the
+      // /v1/credits, /v1/tier and /v1/admin/badges confirm locks;
+      // cust:<id> for custodial — matches the POST /v1/custodial/credit lock
+      const lockKey = keyRow.kind === "cust" ? `cust:${keyRow.custId}` : keyRow.address
+
+      const res = await withLedgerLock(lockKey, async () => {
         try {
-          const ledgerRaw = await env.CINA_BILLING_KV.get(`ledger:${keyRow.address}`)
+          const ledgerRaw = await env.CINA_BILLING_KV.get(ledgerKey)
           const stored = ledgerRaw ? JSON.parse(ledgerRaw) : {}
-          const snapshot = (await refreshSnapshot(env, keyRow.address)) ?? BigInt(stored.onchainSnapshot ?? 0)
+          let snapshot
+          if (keyRow.kind === "cust") {
+            // DB-backed balance — the pool holds the real tokens (spec §6.1)
+            snapshot = BigInt(stored.balanceWei ?? 0)
+          } else {
+            snapshot = (await refreshSnapshot(env, keyRow.address)) ?? BigInt(stored.onchainSnapshot ?? 0)
+          }
           const ledger = {
             onchainSnapshot: snapshot,
             committedUsage: BigInt(stored.committedUsage ?? 0),
             cumulativeSpend: BigInt(stored.cumulativeSpend ?? 0),
+            mintedTierBadges: stored.mintedTierBadges ?? [],
           }
           const res = await handleUsage({ model, tokens }, ledger)
           if (res.status === 200) {
             const updated = applyConsumption(ledger, BigInt(res.body.chargedWei))
-            await env.CINA_BILLING_KV.put(
-              `ledger:${keyRow.address}`,
-              JSON.stringify({
-                ...stored,
+            const merged = {
+              ...stored,
+              committedUsage: updated.committedUsage.toString(),
+              cumulativeSpend: updated.cumulativeSpend.toString(),
+              tier: res.body.tier,
+              pendingTierBadges: res.body.pendingBadges,
+            }
+            if (keyRow.kind === "cust") {
+              // balanceWei (DB) unchanged by consumption; usage is committed
+              await env.CINA_BILLING_KV.put(ledgerKey, JSON.stringify(merged))
+            } else {
+              await env.CINA_BILLING_KV.put(ledgerKey, JSON.stringify({
+                ...merged,
                 onchainSnapshot: snapshot.toString(),
-                committedUsage: updated.committedUsage.toString(),
-                cumulativeSpend: updated.cumulativeSpend.toString(),
-              })
-            )
+              }))
+            }
           }
           return res
         } catch (err) {
@@ -217,17 +252,234 @@ export default {
       return json(request, res)
     }
 
-    // POST /v1/keys — register an API key for an address (demo provisioning;
-    // production requires SIWE-signed proof of address ownership)
+    if (url.pathname.startsWith("/v1/tier/") && request.method === "GET") {
+      const address = url.pathname.split("/").pop().toLowerCase()
+      const res = await withLedgerLock(address, async () => {
+        try {
+          const raw = await env.CINA_BILLING_KV.get(`ledger:${address}`)
+          const ledger = raw ? JSON.parse(raw) : null
+          const spend = ledger ? BigInt(ledger.cumulativeSpend ?? 0) : 0n
+          const progress = tierProgress(spend)
+          return {
+            address,
+            tier: progress.tier,
+            cumulativeSpend: spend.toString(),
+            nextTier: progress.nextTier,
+            nextThreshold: progress.nextMin,
+            progressBps: progress.progressBps,
+            pendingBadges: ledger?.pendingTierBadges ?? [],
+            mintedBadges: ledger?.mintedTierBadges ?? [],
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : "Invalid request" }
+        }
+      })
+      return json(request, res)
+    }
+
+    // ── Custodial accounts (spec §6.1: hot wallet pool + DB bookkeeping) ──
+    if (url.pathname === "/v1/custodial/accounts" && request.method === "POST") {
+      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+      const body = await request.json().catch(() => ({}))
+      const { owner } = body
+      if (!/^0x[a-fA-F0-9]{40}$/.test(owner ?? "")) return json(request, { error: "Invalid owner" }, 400)
+      const id = `cust_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`
+      await env.CINA_BILLING_KV.put(`cust:${id}`, JSON.stringify({
+        owner: owner.toLowerCase(),
+        balanceWei: "0",
+        committedUsage: "0",
+        cumulativeSpend: "0",
+        pendingTierBadges: [],
+        mintedTierBadges: [],
+        createdAt: Date.now(),
+      }))
+      return json(request, { ok: true, id })
+    }
+
+    if (url.pathname === "/v1/custodial/credit" && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const body = await request.json().catch(() => ({}))
+      const { id, amountWei } = body
+      const key = `cust:${id ?? ""}`
+      const res = await withLedgerLock(key, async () => {
+        try {
+          const raw = await env.CINA_BILLING_KV.get(key)
+          const ledger = raw ? JSON.parse(raw) : null
+          if (!ledger) return { status: 404, body: { error: "Account not found" } }
+          const add = BigInt(amountWei ?? 0)
+          if (add <= 0n) return { status: 400, body: { error: "amountWei must be > 0" } }
+          ledger.balanceWei = (BigInt(ledger.balanceWei ?? 0) + add).toString()
+          await env.CINA_BILLING_KV.put(key, JSON.stringify(ledger))
+          return { status: 200, body: { ok: true, balanceWei: ledger.balanceWei } }
+        } catch (err) {
+          return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+        }
+      })
+      return json(request, res.body, res.status)
+    }
+
+    if (url.pathname === "/v1/custodial/debit" && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const body = await request.json().catch(() => ({}))
+      const { id, amountWei } = body
+      const key = `cust:${id ?? ""}`
+      const res = await withLedgerLock(key, async () => {
+        try {
+          const raw = await env.CINA_BILLING_KV.get(key)
+          const ledger = raw ? JSON.parse(raw) : null
+          if (!ledger) return { status: 404, body: { error: "Account not found" } }
+          const sub = BigInt(amountWei ?? 0)
+          if (sub <= 0n) return { status: 400, body: { error: "amountWei must be > 0" } }
+          const current = BigInt(ledger.balanceWei ?? 0)
+          if (current < sub) return { status: 400, body: { error: "Insufficient balance" } }
+          ledger.balanceWei = (current - sub).toString()
+          await env.CINA_BILLING_KV.put(key, JSON.stringify(ledger))
+          return { status: 200, body: { ok: true, balanceWei: ledger.balanceWei } }
+        } catch (err) {
+          return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+        }
+      })
+      return json(request, res.body, res.status)
+    }
+
+    if (url.pathname.startsWith("/v1/custodial/") && request.method === "GET") {
+      const id = url.pathname.split("/").pop()
+      const raw = await env.CINA_BILLING_KV.get(`cust:${id}`)
+      if (!raw) return json(request, { error: "Account not found" }, 404)
+      let ledger
+      try {
+        ledger = JSON.parse(raw)
+      } catch {
+        // one malformed row must not 500 the read path (mirrors credits/tier)
+        return json(request, { error: "Account data corrupted" })
+      }
+      const balance = BigInt(ledger.balanceWei ?? 0)
+      const committed = BigInt(ledger.committedUsage ?? 0)
+      const usable = computeUsable(balance, committed)
+      return json(request, {
+        id,
+        owner: ledger.owner,
+        balanceWei: balance.toString(),
+        committedUsage: committed.toString(),
+        usable: usable.toString(),
+        usableCredit: Number(usable) / 1e18,
+        cumulativeSpend: ledger.cumulativeSpend ?? "0",
+        tier: getTier(BigInt(ledger.cumulativeSpend ?? 0)),
+        pendingBadges: ledger.pendingTierBadges ?? [],
+      })
+    }
+
+    // POST /v1/keys — register an API key bound to an address (self-managed)
+    // or to a custodial account (spec §6.1); demo provisioning, production
+    // requires SIWE-signed proof of address ownership
     if (url.pathname === "/v1/keys" && request.method === "POST") {
       if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
       const body = await request.json().catch(() => ({}))
-      const { apiKey, address } = body
+      const { apiKey, address, custId } = body
       if (!apiKey || typeof apiKey !== "string" || apiKey.length < 20) return json(request, { error: "Invalid apiKey" }, 400)
-      if (!/^0x[a-fA-F0-9]{40}$/.test(address ?? "")) return json(request, { error: "Invalid address" }, 400)
       const hash = await hashKey(apiKey)
-      await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ address: address.toLowerCase() }))
-      return json(request, { ok: true, address: address.toLowerCase() })
+      if (address) {
+        if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return json(request, { error: "Invalid address" }, 400)
+        await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ kind: "self", address: address.toLowerCase() }))
+        return json(request, { ok: true, address: address.toLowerCase() })
+      }
+      if (custId) {
+        const custRaw = await env.CINA_BILLING_KV.get(`cust:${custId}`)
+        if (!custRaw) return json(request, { error: "Custodial account not found" }, 404)
+        await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ kind: "cust", custId }))
+        return json(request, { ok: true, custId })
+      }
+      return json(request, { error: "address or custId required" }, 400)
+    }
+
+    // Admin: list addresses with pending tier badges (spec §5 minting flow)
+    // Scans both self-hosted ledgers (ledger:<address>) and custodial rows
+    // (cust:<id>) so badges accrued on custodial accounts are visible too.
+    if (url.pathname === "/v1/admin/pending-badges" && request.method === "GET") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const pending = []
+      for (const prefix of ["ledger:", "cust:"]) {
+        const keys = await listAllKeys(env.CINA_BILLING_KV, prefix)
+        for (const { name } of keys) {
+          const raw = await env.CINA_BILLING_KV.get(name)
+          if (!raw) continue
+          let ledger
+          try {
+            ledger = JSON.parse(raw)
+          } catch (err) {
+            // One malformed row (e.g. manual/console edit) must not abort the
+            // admin listing — skip it and carry on (mirrors indexer-run.js).
+            console.error(`[admin] skipping malformed ${name}:`, err?.message ?? err)
+            continue
+          }
+          const badges = (ledger.pendingTierBadges ?? []).filter((t) => tierBadgeId(t) !== null)
+          if (!badges.length) continue
+          if (prefix === "cust:") {
+            pending.push({
+              address: ledger.owner,
+              custId: name.slice("cust:".length),
+              badges,
+              cumulativeSpend: ledger.cumulativeSpend ?? "0",
+            })
+          } else {
+            pending.push({
+              address: name.slice("ledger:".length),
+              badges,
+              cumulativeSpend: ledger.cumulativeSpend ?? "0",
+            })
+          }
+        }
+      }
+      return json(request, { pending })
+    }
+
+    // Admin: confirm a badge was minted on-chain (moves pending -> minted).
+    // A custodial account may be confirmed by its owner address + custId in
+    // the body; the write then lands on cust:<custId> (never a phantom
+    // ledger:<address> row) and the lock uses the custId.
+    const confirmMatch = url.pathname.match(/^\/v1\/admin\/badges\/(0x[a-fA-F0-9]{40})\/([a-z]+)\/confirm$/)
+    if (confirmMatch && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const [, address, tier] = confirmMatch
+      if (tierBadgeId(tier) === null) return json(request, { error: "Invalid tier" }, 400)
+      const body = await request.json().catch(() => ({}))
+      const targetKey = body.custId ? `cust:${body.custId}` : `ledger:${address.toLowerCase()}`
+      const lockKey = body.custId ? `cust:${body.custId}` : address.toLowerCase()
+      const res = await withLedgerLock(lockKey, async () => {
+        const raw = await env.CINA_BILLING_KV.get(targetKey)
+        let ledger
+        try {
+          ledger = raw ? JSON.parse(raw) : {}
+        } catch {
+          return { error: "Ledger data corrupted" }
+        }
+        const minted = [...new Set([...(ledger.mintedTierBadges ?? []), tier])]
+        await env.CINA_BILLING_KV.put(targetKey, JSON.stringify({
+          ...ledger,
+          pendingTierBadges: (ledger.pendingTierBadges ?? []).filter((t) => t !== tier),
+          mintedTierBadges: minted,
+          badgeTxHashes: { ...(ledger.badgeTxHashes ?? {}), [tier]: body.txHash ?? null },
+        }))
+        return { ok: true, address, tier, custId: body.custId ?? null }
+      })
+      return json(request, res)
+    }
+
+    // Manual indexer trigger (admin key; also used by tests/E2E)
+    if (url.pathname === "/v1/admin/index" && request.method === "POST") {
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
+        return json(request, { error: "Unauthorized" }, 401)
+      }
+      const res = await runIndexer(env).catch((err) => ({ error: err instanceof Error ? err.message : "indexer failed" }))
+      return json(request, res)
     }
 
     return json(request, { error: "Not found" }, 404)

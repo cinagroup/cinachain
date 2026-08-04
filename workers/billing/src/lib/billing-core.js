@@ -52,18 +52,65 @@ export const TIER_DISCOUNT_BPS = {
   silver: 1000n,  // 90%
   gold: 1500n,    // 85%
   diamond: 2000n, // 80%
+  whale: 0n,      // custom contract pricing — no automatic discount (spec §5)
 }
 
 // Tier thresholds are in wei units (aligned with the ledger — cumulativeSpend
 // is wei; 1 credit = 1e18 wei). Spec §5 defines thresholds as credit counts:
-// bronze 10k credits, silver 100k, gold 1M, diamond 10M.
+// bronze 10k credits, silver 100k, gold 1M, diamond 10M, whale 100M.
+// ⚠ Ordering is load-bearing: must stay strictly descending — getTier's
+// find() and tierProgress's idx-1 both rely on it.
 export const TIER_THRESHOLDS = [
+  { tier: "whale", min: 100_000_000n * 10n ** 18n }, // 1 亿 credit
   { tier: "diamond", min: 10_000_000n * 10n ** 18n }, // 1000 万 credit
   { tier: "gold", min: 1_000_000n * 10n ** 18n },     // 100 万 credit
   { tier: "silver", min: 100_000n * 10n ** 18n },     // 10 万 credit
   { tier: "bronze", min: 10_000n * 10n ** 18n },      // 1 万 credit
   { tier: "free", min: 0n },
 ]
+
+// Tier -> CinaBadge token ID. CinaBadge assigns custom badge types from 100
+// (nextCustomBadgeId = 100) — spec §3.2 assumed 10-14, corrected to 100-104.
+export const TIER_BADGE_IDS = {
+  bronze: 100n,
+  silver: 101n,
+  gold: 102n,
+  diamond: 103n,
+  whale: 104n,
+}
+
+/** Badge ID for a tier, or null when the tier has no badge (free) */
+export function tierBadgeId(tier) {
+  return TIER_BADGE_IDS[tier] ?? null
+}
+
+/** All tier names whose threshold has been crossed, ascending */
+export function tiersEarned(cumulativeSpend) {
+  return TIER_THRESHOLDS.filter((t) => t.tier !== "free" && cumulativeSpend >= t.min)
+    .map((t) => t.tier)
+    .reverse()
+}
+
+/**
+ * Tier progress for UI: {tier, nextTier, nextMin (string wei), progressBps}.
+ * progressBps = position between current floor and next threshold (0..10000).
+ */
+export function tierProgress(cumulativeSpend) {
+  const tier = getTier(cumulativeSpend)
+  const idx = TIER_THRESHOLDS.findIndex((t) => t.tier === tier)
+  const current = TIER_THRESHOLDS[idx]
+  const next = idx > 0 ? TIER_THRESHOLDS[idx - 1] : null
+  if (!next) return { tier, nextTier: null, nextMin: null, progressBps: 10000 }
+  const floor = current?.min ?? 0n
+  const span = next.min - floor
+  const bps = span > 0n ? Number(((cumulativeSpend - floor) * 10_000n) / span) : 10000
+  return {
+    tier,
+    nextTier: next.tier,
+    nextMin: next.min.toString(),
+    progressBps: Math.min(Math.max(bps, 0), 10000),
+  }
+}
 
 export function getTier(cumulativeSpend) {
   if (cumulativeSpend < 0n) throw new Error("cumulativeSpend must be >= 0")

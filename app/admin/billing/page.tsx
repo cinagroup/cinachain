@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
+import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
-import type { Hash } from "viem"
+import type { Address, Hash } from "viem"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -45,6 +45,7 @@ interface LedgerData {
 export default function BillingManagementPage() {
   const { address } = useAccount()
   const queryClient = useQueryClient()
+  const publicClient = usePublicClient()
   const { creditRate, isPaused, isLoading: creditLoading, formatCredit } = useCreditBalance(address)
 
   const { writeContractAsync, isPending } = useWriteContract()
@@ -60,6 +61,17 @@ export default function BillingManagementPage() {
   // Ledger
   const [ledger, setLedger] = useState<LedgerData | null>(null)
   const [ledgerError, setLedgerError] = useState(false)
+
+  // Tier badge minting (spec §5: platform mints on tier crossing)
+  const [adminKey, setAdminKey] = useState("")
+  const [pendingList, setPendingList] = useState<Array<{ address: string; badges: string[]; cumulativeSpend: string; custId?: string }>>([])
+  const [isFetchingPending, setIsFetchingPending] = useState(false)
+  const [badgeError, setBadgeError] = useState<string | null>(null)
+
+  // Custodial accounts
+  const [custId, setCustId] = useState("")
+  const [custAmountWei, setCustAmountWei] = useState("")
+  const [custMsg, setCustMsg] = useState<string | null>(null)
 
   const { isSuccess: confirmed, isError: reverted } =
     useWaitForTransactionReceipt({
@@ -121,6 +133,78 @@ export default function BillingManagementPage() {
     } catch (err) {
       const anyErr = err as unknown as { shortMessage?: string; message?: string }
       setError(anyErr.shortMessage ?? anyErr.message ?? `Failed to ${label}`)
+    }
+  }
+
+  const fetchPending = async () => {
+    setIsFetchingPending(true)
+    setBadgeError(null)
+    try {
+      const res = await fetch(`${BILLING_API_URL}/v1/admin/pending-badges`, {
+        headers: { "X-Admin-Key": adminKey },
+      })
+      if (!res.ok) throw new Error(`pending-badges ${res.status}`)
+      const body = await res.json()
+      setPendingList(body.pending ?? [])
+    } catch (err) {
+      setBadgeError(err instanceof Error ? err.message : "Failed to load pending badges")
+    } finally {
+      setIsFetchingPending(false)
+    }
+  }
+
+  const BADGE_MINT_ABI = [
+    { name: "mint", type: "function", stateMutability: "nonpayable",
+      inputs: [{ name: "to", type: "address" }, { name: "tokenId", type: "uint256" }, { name: "amount", type: "uint256" }],
+      outputs: [] },
+  ] as const
+  const TIER_IDS: Record<string, bigint> = { bronze: 100n, silver: 101n, gold: 102n, diamond: 103n, whale: 104n }
+  const BADGE_CONTRACT = process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT || "0x72cc9adb6c877d233e9843ee2d00424b9766d0cf"
+
+  const mintPending = async (item: { address: string; badges: string[]; custId?: string }) => {
+    setBadgeError(null)
+    try {
+      if (!publicClient) throw new Error("No public client available")
+      for (const tier of item.badges) {
+        const hash = await writeContractAsync({
+          address: BADGE_CONTRACT as Address,
+          abi: BADGE_MINT_ABI,
+          functionName: "mint",
+          args: [item.address as Address, TIER_IDS[tier], 1n],
+        })
+        // wait for mining before confirming in the ledger (review: gate on receipt)
+        const receipt = await publicClient.waitForTransactionReceipt({ hash })
+        if (receipt.status !== "success") throw new Error(`mint reverted for ${tier}`)
+        const confirmRes = await fetch(`${BILLING_API_URL}/v1/admin/badges/${item.address}/${tier}/confirm`, {
+          method: "POST",
+          headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
+          body: JSON.stringify({ txHash: hash, ...(item.custId ? { custId: item.custId } : {}) }),
+        })
+        if (!confirmRes.ok) throw new Error(`confirm failed: ${confirmRes.status}`)
+      }
+      setSuccessAction("Tier badges minted")
+      await fetchPending()
+    } catch (err) {
+      const anyErr = err as unknown as { shortMessage?: string; message?: string }
+      setBadgeError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge")
+    }
+  }
+
+  const custOperate = async (op: "credit" | "debit") => {
+    setBadgeError(null)
+    setCustMsg(null)
+    try {
+      if (!custId || !/^\d+$/.test(custAmountWei)) throw new Error("Valid account id and amountWei required")
+      const res = await fetch(`${BILLING_API_URL}/v1/custodial/${op}`, {
+        method: "POST",
+        headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: custId, amountWei: custAmountWei }),
+      })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body.error ?? `${op} failed: ${res.status}`)
+      setCustMsg(`${op} ok — balanceWei ${body.balanceWei}`)
+    } catch (err) {
+      setBadgeError(err instanceof Error ? err.message : "Custodial operation failed")
     }
   }
 
@@ -449,6 +533,91 @@ export default function BillingManagementPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tier badge minting (spec §5: platform mints on tier crossing) */}
+      <Card className="mt-6 shadow-vercel-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BadgeCheck className="h-5 w-5" />
+            Tier Badge Minting
+          </CardTitle>
+          <CardDescription>
+            Addresses that crossed a tier threshold but have no on-chain badge yet
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Input
+              placeholder="Admin key"
+              type="password"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              className="max-w-[240px]"
+            />
+            <Button variant="outline" size="sm" onClick={fetchPending} disabled={isFetchingPending}>
+              {isFetchingPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+            </Button>
+          </div>
+          {badgeError && (
+            <p className="mt-3 text-sm text-destructive">{badgeError}</p>
+          )}
+          {pendingList.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              {isFetchingPending ? "Loading..." : "No pending tier badges"}
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {pendingList.map((item) => (
+                <li key={`${item.custId ?? item.address}`} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+                  <div>
+                    <p className="font-mono-tech text-xs text-foreground">{item.address}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.badges.join(", ")} · cumulative {(Number(item.cumulativeSpend) / 1e18).toLocaleString()} credit
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={() => mintPending(item)} disabled={isBusy || !adminKey}>
+                    Mint
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Custodial accounts (spec §6.1: pool + DB bookkeeping) */}
+      <Card className="mt-6 shadow-vercel-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5" />
+            Custodial Accounts
+          </CardTitle>
+          <CardDescription>
+            DB bookkeeping on top of the hot-wallet pool — credit on deposit, debit after pool withdrawal
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="custId">Account ID</Label>
+              <Input id="custId" placeholder="cust_..." value={custId} onChange={(e) => setCustId(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="custAmount">Amount (wei)</Label>
+              <Input id="custAmount" placeholder="1000000000000000000" value={custAmountWei} onChange={(e) => setCustAmountWei(e.target.value)} />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-3">
+            <Button variant="outline" size="sm" onClick={() => custOperate("credit")} disabled={!adminKey}>
+              Credit
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => custOperate("debit")} disabled={!adminKey}>
+              Debit
+            </Button>
+          </div>
+          {custMsg && <p className="mt-3 text-sm text-[#29bc9b]">{custMsg}</p>}
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -48,3 +48,4 @@ contracts/out/
 .playwright-mcp/
 prod-mint.png
 dev-server.log
+.wrangler/

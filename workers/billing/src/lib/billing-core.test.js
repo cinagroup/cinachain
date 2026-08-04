@@ -7,6 +7,10 @@ import {
   estimateCost,
   costToWei,
   microToCredit,
+  tiersEarned,
+  tierProgress,
+  tierBadgeId,
+  TIER_BADGE_IDS,
 } from "./billing-core.js"
 
 describe("computeUsable", () => {
@@ -79,5 +83,52 @@ describe("edge cases", () => {
   })
   it("estimateCost defaults to free tier", () => {
     expect(estimateCost("demo", 1000n)).toBe(2_000_000n)
+  })
+})
+
+describe("M2 tier engine", () => {
+  it("whale threshold at 100M credit", () => {
+    const whale = 100_000_000n * 10n ** 18n
+    expect(getTier(whale - 1n)).toBe("diamond")
+    expect(getTier(whale)).toBe("whale")
+  })
+  it("tiersEarned lists every threshold crossed, ascending", () => {
+    const spend = 120_000n * 10n ** 18n // 12 万 credit: bronze + silver
+    expect(tiersEarned(spend)).toEqual(["bronze", "silver"])
+    expect(tiersEarned(0n)).toEqual([])
+  })
+  it("tierProgress reports next tier and bps progress", () => {
+    // bronze floor 10k, silver next 100k; 55k -> (55-10)/(100-10) = 50%
+    const spend = 55_000n * 10n ** 18n
+    const p = tierProgress(spend)
+    expect(p.tier).toBe("bronze")
+    expect(p.nextTier).toBe("silver")
+    expect(p.progressBps).toBe(5000)
+    expect(p.nextMin).toBe((100_000n * 10n ** 18n).toString())
+  })
+  it("tierProgress caps at whale (no next tier)", () => {
+    const p = tierProgress(1_000_000_000n * 10n ** 18n)
+    expect(p.tier).toBe("whale")
+    expect(p.nextTier).toBeNull()
+    expect(p.progressBps).toBe(10000)
+  })
+  it("badge id map covers bronze..whale", () => {
+    expect(TIER_BADGE_IDS).toEqual({ bronze: 100n, silver: 101n, gold: 102n, diamond: 103n, whale: 104n })
+  })
+  it("whale keeps full pricing (custom contract outside scope)", () => {
+    const tier = getTier(100_000_000n * 10n ** 18n)
+    const cost = estimateCost("demo", 1000n, tier)
+    expect(cost).toBe(2_000_000n) // 2000 micro × 1000 tokens, no discount
+  })
+  it("tierProgress floor edge: exactly at next threshold is 0 bps", () => {
+    const p = tierProgress(100_000n * 10n ** 18n) // exactly silver floor
+    expect(p.tier).toBe("silver")
+    expect(p.progressBps).toBe(0)
+    expect(p.nextTier).toBe("gold")
+  })
+  it("tierBadgeId returns null for free and unknown tiers", () => {
+    expect(tierBadgeId("free")).toBeNull()
+    expect(tierBadgeId("bogus")).toBeNull()
+    expect(tierBadgeId("bronze")).toBe(100n)
   })
 })

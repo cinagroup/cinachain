@@ -102,11 +102,13 @@ contract CinaCredit is ERC20, Ownable, Pausable, ReentrancyGuard {
 
 | 等级徽章 ID | 名称 | 累计消耗门槛 |
 |---|---|---|
-| 10 | Bronze 青铜 | 1 万 Credit |
-| 11 | Silver 白银 | 10 万 Credit |
-| 12 | Gold 黄金 | 100 万 Credit |
-| 13 | Diamond 钻石 | 1000 万 Credit |
-| 14 | Whale 巨鲸 | 1 亿 Credit |
+| 100 | Bronze 青铜 | 1 万 Credit |
+| 101 | Silver 白银 | 10 万 Credit |
+| 102 | Gold 黄金 | 100 万 Credit |
+| 103 | Diamond 钻石 | 1000 万 Credit |
+| 104 | Whale 巨鲸 | 1 亿 Credit |
+
+> 注：CinaBadge 自定义徽章 ID 从 100 起（`nextCustomBadgeId = 100`），故等级徽章为 100-104。
 
 - 等级判定在服务端（累计消耗是服务端权威数据），达标后由平台调用 CinaBadge.mint 发放——链上无需自动升级逻辑
 - 徽章作为链上凭证：可展示、可成就体系联动（与现有 Dashboard/Badges 页无缝衔接）
@@ -163,11 +165,11 @@ contract CinaCredit is ERC20, Ownable, Pausable, ReentrancyGuard {
 | 等级 | 门槛（累计消耗） | 权益 | 徽章 |
 |---|---|---|---|
 | Free | 0 | 基础速率限制 | — |
-| Bronze | 1 万 | 95 折、限速 ×2 | #10 |
-| Silver | 10 万 | 9 折、限速 ×5 | #11 |
-| Gold | 100 万 | 85 折、专属队列 | #12 |
-| Diamond | 1000 万 | 8 折、专属模型+客服 | #13 |
-| Whale | 1 亿 | 定制合同、白名单新模型 | #14 |
+| Bronze | 1 万 | 95 折、限速 ×2 | #100 |
+| Silver | 10 万 | 9 折、限速 ×5 | #101 |
+| Gold | 100 万 | 85 折、专属队列 | #102 |
+| Diamond | 1000 万 | 8 折、专属模型+客服 | #103 |
+| Whale | 1 亿 | 定制合同、白名单新模型 | #104 |
 
 - 折扣在服务端定价表应用：消耗按原始 token 数计量，折扣在扣费金额生效
 - 速率限制服务端执行；等级变化实时生效（服务端账本判定）
@@ -239,7 +241,7 @@ key 被 API 调用且确认消耗（服务端计量确认，逐笔累计）
 | 阶段 | 内容 | 验收标准 |
 |---|---|---|
 | **M1 MVP** | CinaCredit 部署（mintWithEth + mintTo + 汇率/金库/平台费）→ 计量网关（API Key 校验 + 服务端账本 + 429）→ 充值页 → 管理后台汇率/发放 | 用户可充值 → 调用 API → 余额扣减 → 用尽 429 ✅ 已完成（2026-08-04，M1 commit 分支 feat/credit-billing-m1） |
-| **M2** | 事件索引对账 + 托管账户（热钱包池 + DB） + 会员等级（累计消耗 → 等级 → 徽章发放） | 转账/转出实时反映额度；等级达标自动发徽章 |
+| **M2** | 事件索引对账 + 托管账户（热钱包池 + DB） + 会员等级（累计消耗 → 等级 → 徽章发放） | 转账/转出实时反映额度；等级达标自动发徽章 ✅ 已完成（2026-08-04，M2 分支 feat/credit-billing-m2） |
 | **M3** | Key 入金通道（验证/池化/确认铸造）+ 定价表细分 + 消耗明细报表 + **兑出（redeem，金库余额上限保护）** | key 提供者可获得 Credit；用户可兑出；平台可审计 |
 | **主网** | 合约审计（外部审计机构）→ 汇率 oracle → Base 主网部署 → 前端切链 | 真实资金充值/扣费/兑出闭环 |
 
