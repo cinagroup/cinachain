@@ -361,3 +361,75 @@ describe("M3 pricing override in handleUsage", () => {
     expect(res.body.tier).toBe("free")
   })
 })
+
+describe("M3 consumption history", () => {
+  it("usage writes a history entry; GET /v1/history/:address returns it", async () => {
+    const env = makeEnv()
+    // self key flow
+    const data = new TextEncoder().encode("histkey1")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "self", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }))
+    // ledger with balance — usage will succeed
+    env.store.set("ledger:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", JSON.stringify({
+      onchainSnapshot: (10n * 10n ** 18n).toString(), committedUsage: "0", cumulativeSpend: "0",
+    }))
+    // stub RPC so refreshSnapshot doesn't fail (returns null -> falls back to ledger)
+    const origFetch = global.fetch
+    global.fetch = async () => { throw new Error("no rpc") }
+    try {
+      const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "histkey1", model: "demo", tokens: "1000" }),
+      }))
+      expect(res.status).toBe(200)
+    } finally {
+      global.fetch = origFetch // 恢复，避免污染其他用例
+    }
+    const histRaw = env.store.get("hist:0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    expect(histRaw).toBeTruthy()
+    const hist = JSON.parse(histRaw)
+    expect(hist).toHaveLength(1)
+    expect(hist[0].model).toBe("demo")
+    expect(hist[0].tokens).toBe("1000")
+    expect(hist[0].chargedWei).toBe("2000000000000000000") // 2 credit
+    expect(typeof hist[0].ts).toBe("number")
+
+    const hres = await callWorker(env, new Request("https://billing.test/v1/history/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+    expect(hres.status).toBe(200)
+    const hbody = await hres.json()
+    expect(hbody.entries).toHaveLength(1)
+    expect(hbody.entries[0].model).toBe("demo")
+  })
+
+  it("history caps at 100 entries (oldest dropped)", async () => {
+    const env = makeEnv()
+    const ADDR = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    const existing = Array.from({ length: 100 }, (_, i) => ({ ts: i, model: "demo", tokens: "1", chargedWei: "1", tier: "free" }))
+    env.store.set(`hist:${ADDR}`, JSON.stringify(existing))
+    const hres = await callWorker(env, new Request(`https://billing.test/v1/history/${ADDR}`))
+    expect(hres.status).toBe(200)
+    const hbody = await hres.json()
+    expect(hbody.entries).toHaveLength(100)
+  })
+
+  it("usage history for a custodial key uses hist:cust:<id>", async () => {
+    const env = makeEnv()
+    env.store.set("cust:c1", JSON.stringify({
+      owner: "0xaaa", balanceWei: (10n * 10n ** 18n).toString(),
+      committedUsage: "0", cumulativeSpend: "0",
+    }))
+    const data = new TextEncoder().encode("histcust1")
+    const digest = await crypto.subtle.digest("SHA-256", data)
+    const hash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+    env.store.set(`key:${hash}`, JSON.stringify({ kind: "cust", custId: "c1" }))
+    const res = await callWorker(env, new Request("https://billing.test/v1/usage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey: "histcust1", model: "demo", tokens: "1000" }),
+    }))
+    expect(res.status).toBe(200)
+    expect(env.store.get("hist:cust:c1")).toBeTruthy()
+  })
+})

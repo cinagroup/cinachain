@@ -210,6 +210,13 @@ export default {
               tier: res.body.tier,
               pendingTierBadges: res.body.pendingBadges,
             }
+            // Consumption report (spec §7.2): append to per-address history
+            const histKey = keyRow.kind === "cust" ? `hist:cust:${keyRow.custId}` : `hist:${keyRow.address}`
+            const histRaw = await env.CINA_BILLING_KV.get(histKey)
+            const hist = histRaw ? JSON.parse(histRaw) : []
+            hist.push({ ts: Date.now(), model: body.model ?? "demo", tokens: String(body.tokens ?? 0), chargedWei: res.body.chargedWei, tier: res.body.tier })
+            const trimmed = hist.slice(-100)
+            await env.CINA_BILLING_KV.put(histKey, JSON.stringify(trimmed))
             if (keyRow.kind === "cust") {
               // balanceWei (DB) unchanged by consumption; usage is committed
               await env.CINA_BILLING_KV.put(ledgerKey, JSON.stringify(merged))
@@ -275,6 +282,19 @@ export default {
         }
       })
       return json(request, res)
+    }
+
+    // Consumption report (spec §7.2): last N metered charges for an address
+    if (url.pathname.startsWith("/v1/history/") && request.method === "GET") {
+      const address = url.pathname.split("/").pop().toLowerCase()
+      const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 100), 1), 100)
+      try {
+        const raw = await env.CINA_BILLING_KV.get(`hist:${address}`)
+        const entries = raw ? JSON.parse(raw) : []
+        return json(request, { address, entries: entries.slice(-limit) })
+      } catch {
+        return json(request, { error: "History data corrupted" })
+      }
     }
 
     // ── Custodial accounts (spec §6.1: hot wallet pool + DB bookkeeping) ──
