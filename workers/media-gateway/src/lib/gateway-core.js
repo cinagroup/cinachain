@@ -89,8 +89,10 @@ export function buildFallbackMetadata(type, svgBytes) {
 }
 
 // eth_call getBackupSvgRaw(uint256) → bytes; returns decoded Uint8Array or null.
-// Selector: keccak256("getBackupSvgRaw(uint256)")[0:4] = 0xac44d0f7
-export const GET_BACKUP_SVG_SELECTOR = "0xac44d0f7"
+// Selector: keccak256("getBackupSvgRaw(uint256)")[0:4] = 0x3385be15
+// (verified against the deployed contract; the previous placeholder value
+//  made eth_call hit an unrelated selector and revert)
+export const GET_BACKUP_SVG_SELECTOR = "0x3385be15"
 
 export async function ethCallRaw(rpc, to, data) {
   const res = await fetch(rpc, {

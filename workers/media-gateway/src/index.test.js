@@ -67,6 +67,11 @@ describe("buildFallbackMetadata", () => {
 })
 
 describe("encodeGetBackupSvg", () => {
+  it("uses the verified on-chain selector", () => {
+    // keccak256("getBackupSvgRaw(uint256)")[0:4] — regression guard against
+    // placeholder values silently breaking the chain fallback
+    expect(GET_BACKUP_SVG_SELECTOR).toBe("0x3385be15")
+  })
   it("encodes selector + padded type", () => {
     const call = encodeGetBackupSvg(1)
     expect(call.startsWith(GET_BACKUP_SVG_SELECTOR)).toBe(true)
