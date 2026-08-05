@@ -9,9 +9,12 @@ import { privateKeyToAccount } from "viem/accounts"
 
 const PK = process.env.DEPLOY_PRIVATE_KEY
 if (!PK) throw new Error("DEPLOY_PRIVATE_KEY required")
+// Base Sepolia public RPCs; MEGA_RPC_URL overrides (some public endpoints are
+// flaky under burst reads — publicnode is generally the most stable).
+const RPC = process.env.MEGA_RPC_URL ?? "https://base-sepolia-rpc.publicnode.com"
 const acct = privateKeyToAccount(PK)
-const pc = createPublicClient({ chain: baseSepolia, transport: http("https://sepolia.base.org") })
-const wc = createWalletClient({ account: acct, chain: baseSepolia, transport: http("https://sepolia.base.org") })
+const pc = createPublicClient({ chain: baseSepolia, transport: http(RPC) })
+const wc = createWalletClient({ account: acct, chain: baseSepolia, transport: http(RPC) })
 const mega = JSON.parse(readFileSync(resolve("contracts/out/CinaMega.json"), "utf8"))
 const ADDR = process.env.CINA_MEGA_CONTRACT
 if (!ADDR) throw new Error("CINA_MEGA_CONTRACT required")
@@ -20,16 +23,28 @@ const f = (n, i = [], o = [], m = "view") => ({ name: n, type: "function", state
 const assert = (cond, msg) => { if (!cond) { console.error("❌ FAIL:", msg); process.exit(1) } console.log("✅", msg) }
 
 const UCINA = 1n, MCINA = 2n, CINA = 3n
-const balOf = (t) => pc.readContract({ address: ADDR, abi: [f("balanceOf", [{ type: "address" }, { type: "uint256" }], [{ type: "uint256" }])], functionName: "balanceOf", args: [acct.address, t] })
+// Reads are pinned to the confirmed block of the previous write so a lagging
+// RPC node can never return pre-transaction state (seen on Base Sepolia).
+let readAt = undefined
+const balOf = (t) =>
+  pc.readContract({
+    address: ADDR,
+    abi: [f("balanceOf", [{ type: "address" }, { type: "uint256" }], [{ type: "uint256" }])],
+    functionName: "balanceOf",
+    args: [acct.address, t],
+    blockNumber: readAt,
+  })
 
 async function mint(amount) {
   const tx = await wc.writeContract({ address: ADDR, abi: mega.abi, functionName: "mintUcina", args: [amount] })
-  return pc.waitForTransactionReceipt({ hash: tx })
+  const rec = await pc.waitForTransactionReceipt({ hash: tx })
+  readAt = rec.blockNumber
 }
 
 async function exch(from, to, amount) {
   const tx = await wc.writeContract({ address: ADDR, abi: mega.abi, functionName: "exchange", args: [from, to, amount] })
-  return pc.waitForTransactionReceipt({ hash: tx })
+  const rec = await pc.waitForTransactionReceipt({ hash: tx })
+  readAt = rec.blockNumber
 }
 
 async function main() {
@@ -67,14 +82,14 @@ async function main() {
   assert((await balOf(UCINA)) === 1000000n, "1000 mcina -> 1M ucina (round trip)")
   assert((await balOf(MCINA)) === 0n, "source mcina burned")
 
-  // Dust: 1500 ucina -> mcina = 1 (500 units burned, floor)
-  await mint(1500n)
+  // Dust: 1500 ucina -> mcina = 1 (500 units burned, floor).
+  // Uses the 1M ucina left over from the round trip — the mint cap is
+  // already exhausted, so no extra mint is needed here.
   await exch(UCINA, MCINA, 1500n)
   assert((await balOf(MCINA)) === 1n, "1500 ucina -> 1 mcina (dust 500 burned)")
-  assert((await balOf(UCINA)) === 0n, "dust-side ucina fully burned")
+  assert((await balOf(UCINA)) === 998500n, "dust-side ucina burned (1M - 1500)")
 
   // ExchangeTooSmall: 999 ucina -> cina = 0 → revert, nothing burned
-  await mint(999n)
   const before = await balOf(UCINA)
   try {
     await pc.simulateContract({ address: ADDR, abi: mega.abi, functionName: "exchange", args: [UCINA, CINA, 999n], account: acct.address })
