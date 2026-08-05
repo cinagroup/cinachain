@@ -19,6 +19,7 @@ import {
   Sparkles,
   Server,
   Lock,
+  Coins,
 } from "lucide-react"
 
 import { siteConfig } from "@/config/site"
@@ -141,6 +142,15 @@ export default function HomePage() {
               href="/dashboard/badges"
               cta="View Badges"
               status="Live"
+            />
+            <ProductCard
+              icon={<Coins className="size-6" />}
+              name="CinaMega"
+              tag="ERC-1155"
+              description="Three template-based mega-collections — UCINA, MCINA, CINA — with billions of copies each and a fixed 1:1000:1,000,000 exchange."
+              href="/collections"
+              cta="View Collections"
+              status="Beta"
             />
             <ProductCard
               icon={<Zap className="size-6" />}

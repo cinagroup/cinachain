@@ -26,6 +26,18 @@ export function MainNav() {
       >
         Mint
       </Link>
+      <Link
+        href="/collections"
+        className="rounded-sm px-3 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+      >
+        Collections
+      </Link>
+      <Link
+        href="/exchange"
+        className="rounded-sm px-3 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+      >
+        Exchange
+      </Link>
 
       <NavigationMenu>
         <NavigationMenuList>

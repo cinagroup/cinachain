@@ -44,6 +44,13 @@ export const env = createEnv({
       .regex(/^0x[a-fA-F0-9]{40}$/)
       .default("0x0000000000000000000000000000000000000000"),
     NEXT_PUBLIC_CINA_CREDIT_CONTRACT: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
+    // CinaMega ERC-1155 mega-collection + exchange (ucina/mcina/cina)
+    NEXT_PUBLIC_CINA_MEGA_CONTRACT: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/)
+      .default("0x0000000000000000000000000000000000000000"),
+    // Media gateway for CinaMega assets (R2 → 4EVERLAND → on-chain fallback)
+    NEXT_PUBLIC_MEGA_MEDIA_URL: z.string().url().optional(),
     // Mint price displayed in the UI (read-only; the contract is authoritative)
     NEXT_PUBLIC_MINT_PRICE_ETH: z.string().default("0.05"),
     // Whitelist API (Cloudflare Worker)
@@ -70,6 +77,8 @@ export const env = createEnv({
     NEXT_PUBLIC_CINA_NFT_CONTRACT: process.env.NEXT_PUBLIC_CINA_NFT_CONTRACT,
     NEXT_PUBLIC_CINA_ERC1155_CONTRACT: process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT,
     NEXT_PUBLIC_CINA_CREDIT_CONTRACT: process.env.NEXT_PUBLIC_CINA_CREDIT_CONTRACT,
+    NEXT_PUBLIC_CINA_MEGA_CONTRACT: process.env.NEXT_PUBLIC_CINA_MEGA_CONTRACT,
+    NEXT_PUBLIC_MEGA_MEDIA_URL: process.env.NEXT_PUBLIC_MEGA_MEDIA_URL,
     NEXT_PUBLIC_MINT_PRICE_ETH: process.env.NEXT_PUBLIC_MINT_PRICE_ETH,
     NEXT_PUBLIC_WHITELIST_API_URL: process.env.NEXT_PUBLIC_WHITELIST_API_URL,
     NEXT_PUBLIC_PAYMASTER_PROXY_URL: process.env.NEXT_PUBLIC_PAYMASTER_PROXY_URL,

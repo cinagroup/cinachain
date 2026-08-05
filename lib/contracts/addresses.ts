@@ -36,6 +36,12 @@ export const CINA_CREDIT_CONTRACT = resolveAddress(
 )
 export const hasCreditContract = CINA_CREDIT_CONTRACT !== ZERO_ADDRESS
 
+/** ERC-1155 CinaMega mega-collection + exchange contract address */
+export const CINA_MEGA_CONTRACT = resolveAddress(
+  process.env.NEXT_PUBLIC_CINA_MEGA_CONTRACT
+)
+export const hasMegaContract = CINA_MEGA_CONTRACT !== ZERO_ADDRESS
+
 /** True when the NFT contract address is set (not the zero placeholder) */
 export const hasNftContract = CINA_NFT_CONTRACT !== ZERO_ADDRESS
 export const hasErc1155Contract = CINA_ERC1155_CONTRACT !== ZERO_ADDRESS

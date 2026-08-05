@@ -53,6 +53,12 @@ export function MobileNav() {
             <MobileLink href="/mint" className="text-base font-medium" onOpenChange={setOpen}>
               Mint
             </MobileLink>
+            <MobileLink href="/collections" className="text-base font-medium" onOpenChange={setOpen}>
+              Collections
+            </MobileLink>
+            <MobileLink href="/exchange" className="text-base font-medium" onOpenChange={setOpen}>
+              Exchange
+            </MobileLink>
 
             <Separator />
 

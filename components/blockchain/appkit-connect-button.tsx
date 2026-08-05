@@ -13,11 +13,11 @@ import { AppKitButton } from "@reown/appkit/react"
  * mount (classic useIsMounted gate) keeps the exported HTML clean and the
  * button hydrates on the client, where the full react build is available.
  */
-export function AppKitConnectButton() {
+export function AppKitConnectButton({ className }: { className?: string }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
   }, [])
   if (!mounted) return null
-  return <AppKitButton balance="hide" />
+  return <AppKitButton balance="hide" className={className} />
 }

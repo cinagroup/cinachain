@@ -14,6 +14,8 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
       links: [
         { label: "Explore", href: "/explore" },
         { label: "Mint", href: "/mint" },
+        { label: "Collections", href: "/collections" },
+        { label: "Exchange", href: "/exchange" },
         { label: "Dashboard", href: "/dashboard" },
         { label: "API Keys", href: "/settings" },
       ],
