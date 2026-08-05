@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CinaChain — Building the Future on Base</title>
+  <meta name="description" content="CinaChain — NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base L2." />
+  <meta property="og:title" content="CinaChain" />
+  <meta property="og:description" content="NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base L2." />
+  <meta property="og:url" content="https://cinachain.com" />
+  <style>
+    :root { color-scheme: dark; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #060a12;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container { max-width: 960px; width: 100%; padding: 0 24px; }
+    header { width: 100%; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .logo { font-weight: 800; font-size: 20px; letter-spacing: 0.5px; color: #fff; text-decoration: none; }
+    .logo span { color: #50e3c2; }
+    nav a.link { color: #94a3b8; text-decoration: none; margin-left: 20px; font-size: 14px; }
+    nav a.link:hover { color: #fff; }
+    main { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .hero { text-align: center; padding: 96px 24px 64px; }
+    .hero .eyebrow {
+      display: inline-block; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+      letter-spacing: 2px; text-transform: uppercase; color: #50e3c2;
+      border: 1px solid rgba(80,227,194,0.3); border-radius: 999px; padding: 6px 14px; margin-bottom: 24px;
+    }
+    .hero h1 { font-size: 56px; font-weight: 800; letter-spacing: -1px; color: #fff; line-height: 1.1; }
+    .hero h1 span { color: #50e3c2; }
+    .hero p { margin-top: 20px; color: #94a3b8; font-size: 18px; max-width: 560px; margin-inline: auto; }
+    .cta { margin-top: 36px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 12px 24px; border-radius: 999px; font-size: 15px; font-weight: 600;
+      text-decoration: none; transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: #fff; color: #060a12; }
+    .btn-ghost { border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; }
+    .products { padding: 48px 24px 96px; width: 100%; }
+    .products h2 { text-align: center; font-size: 28px; color: #fff; margin-bottom: 40px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 24px; text-decoration: none; color: inherit; transition: border-color 0.2s, background 0.2s;
+    }
+    .card:hover { border-color: rgba(80,227,194,0.4); background: rgba(80,227,194,0.04); }
+    .card .tag {
+      font-family: ui-monospace, Menlo, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+      color: #50e3c2; display: block; margin-bottom: 10px;
+    }
+    .card h3 { font-size: 18px; color: #fff; margin-bottom: 8px; }
+    .card p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+    footer { width: 100%; border-top: 1px solid rgba(255,255,255,0.08); padding: 32px 0; text-align: center; }
+    footer p { color: #64748b; font-size: 13px; }
+    footer a { color: #94a3b8; text-decoration: none; margin: 0 10px; }
+    footer a:hover { color: #fff; }
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 38px; }
+      .hero { padding: 64px 24px 40px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a class="logo" href="/">Cina<span>Chain</span></a>
+        <div>
+          <a class="link" href="https://nft.cinachain.com">DApp</a>
+          <a class="link" href="https://docs.cinachain.com">Docs</a>
+          <a class="link" href="https://github.com/cinagroup">GitHub</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <section class="hero">
+        <span class="eyebrow">Building on Base L2</span>
+        <h1>Cina<span>Chain</span>.</h1>
+        <p>A full-stack Web3 ecosystem on Base — NFT platform, badge system, mega-collections, and edge-deployed infrastructure.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://nft.cinachain.com">Enter DApp</a>
+          <a class="btn btn-ghost" href="https://docs.cinachain.com">Read the Docs</a>
+        </div>
+      </section>
+    </div>
+
+    <section class="products">
+      <div class="container">
+        <h2>Products</h2>
+        <div class="grid">
+          <a class="card" href="https://nft.cinachain.com/explore">
+            <span class="tag">ERC-721 · Live</span>
+            <h3>CinaChain NFT</h3>
+            <p>10,000 unique collectibles with whitelist + public mint phases on Base.</p>
+          </a>
+          <a class="card" href="https://nft.cinachain.com/dashboard/badges">
+            <span class="tag">ERC-1155 · Live</span>
+            <h3>CinaBadge</h3>
+            <p>Soulbound achievements, event tickets, and membership tiers.</p>
+          </a>
+          <a class="card" href="https://nft.cinachain.com/collections">
+            <span class="tag">ERC-1155 · Mega</span>
+            <h3>CinaMega</h3>
+            <p>UCINA · MCINA · CINA — billions of copies, fixed 1:1000:1,000,000 exchange.</p>
+          </a>
+          <a class="card" href="https://nft.cinachain.com/exchange">
+            <span class="tag">Exchange</span>
+            <h3>Fixed-Rate Exchange</h3>
+            <p>Bidirectional conversion with atomic burn-and-mint, floor + dust-safe.</p>
+          </a>
+          <a class="card" href="https://docs.cinachain.com">
+            <span class="tag">Documentation</span>
+            <h3>Docs &amp; Guides</h3>
+            <p>Architecture, deployment, domain plan, and integration guides.</p>
+          </a>
+          <a class="card" href="https://cinachain-billing.cinagroup.workers.dev/health">
+            <span class="tag">Infrastructure</span>
+            <h3>Edge API</h3>
+            <p>Whitelist verification, billing metering, and media gateway on Cloudflare's edge.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 cinagroup · Built on <a href="https://base.org">Base</a> · Powered by <a href="https://cloudflare.com">Cloudflare</a></p>
+      <p style="margin-top: 8px;">
+        <a href="https://github.com/cinagroup">GitHub</a>
+        <a href="https://x.com/cinachain">X / Twitter</a>
+        <a href="https://discord.gg/cinachain">Discord</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

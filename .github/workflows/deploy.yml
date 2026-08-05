@@ -88,3 +88,15 @@ jobs:
           npx --yes wrangler@3 r2 bucket create cinachain-mega-media || true
           npx --yes wrangler@3 deploy
 
+      # Brand portal (cinachain.com). Static single page, no build step.
+      - name: Deploy portal
+        if: github.event_name == 'push'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if ! npx --yes wrangler@3 pages project list 2>/dev/null | grep -q "cinachain-portal"; then
+            npx --yes wrangler@3 pages project create cinachain-portal --production-branch=main
+          fi
+          npx --yes wrangler@3 pages deploy portal --project-name=cinachain-portal --commit-dirty=true
+
