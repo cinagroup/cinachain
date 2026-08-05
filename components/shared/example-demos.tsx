@@ -132,7 +132,7 @@ function DemoCard({ title, description, href, demo, large }: DemoCardProps) {
     >
       <div className="flex h-60 items-center justify-center">{demo}</div>
       <div className="mx-auto max-w-xl text-center">
-        <h2 className="font-display mb-3 bg-gradient-to-br from-black to-stone-500 bg-clip-text text-xl text-transparent dark:from-stone-100 dark:to-emerald-200 md:text-3xl md:font-normal">
+        <h2 className="font-display mb-3 bg-gradient-to-br from-black to-stone-500 bg-clip-text text-xl text-transparent dark:from-stone-100 dark:to-stone-400 md:text-3xl md:font-normal">
           {title}
         </h2>
         <p className="-mt-2 text-sm leading-normal text-muted-foreground">

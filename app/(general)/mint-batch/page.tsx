@@ -132,7 +132,7 @@ export default function BatchMintPage() {
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1200px] px-6 py-12">
+        <div className="container max-w-[1400px] px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
               Batch Mint
@@ -160,7 +160,7 @@ export default function BatchMintPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
@@ -193,9 +193,9 @@ export default function BatchMintPage() {
 
           {/* Success Message */}
           {confirmed && txHash && (
-            <Alert className="border-[#50e3c2]/20 bg-[#aaffec]">
-              <CheckCircle2 className="size-4 text-[#29bc9b]" />
-              <AlertDescription className="text-sm text-[#29bc9b]">
+            <Alert variant="success" className="border">
+              <CheckCircle2 className="size-4" />
+              <AlertDescription>
                 Batch mint confirmed!{" "}
                 <a
                   href={`https://sepolia.basescan.org/tx/${txHash}`}

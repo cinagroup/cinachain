@@ -133,7 +133,7 @@ function BadgesContent() {
                     {badge.name}
                   </h3>
                   {badge.owned && (
-                    <span className="rounded-full bg-[#50e3c2]/20 px-2 py-0.5 text-[10px] font-semibold text-[#29bc9b]">
+                    <span className="bg-cyan/20 rounded-full px-2 py-0.5 text-[10px] font-semibold text-cyan-deep">
                       Owned
                     </span>
                   )}

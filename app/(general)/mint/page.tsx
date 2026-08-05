@@ -181,7 +181,7 @@ export default function MintPage() {
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1200px] px-6 py-12">
+        <div className="container max-w-[1400px] px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
               Mint
@@ -209,7 +209,7 @@ export default function MintPage() {
   if (whitelistLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1200px] px-6 py-12">
+        <div className="container max-w-[1400px] px-6 py-12">
           <Card className="max-w-md shadow-vercel-card">
             <CardContent className="pt-6">
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -236,7 +236,7 @@ export default function MintPage() {
   // Main mint UI
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
@@ -282,7 +282,7 @@ export default function MintPage() {
               <CardTitle className="flex items-center gap-2">
                 Mint Details
                 {isGasless && (
-                  <span className="rounded-full bg-[#50e3c2]/20 px-2 py-0.5 text-[10px] font-semibold text-[#29bc9b]">
+                  <span className="bg-cyan/20 rounded-full px-2 py-0.5 text-[10px] font-semibold text-cyan-deep">
                     ⚡ Gasless
                   </span>
                 )}
@@ -296,8 +296,8 @@ export default function MintPage() {
             <CardContent className="space-y-6">
               {/* Status Alerts */}
               {mintPhase === "whitelist" && whitelistData && (
-                <Alert className="border-[#0070f3]/20 bg-[#d3e5ff]">
-                  <AlertDescription className="text-sm text-[#0761d1]">
+                <Alert variant="info">
+                  <AlertDescription>
                     You are on the whitelist! You can mint up to{" "}
                     <span className="font-semibold">
                       {whitelistData.mintLimit}
@@ -308,8 +308,8 @@ export default function MintPage() {
               )}
 
               {mintPhase === "public" && (
-                <Alert className="border-[#50e3c2]/20 bg-[#aaffec]">
-                  <AlertDescription className="text-sm text-[#29bc9b]">
+                <Alert className="bg-cyan-soft/40 border border-cyan-soft">
+                  <AlertDescription className="text-cyan-deep">
                     Public mint active. Price:{" "}
                     <span className="font-semibold">{priceDisplay} ETH</span>{" "}
                     per NFT.
@@ -336,9 +336,9 @@ export default function MintPage() {
               )}
 
               {isConfirmed && txHash && (
-                <Alert className="border-[#50e3c2]/20 bg-[#aaffec]">
-                  <CheckCircle2 className="size-4 text-[#29bc9b]" />
-                  <AlertDescription className="text-sm text-[#29bc9b]">
+                <Alert variant="success">
+                  <CheckCircle2 className="size-4" />
+                  <AlertDescription>
                     Mint successful!{" "}
                     <a
                       href={`https://sepolia.basescan.org/tx/${txHash}`}

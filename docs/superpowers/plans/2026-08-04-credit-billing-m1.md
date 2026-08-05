@@ -306,7 +306,7 @@ console.log(`NEXT_PUBLIC_CINA_CREDIT_CONTRACT=${creditAddress}`)
 
 - [ ] **Step 2: Deploy (deployer funded)**
 
-Run: `DEPLOY_PRIVATE_KEY=0x826a7d8185a1392b602f793143ea7e281fe3de8132480176eb533b07be11f256 node scripts/deploy.mjs`
+Run: `DEPLOY_PRIVATE_KEY=0x<redacted — set via env, never commit> node scripts/deploy.mjs`
 Expected: all three contracts deploy; record CinaCredit address.
 
 - [ ] **Step 3: Write scripts/test-credit.mjs (on-chain assertions)**
@@ -373,7 +373,7 @@ main().catch((e) => { console.error("ERR:", e.message.slice(0, 200)); process.ex
 
 - [ ] **Step 4: Run verification**
 
-Run: `DEPLOY_PRIVATE_KEY=0x826a7d8185a1392b602f793143ea7e281fe3de8132480176eb533b07be11f256 CINA_CREDIT_CONTRACT=<deployed address> node scripts/test-credit.mjs`
+Run: `DEPLOY_PRIVATE_KEY=0x<redacted — set via env, never commit> CINA_CREDIT_CONTRACT=<deployed address> node scripts/test-credit.mjs`
 Expected: all ✅, no ❌.
 
 - [ ] **Step 5: Wire the address into env**

@@ -70,7 +70,7 @@ export function GitcoinPassport({
                 {score.score !== null && (
                   <Badge
                     variant={isEligible ? "default" : "destructive"}
-                    className={isEligible ? "bg-emerald-600" : ""}
+                    className={isEligible ? "bg-success" : ""}
                   >
                     {isEligible ? (
                       <>

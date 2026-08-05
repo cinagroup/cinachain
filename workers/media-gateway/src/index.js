@@ -38,8 +38,12 @@ function json(data, status = 200, extra = {}) {
   })
 }
 
-async function handleHealth() {
-  return json({ ok: true, service: "cinachain-mega-media", version: "1.0.0" })
+async function handleHealth(request) {
+  return json(
+    { ok: true, service: "cinachain-mega-media", version: "1.0.0" },
+    200,
+    corsHeaders(request),
+  )
 }
 
 async function handleMedia(request, env) {
@@ -130,7 +134,7 @@ async function handleMedia(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
-    if (url.pathname === "/health") return handleHealth()
+    if (url.pathname === "/health") return handleHealth(request)
     if (request.method !== "GET") return json({ error: "method not allowed" }, 405)
     return handleMedia(request, env)
   },

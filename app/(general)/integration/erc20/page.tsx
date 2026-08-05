@@ -69,7 +69,7 @@ export default function Erc20Page() {
                     </span>
                     <Link
                       className={cn(
-                        buttonVariants({ variant: "emerald", size: "sm" })
+                        buttonVariants({ variant: "default", size: "sm" })
                       )}
                       // No dynamic token page exists on this static export —
                       // link to Base USDC on Basescan instead of a dead route

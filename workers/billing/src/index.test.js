@@ -1,7 +1,45 @@
 import { describe, it, expect } from "vitest"
+import { secp256k1 } from "@noble/curves/secp256k1.js"
+import { keccak_256 } from "@noble/hashes/sha3.js"
+import { utf8ToBytes } from "@noble/hashes/utils.js"
 import { computePendingBadges, handleUsage } from "./index.js"
 import billingWorker from "./index.js"
 import { applyPricingOverrides, DEFAULT_PRICING } from "./lib/pricing.js"
+import { buildBindingMessage } from "./lib/sig-verify.js"
+
+// Fixed test keypair: signs the binding message to prove address ownership.
+const SIGNER_PK = "2222222222222222222222222222222222222222222222222222222222222222"
+const SIGNER_ADDR =
+  "0x" +
+  Buffer.from(keccak_256(secp256k1.getPublicKey(new Uint8Array(Buffer.from(SIGNER_PK, "hex")), false).slice(1)))
+    .toString("hex")
+    .slice(-40)
+
+/** EIP-191 personal_sign over a binding message (noble-curves 2.x API). */
+function signBindingMessage(message) {
+  const msgBytes = utf8ToBytes(message)
+  const prefix = utf8ToBytes(`\x19Ethereum Signed Message:\n${msgBytes.length}`)
+  const hash = keccak_256(new Uint8Array([...prefix, ...msgBytes]))
+  const pk = new Uint8Array(Buffer.from(SIGNER_PK, "hex"))
+  const compact = secp256k1.sign(hash, pk, { prehash: false })
+  const signerPub = secp256k1.getPublicKey(pk)
+  let recovery = null
+  for (let r = 0; r < 2; r++) {
+    const pub = secp256k1.recoverPublicKey(new Uint8Array([r, ...compact]), hash, { prehash: false })
+    if (Buffer.from(pub).equals(Buffer.from(signerPub))) { recovery = r; break }
+  }
+  if (recovery === null) throw new Error("could not determine recovery bit")
+  const rHex = Buffer.from(compact.slice(0, 32)).toString("hex")
+  const sHex = Buffer.from(compact.slice(32)).toString("hex")
+  return `0x${rHex}${sHex}${(27 + recovery).toString(16)}`
+}
+
+function bindingProof(env, { address = SIGNER_ADDR, nonce = "n1", issuedAt = new Date().toISOString() } = {}) {
+  const message = buildBindingMessage(address, nonce, issuedAt)
+  const signature = signBindingMessage(message)
+  env.bindingMessage = message
+  return { message, signature }
+}
 
 // Ledger is wei-unit: 10 credit = 10e18 wei
 const baseLedger = { onchainSnapshot: 10_000_000_000_000_000_000n, committedUsage: 0n, cumulativeSpend: 0n }
@@ -102,6 +140,19 @@ function makeEnv() {
 
 async function callWorker(env, req) {
   return billingWorker.fetch(req, env)
+}
+
+// Rate limiter allows 5 registrations/IP/10min — give every test its own IP.
+let ipSeq = 0
+function keysRequest(body) {
+  return new Request("https://billing.test/v1/keys", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "CF-Connecting-IP": `127.0.0.${++ipSeq}`,
+    },
+    body: JSON.stringify(body),
+  })
 }
 
 describe("M2 admin endpoints", () => {
@@ -313,6 +364,63 @@ describe("M2 custodial accounts", () => {
       body: JSON.stringify({ apiKey: "012345678901234567890123", custId: "does-not-exist" }),
     }))
     expect(res.status).toBe(404)
+  })
+
+  it("/v1/keys self-managed requires a signed binding message", async () => {
+    const env = makeEnv()
+    const res = await callWorker(env, keysRequest({ apiKey: "012345678901234567890123", address: SIGNER_ADDR }))
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toMatch(/binding message/)
+  })
+
+  it("/v1/keys self-managed binds after signature verification", async () => {
+    const env = makeEnv()
+    const { message, signature } = bindingProof(env, { nonce: "nonce-abc" })
+    const res = await callWorker(env, keysRequest({ apiKey: "012345678901234567890123", address: SIGNER_ADDR, message, signature }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+    expect(body.address).toBe(SIGNER_ADDR.toLowerCase())
+    // Key row exists; nonce consumed (replay must be rejected)
+    const keyRows = [...env.store.keys()].filter((k) => k.startsWith("key:"))
+    expect(keyRows).toHaveLength(1)
+    expect([...env.store.keys()].filter((k) => k.startsWith("nonce:"))).toHaveLength(1)
+  })
+
+  it("/v1/keys rejects a replayed nonce", async () => {
+    const env = makeEnv()
+    const { message, signature } = bindingProof(env, { nonce: "nonce-replay" })
+    const body = { apiKey: "012345678901234567890123", address: SIGNER_ADDR, message, signature }
+    const first = await callWorker(env, keysRequest(body))
+    expect(first.status).toBe(200)
+    // Request objects are single-use — rebuild for the replay attempt.
+    const replay = await callWorker(env, keysRequest(body))
+    expect(replay.status).toBe(400)
+    const replayBody = await replay.json()
+    expect(replayBody.error).toMatch(/Nonce already used/)
+  })
+
+  it("/v1/keys rejects an expired binding message", async () => {
+    const env = makeEnv()
+    const { message, signature } = bindingProof(env, {
+      nonce: "nonce-old",
+      issuedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    })
+    const res = await callWorker(env, keysRequest({ apiKey: "012345678901234567890123", address: SIGNER_ADDR, message, signature }))
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toMatch(/expired/)
+  })
+
+  it("/v1/keys rejects a signature from a different address", async () => {
+    const env = makeEnv()
+    // Message addresses a different wallet than the one that signed.
+    const other = "0x" + "3".repeat(40)
+    const { message, signature } = bindingProof(env, { address: other, nonce: "nonce-other" })
+    const res = await callWorker(env, keysRequest({ apiKey: "012345678901234567890123", address: other, message, signature }))
+    // Signature doesn't match the address in the body -> verification fails.
+    expect(res.status).toBe(403)
   })
 
   it("admin debits a custodial account", async () => {
@@ -630,6 +738,42 @@ describe("M3 ingress consumption", () => {
       method: "POST",
       headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
       body: JSON.stringify({ txHash: "0xdef" }),
+    }))
+    expect(res.status).toBe(400)
+  })
+
+  it("confirm is idempotent for the same txHash (retry-safe, no double-mint)", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaa", model: "demo", declaredMicro: "2000000", confirmedMicro: "2000000",
+      status: "minted", txHash: "0xdef", keyHash: "0xabc", createdAt: 1,
+    }))
+    // Simulated retry after a timeout — must succeed without re-minting.
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress/ing1/confirm", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ txHash: "0xdef" }),
+    }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.alreadyMinted).toBe(true)
+    // Record unchanged (no second mint).
+    const rec = JSON.parse(env.store.get("ing:ing1"))
+    expect(rec.status).toBe("minted")
+    expect(rec.txHash).toBe("0xdef")
+  })
+
+  it("confirm rejects a conflicting txHash on an already-minted record", async () => {
+    const env = makeEnv()
+    env.store.set("ing:ing1", JSON.stringify({
+      owner: "0xaaa", model: "demo", declaredMicro: "2000000", confirmedMicro: "2000000",
+      status: "minted", txHash: "0xdef", keyHash: "0xabc", createdAt: 1,
+    }))
+    // A second mint attempt with a different txHash must be refused.
+    const res = await callWorker(env, new Request("https://billing.test/v1/ingress/ing1/confirm", {
+      method: "POST",
+      headers: { "X-Admin-Key": "test-admin", "Content-Type": "application/json" },
+      body: JSON.stringify({ txHash: "0xDEADBEEF" }),
     }))
     expect(res.status).toBe(400)
   })

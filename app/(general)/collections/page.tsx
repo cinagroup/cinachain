@@ -102,7 +102,7 @@ export default function CollectionsPage() {
 
   if (!hasMegaContract) {
     return (
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
@@ -133,7 +133,7 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div className="container max-w-[1200px] px-6 py-12">
+    <div className="container max-w-[1400px] px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
         Collections
       </span>
@@ -162,9 +162,9 @@ export default function CollectionsPage() {
         </Alert>
       )}
       {isConfirmed && txHash && (
-        <Alert className="mt-6 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-          <CheckCircle2 className="size-4 text-[#29bc9b]" />
-          <AlertDescription className="text-sm text-[#29bc9b]">
+        <Alert variant="success" className="mt-6">
+          <CheckCircle2 className="size-4" />
+          <AlertDescription>
             Minted!{" "}
             <a
               href={`https://sepolia.basescan.org/tx/${txHash}`}
@@ -180,9 +180,9 @@ export default function CollectionsPage() {
 
       {/* Counterfactual smart account warning (Attachment-1 adoption) */}
       {accountType === "sa" && (
-        <Alert className="mt-6 border-amber-400/40 bg-amber-400/10">
-          <TriangleAlert className="size-4 text-amber-500" />
-          <AlertDescription className="text-sm text-amber-600">
+        <Alert variant="warning" className="mt-6">
+          <TriangleAlert className="size-4" />
+          <AlertDescription>
             Smart account notice: your embedded wallet is not deployed on-chain until its first
             transaction. Do NOT send NFTs or funds to this address from another wallet — assets
             sent to an undeployed account can be lost.
@@ -208,7 +208,7 @@ export default function CollectionsPage() {
             <Sparkles className="size-5" />
             Mint UCINA
             {isGasless && (
-              <span className="font-mono-tech rounded-full bg-[#50e3c2]/20 px-2 py-0.5 text-xs text-[#29bc9b]">
+              <span className="font-mono-tech bg-cyan/20 rounded-full px-2 py-0.5 text-xs text-cyan-deep">
                 ⚡ Gasless
               </span>
             )}
@@ -230,6 +230,7 @@ export default function CollectionsPage() {
                 size="icon"
                 onClick={() => setAmount((a) => (BigInt(a || 1) > 1n ? String(BigInt(a) - 1n) : "1"))}
                 disabled={isPending}
+                aria-label="Decrease mint amount"
               >
                 <Minus className="size-4" />
               </Button>
@@ -247,6 +248,7 @@ export default function CollectionsPage() {
                 size="icon"
                 onClick={() => setAmount((a) => String((BigInt(a || 1) + 1n).toString()))}
                 disabled={isPending}
+                aria-label="Increase mint amount"
               >
                 <Plus className="size-4" />
               </Button>

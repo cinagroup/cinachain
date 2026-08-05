@@ -17,16 +17,19 @@ import { useCinaMegaBalances } from "@/lib/hooks/use-cina-mega"
 import { useExchange } from "@/lib/hooks/use-exchange"
 
 function TypeSelect({
+  id,
   value,
   onChange,
   disabled,
 }: {
+  id: string
   value: number
   onChange: (t: number) => void
   disabled?: boolean
 }) {
   return (
     <select
+      id={id}
       className="flex h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-vercel-sm"
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
@@ -53,7 +56,7 @@ export default function ExchangePage() {
 
   if (!hasMegaContract) {
     return (
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
@@ -100,7 +103,7 @@ export default function ExchangePage() {
   }
 
   return (
-    <div className="container max-w-[1200px] px-6 py-12">
+    <div className="container max-w-[1400px] px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
         Exchange
       </span>
@@ -125,10 +128,10 @@ export default function ExchangePage() {
         </Alert>
       )}
       {isConfirmed && txHash && (
-        <Alert className="mt-6 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-          <CheckCircle2 className="size-4 text-[#29bc9b]" />
-          <AlertDescription className="text-sm text-[#29bc9b]">
-            Exchange complete!{" "}
+        <Alert variant="success" className="mt-6">
+          <CheckCircle2 className="size-4" />
+          <AlertDescription>
+            Exchanged!{" "}
             <a
               href={`https://sepolia.basescan.org/tx/${txHash}`}
               target="_blank"
@@ -147,7 +150,7 @@ export default function ExchangePage() {
             <ArrowLeftRight className="size-5" />
             Exchange
             {isGasless && (
-              <span className="font-mono-tech rounded-full bg-[#50e3c2]/20 px-2 py-0.5 text-xs text-[#29bc9b]">
+              <span className="font-mono-tech bg-cyan/20 rounded-full px-2 py-0.5 text-xs text-cyan-deep">
                 ⚡ Gasless
               </span>
             )}
@@ -165,8 +168,8 @@ export default function ExchangePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>You give (source)</Label>
-            <TypeSelect value={fromType} onChange={(t) => { setFromType(t); reset() }} disabled={isPending} />
+            <Label htmlFor="exchange-from-type">You give (source)</Label>
+            <TypeSelect id="exchange-from-type" value={fromType} onChange={(t) => { setFromType(t); reset() }} disabled={isPending} />
             <Input
               type="number"
               min="1"
@@ -175,6 +178,7 @@ export default function ExchangePage() {
               onChange={(e) => setAmount(e.target.value)}
               disabled={isPending}
               placeholder="Amount"
+              aria-label={`Amount of ${MEGA_COLLECTION_INFO[fromType].name} to exchange`}
             />
             {exceedsBalance && (
               <p className="text-xs text-destructive">
@@ -184,14 +188,21 @@ export default function ExchangePage() {
           </div>
 
           <div className="flex justify-center">
-            <Button variant="ghost" size="icon" onClick={swapDirection} disabled={isPending} title="Swap direction">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={swapDirection}
+              disabled={isPending}
+              title="Swap direction"
+              aria-label="Swap exchange direction"
+            >
               <ArrowLeftRight className="size-5 rotate-90" />
             </Button>
           </div>
 
           <div className="space-y-2">
-            <Label>You receive (destination)</Label>
-            <TypeSelect value={toType} onChange={(t) => { setToType(t); reset() }} disabled={isPending} />
+            <Label htmlFor="exchange-to-type">You receive (destination)</Label>
+            <TypeSelect id="exchange-to-type" value={toType} onChange={(t) => { setToType(t); reset() }} disabled={isPending} />
             <div className="rounded-md border border-border bg-secondary p-4">
               <div className="flex items-baseline justify-between">
                 <span className="text-sm text-muted-foreground">You receive</span>
@@ -209,7 +220,7 @@ export default function ExchangePage() {
                 </p>
               )}
               {conversion.error === "too-small" && (
-                <p className="mt-1 text-xs text-amber-600">
+                <p className="mt-1 text-xs text-warning-deep">
                   Amount too small — minimum for 1 {MEGA_COLLECTION_INFO[toType].name}:{" "}
                   {formatAmount((MEGA_UNITS[toType] + MEGA_UNITS[fromType] - 1n) / MEGA_UNITS[fromType])}{" "}
                   {MEGA_COLLECTION_INFO[fromType].name}

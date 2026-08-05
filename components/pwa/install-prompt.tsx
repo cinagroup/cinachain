@@ -71,15 +71,15 @@ export function PWAInstallPrompt() {
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="size-4 text-emerald-600" />
+            <CheckCircle className="size-4 text-success" />
             <span>Works offline</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="size-4 text-emerald-600" />
+            <CheckCircle className="size-4 text-success" />
             <span>Faster loading times</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CheckCircle className="size-4 text-emerald-600" />
+            <CheckCircle className="size-4 text-success" />
             <span>Home screen icon</span>
           </div>
 

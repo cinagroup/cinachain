@@ -111,9 +111,9 @@ export default function KeysPage() {
         </Alert>
       )}
       {success && (
-        <Alert className="mt-6 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-          <CheckCircle2 className="size-4 text-[#29bc9b]" />
-          <AlertDescription className="text-sm text-[#29bc9b]">{success}</AlertDescription>
+        <Alert variant="success" className="mt-6">
+          <CheckCircle2 className="size-4" />
+          <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
 

@@ -41,16 +41,26 @@ export async function getPassportScore(
   scorerId: string,
   apiKey: string
 ): Promise<PassportScore> {
-  const response = await fetch(
-    `${GITCOIN_PASSPORT_API_URL}/registry/score/${scorerId}/${address}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": apiKey,
-      },
-    }
-  )
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  let response: Response
+  try {
+    response = await fetch(
+      `${GITCOIN_PASSPORT_API_URL}/registry/score/${scorerId}/${address}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
+        },
+        signal: controller.signal,
+      }
+    )
+  } catch (err) {
+    clearTimeout(timeout)
+    throw err
+  }
+  clearTimeout(timeout)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch passport score: ${response.statusText}`)
@@ -64,20 +74,30 @@ export async function submitPassport(
   scorerId: string,
   apiKey: string
 ): Promise<PassportScore> {
-  const response = await fetch(
-    `${GITCOIN_PASSPORT_API_URL}/registry/submit-passport`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": apiKey,
-      },
-      body: JSON.stringify({
-        address,
-        scorer_id: scorerId,
-      }),
-    }
-  )
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  let response: Response
+  try {
+    response = await fetch(
+      `${GITCOIN_PASSPORT_API_URL}/registry/submit-passport`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          address,
+          scorer_id: scorerId,
+        }),
+      }
+    )
+  } catch (err) {
+    clearTimeout(timeout)
+    throw err
+  }
+  clearTimeout(timeout)
 
   if (!response.ok) {
     throw new Error(`Failed to submit passport: ${response.statusText}`)

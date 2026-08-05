@@ -160,7 +160,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>Owner</span>
                   {isOwner && (
-                    <span className="rounded-full bg-[#50e3c2]/20 px-2 py-0.5 text-xs text-[#29bc9b]">
+                    <span className="bg-cyan/20 rounded-full px-2 py-0.5 text-xs text-cyan-deep">
                       You
                     </span>
                   )}

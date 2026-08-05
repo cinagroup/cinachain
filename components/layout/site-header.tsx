@@ -39,7 +39,7 @@ export function SiteHeader() {
         <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/dashboard"
-            className="inline-flex items-center justify-center rounded-sm px-2 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+            className="inline-flex items-center justify-center rounded-sm px-2 text-sm font-medium text-body transition-colors hover:text-foreground"
             style={{ height: "28px" }}
           >
             Dashboard
@@ -48,7 +48,8 @@ export function SiteHeader() {
           <SignInButton />
           <Link
             href="/mint"
-            className="btn-pill inline-flex items-center justify-center bg-foreground px-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            // Nav-scale CTA per DESIGN.md: 6px radius (nav-cta-signup), 28px tall
+            className="inline-flex items-center justify-center rounded-sm bg-foreground px-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
             style={{ height: "28px" }}
           >
             Mint NFT

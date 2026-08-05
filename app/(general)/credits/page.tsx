@@ -16,6 +16,7 @@ import {
   hasCreditContract,
 } from "@/lib/contracts/addresses"
 import { CINA_CREDIT_ABI } from "@/lib/contracts/cina-credit"
+import { extractErrorMessage } from "@/lib/error-utils"
 import { useCreditBalance } from "@/lib/hooks/use-credit-balance"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -34,19 +35,6 @@ import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-butt
 const MIN_TOP_UP_ETH = 0.001
 const BPS_DIVISOR = 10000n
 const VALID_AMOUNT_RE = /^\d*\.?\d+$/
-
-function extractError(err: unknown): string {
-  if (err instanceof Error) {
-    const anyErr = err as unknown as {
-      shortMessage?: string
-      cause?: { reason?: string }
-    }
-    if (anyErr.shortMessage) return anyErr.shortMessage
-    if (anyErr.cause?.reason) return anyErr.cause.reason
-    return err.message
-  }
-  return "Unknown error"
-}
 
 export default function CreditsPage() {
   const { address, isConnected } = useAccount()
@@ -164,7 +152,7 @@ export default function CreditsPage() {
       })
       setTxHash(hash)
     } catch (err) {
-      setLocalError(extractError(err))
+      setLocalError(extractErrorMessage(err))
     }
   }
 
@@ -190,7 +178,7 @@ export default function CreditsPage() {
       })
       setTxHash(hash)
     } catch (err) {
-      setRedeemError(extractError(err))
+      setRedeemError(extractErrorMessage(err))
     } finally {
       setRedeemBusy(false)
     }
@@ -200,7 +188,7 @@ export default function CreditsPage() {
   if (!hasCreditContract) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1200px] px-6 py-12">
+        <div className="container max-w-[1400px] px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
               Billing
@@ -225,7 +213,7 @@ export default function CreditsPage() {
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1200px] px-6 py-12">
+        <div className="container max-w-[1400px] px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
               Billing
@@ -258,7 +246,7 @@ export default function CreditsPage() {
   // Main connected UI
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
@@ -334,15 +322,15 @@ export default function CreditsPage() {
                 <Alert variant="destructive">
                   <AlertCircle className="size-4" />
                   <AlertDescription className="break-all text-sm">
-                    {localError ?? extractError(receiptError)}
+                    {localError ?? extractErrorMessage(receiptError)}
                   </AlertDescription>
                 </Alert>
               )}
 
               {confirmed && txHash && (
-                <Alert className="border-[#50e3c2]/20 bg-[#aaffec]">
-                  <CheckCircle2 className="size-4 text-[#29bc9b]" />
-                  <AlertDescription className="text-sm text-[#29bc9b]">
+                <Alert variant="success" className="border">
+                  <CheckCircle2 className="size-4" />
+                  <AlertDescription>
                     {lastAction === "redeem"
                       ? "Redeem confirmed!"
                       : "Top-up confirmed!"}{" "}
@@ -449,7 +437,7 @@ export default function CreditsPage() {
                   className={cn(
                     "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold",
                     redeemEnabled
-                      ? "bg-[#50e3c2]/20 text-[#29bc9b]"
+                      ? "bg-cyan/20 text-cyan-deep"
                       : "bg-secondary text-muted-foreground"
                   )}
                 >

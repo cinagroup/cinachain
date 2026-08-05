@@ -173,7 +173,7 @@ export default function WhitelistManagementPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
           Administration
         </span>
@@ -263,9 +263,9 @@ export default function WhitelistManagementPage() {
               </div>
 
               {deployStatus === "success" && (
-                <Alert className="mb-4 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-                  <CheckCircle className="size-4 text-[#29bc9b]" />
-                  <AlertDescription className="text-sm text-[#29bc9b]">
+                <Alert variant="success" className="mb-4">
+                  <CheckCircle className="size-4" />
+                  <AlertDescription>
                     Whitelist deployed successfully!{" "}
                     {activeCount !== null ? activeCount : entries.length} addresses are now active.
                   </AlertDescription>

@@ -1,8 +1,12 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { useAccount } from "wagmi"
+import { useAccount, useSignMessage } from "wagmi"
 
+import {
+  buildBindingMessage,
+  generateBindingNonce,
+} from "@/lib/binding-message"
 import { useSiwe } from "@/lib/hooks/use-siwe"
 
 const KEYS_STORAGE = "cinachain-api-keys"
@@ -20,6 +24,7 @@ export interface ApiKeyRecord {
  *  the billing worker stores only the SHA-256 hash of the key. */
 export function useApiKeys() {
   const { address } = useAccount()
+  const { signMessageAsync } = useSignMessage()
   const { isAuthenticated, signIn, signInError } = useSiwe()
   const [keys, setKeys] = useState<ApiKeyRecord[]>([])
 
@@ -73,21 +78,40 @@ export function useApiKeys() {
     }
     persist([...keys, rec])
     // Register the key with the billing gateway so /v1/usage can resolve it.
+    // The gateway requires a fresh SIWE-style binding message signed by the
+    // address (EOA personal_sign; deployed smart accounts via EIP-1271) to
+    // prove ownership — the worker rejects expired or replayed nonces.
     try {
-      const res = await fetch(`${BILLING_API_URL}/v1/keys`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: raw, address }),
-      })
-      if (!res.ok)
-        throw new Error("Failed to register key with billing gateway")
+      const issuedAt = new Date().toISOString()
+      const message = buildBindingMessage(address, generateBindingNonce(), issuedAt)
+      const signature = await signMessageAsync({ message })
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10_000)
+      try {
+        const res = await fetch(`${BILLING_API_URL}/v1/keys`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({ apiKey: raw, address, message, signature }),
+        })
+        if (!res.ok) {
+          // Surface the gateway's reason (e.g. counterfactual smart account
+          // must deploy first) instead of a generic failure.
+          const errBody = await res.json().catch(() => null)
+          throw new Error(
+            errBody?.error || "Failed to register key with billing gateway"
+          )
+        }
+      } finally {
+        clearTimeout(timeout)
+      }
     } catch (err) {
       // Roll back the locally-created key so state stays consistent.
       persist(keys)
       throw err
     }
     return raw
-  }, [isAuthenticated, signIn, address, keys, persist])
+  }, [isAuthenticated, signIn, address, signMessageAsync, keys, persist])
 
   const revokeKey = useCallback(
     (id: string) => {

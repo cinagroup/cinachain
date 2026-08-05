@@ -26,7 +26,7 @@ export default function AccountPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         <IsWalletConnected>
           {/* Header */}
           <div className="mb-8">
@@ -123,7 +123,7 @@ export default function AccountPage() {
                   <div className="flex items-center gap-2">
                     <div
                       className={`size-2 rounded-full ${
-                        isAuthenticated ? "bg-emerald-500" : "bg-muted-foreground"
+                        isAuthenticated ? "bg-success" : "bg-muted-foreground"
                       }`}
                     />
                     <span className="text-sm font-medium">
@@ -133,10 +133,10 @@ export default function AccountPage() {
                 </div>
 
                 {isAuthenticated && session && (
-                  <div className="rounded-md border border-[#50e3c2]/30 bg-[#50e3c2]/10 p-3">
+                  <div className="border-success/30 bg-success/10 rounded-md border p-3">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="size-4 text-[#29bc9b]" />
-                      <span className="text-sm text-[#29bc9b]">
+                      <CheckCircle2 className="size-4 text-success" />
+                      <span className="text-sm text-success">
                         Authenticated
                       </span>
                     </div>

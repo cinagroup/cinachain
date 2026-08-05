@@ -78,7 +78,7 @@ export default function AdminBadgesPage() {
 
   if (!hasErc1155Contract) {
     return (
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
@@ -90,7 +90,7 @@ export default function AdminBadgesPage() {
   }
 
   return (
-    <div className="container max-w-[1200px] px-6 py-12">
+    <div className="container max-w-[1400px] px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
         Administration
       </span>
@@ -109,9 +109,9 @@ export default function AdminBadgesPage() {
         </Alert>
       )}
       {confirmed && txHash && (
-        <Alert className="mt-6 border-[#50e3c2]/30 bg-[#50e3c2]/10">
-          <CheckCircle2 className="size-4 text-[#29bc9b]" />
-          <AlertDescription className="text-sm text-[#29bc9b]">
+        <Alert variant="success" className="mt-6">
+          <CheckCircle2 className="size-4" />
+          <AlertDescription>
             Badge minted!{" "}
             <a
               href={`https://sepolia.basescan.org/tx/${txHash}`}

@@ -10,9 +10,7 @@
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
-  "https://cinachain-nft-dapp.pages.dev",
   "https://cinachain-dapp-v2.pages.dev",
-  "https://cinachain.pages.dev",
   "http://localhost:3000",
 ])
 
@@ -76,6 +74,15 @@ export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(request) })
+    }
+
+    // Standardized health check (matches billing/whitelist/media-gateway).
+    if (request.method === "GET" && new URL(request.url).pathname === "/health") {
+      return respond(request, {
+        ok: true,
+        service: "cinachain-paymaster-api",
+        paymasterConfigured: !!env.CDP_PAYMASTER_URL,
+      })
     }
 
     if (request.method !== "POST") {

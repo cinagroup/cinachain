@@ -15,9 +15,7 @@ import { keccak_256 } from "@noble/hashes/sha3"
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
-  "https://cinachain-nft-dapp.pages.dev",
   "https://cinachain-dapp-v2.pages.dev",
-  "https://cinachain.pages.dev",
   "http://localhost:3000",
 ])
 

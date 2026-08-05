@@ -13,6 +13,12 @@ import {
 import { runIndexer, listAllKeys } from "./lib/indexer-run.js"
 import { DEFAULT_PRICING, estimateCostWithPricing, applyPricingOverrides } from "./lib/pricing.js"
 import { ingressRecord, validateDeclaredMicro, ingressStatusTransitions, encryptKey } from "./lib/ingress.js"
+import {
+  BINDING_URI,
+  CHAIN_ID,
+  parseBindingMessage,
+  verifyOwnership,
+} from "./lib/sig-verify.js"
 
 const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
@@ -560,7 +566,17 @@ export default {
         } catch {
           return { status: 400, body: { error: "Ingress record corrupted" } }
         }
-        if (!ingressStatusTransitions(rec.status, "minted")) return { status: 400, body: { error: `Invalid transition from ${rec.status}` } }
+        if (!ingressStatusTransitions(rec.status, "minted")) {
+          // Idempotency for retries: the same mint already confirmed with the
+          // same txHash must not error (admin scripts retry after timeouts) —
+          // and must not double-mint. A *different* txHash on an already-minted
+          // record is a conflicting double-mint attempt and stays rejected.
+          const txHash = body.txHash ?? null
+          if (rec.status === "minted" && rec.txHash === txHash) {
+            return { status: 200, body: { ok: true, id, status: rec.status, alreadyMinted: true } }
+          }
+          return { status: 400, body: { error: `Invalid transition from ${rec.status}` } }
+        }
         rec.status = "minted"
         rec.txHash = body.txHash ?? null
         await env.CINA_BILLING_KV.put(key, JSON.stringify(rec))
@@ -602,16 +618,40 @@ export default {
     }
 
     // POST /v1/keys — register an API key bound to an address (self-managed)
-    // or to a custodial account (spec §6.1); demo provisioning, production
-    // requires SIWE-signed proof of address ownership
+    // or to a custodial account (spec §6.1). Self-managed keys require a
+    // SIWE-signed binding message proving address ownership (EOA recovery or
+    // EIP-1271 eth_call); counterfactual smart accounts must deploy first.
     if (url.pathname === "/v1/keys" && request.method === "POST") {
       if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
       const body = await request.json().catch(() => ({}))
-      const { apiKey, address, custId } = body
+      const { apiKey, address, custId, message, signature } = body
       if (!apiKey || typeof apiKey !== "string" || apiKey.length < 20) return json(request, { error: "Invalid apiKey" }, 400)
       const hash = await hashKey(apiKey)
       if (address) {
         if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return json(request, { error: "Invalid address" }, 400)
+        // -- Address-ownership proof (spec §6.1) ----------------------------
+        const parsed = parseBindingMessage(message)
+        if (!parsed || parsed.address.toLowerCase() !== address.toLowerCase()) {
+          return json(request, { error: "message must be a valid binding message for this address" }, 400)
+        }
+        if (parsed.uri !== BINDING_URI || parsed.chainId !== CHAIN_ID.toString()) {
+          return json(request, { error: "message must target billing-api.cinachain.com on Base Sepolia" }, 400)
+        }
+        // Freshness: issuedAt within the last 5 minutes (and not from the
+        // future by more than a minute of clock skew).
+        const issued = Date.parse(parsed.issuedAt)
+        const skew = Date.now() - issued
+        if (Number.isNaN(issued) || skew > 5 * 60 * 1000 || skew < -60 * 1000) {
+          return json(request, { error: "message expired; sign a fresh one" }, 400)
+        }
+        // Nonce replay protection: one use per nonce, kept for 1 hour.
+        const nonceKey = `nonce:${await hashKey(`${parsed.nonce}${address.toLowerCase()}`)}`
+        if (await env.CINA_BILLING_KV.get(nonceKey)) {
+          return json(request, { error: "Nonce already used; sign a fresh message" }, 400)
+        }
+        const proof = await verifyOwnership(env, { address, message, signature })
+        if (!proof.ok) return json(request, { error: proof.error }, 403)
+        await env.CINA_BILLING_KV.put(nonceKey, "1", { expirationTtl: 3600 })
         await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ kind: "self", address: address.toLowerCase() }))
         return json(request, { ok: true, address: address.toLowerCase() })
       }

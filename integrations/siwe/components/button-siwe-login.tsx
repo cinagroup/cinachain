@@ -34,7 +34,7 @@ export const ButtonSIWELogin = ({
 
   return (
     <Button
-      variant="emerald"
+      variant="default"
       size="lg"
       className={classes}
       disabled={disabled || isLoading || !address}

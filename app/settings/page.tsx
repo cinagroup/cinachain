@@ -89,7 +89,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-[1400px] px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
@@ -147,7 +147,7 @@ export default function SettingsPage() {
 
             {/* Newly created key */}
             {newKey ? (
-              <Alert className="border-emerald-500/50 [&>svg]:text-emerald-500">
+              <Alert variant="success">
                 <CheckCircle2 className="size-4" />
                 <AlertTitle>API Key Created</AlertTitle>
                 <AlertDescription>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
                       className="shrink-0"
                     >
                       {copied ? (
-                        <CheckCircle2 className="mr-2 size-4 text-emerald-500" />
+                        <CheckCircle2 className="mr-2 size-4 text-success" />
                       ) : (
                         <Copy className="mr-2 size-4" />
                       )}

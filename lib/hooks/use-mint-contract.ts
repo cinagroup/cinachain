@@ -9,6 +9,7 @@ import {
 
 import { CINA_NFT_CONTRACT, MINT_PRICE_ETH } from "@/lib/contracts/addresses"
 import { usePaymasterCapabilities } from "@/lib/hooks/use-paymaster"
+import { extractErrorMessage } from "@/lib/error-utils"
 
 const MINT_ABI = [
   {
@@ -169,20 +170,6 @@ export function useMintContract(): UseMintContractResult {
     }
   }, [callsStatusFailed, callsStatusError, status])
 
-  const extractError = (err: unknown): string => {
-    if (err instanceof Error) {
-      // viem/wagmi 错误通常带 shortMessage
-      const anyErr = err as unknown as {
-        shortMessage?: string
-        cause?: { reason?: string }
-      }
-      if (anyErr.shortMessage) return anyErr.shortMessage
-      if (anyErr.cause?.reason) return anyErr.cause.reason
-      return err.message
-    }
-    return "Unknown error"
-  }
-
   const assertConfigured = (): boolean => {
     if (
       !CINA_NFT_CONTRACT ||
@@ -245,7 +232,7 @@ export function useMintContract(): UseMintContractResult {
         return (batchId ?? hash) as Hash | undefined
       } catch (err) {
         setStatus("error")
-        setError(extractError(err))
+        setError(extractErrorMessage(err))
         return undefined
       }
     },
@@ -313,7 +300,7 @@ export function useMintContract(): UseMintContractResult {
         return (batchId ?? hash) as Hash | undefined
       } catch (err) {
         setStatus("error")
-        setError(extractError(err))
+        setError(extractErrorMessage(err))
         return undefined
       }
     },
@@ -349,9 +336,9 @@ export function useMintContract(): UseMintContractResult {
     error:
       error ??
       (writeError
-        ? extractError(writeError)
+        ? extractErrorMessage(writeError)
         : callsError
-        ? extractError(callsError)
+        ? extractErrorMessage(callsError)
         : null),
     txHash,
     reset,

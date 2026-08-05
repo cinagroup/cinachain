@@ -7,6 +7,7 @@ import { useSendCalls, useWaitForCallsStatus, useWaitForTransactionReceipt, useW
 import { cinaMegaAbi, CINA_MEGA_CONTRACT } from "@/lib/contracts/cina-mega"
 import { hasMegaContract } from "@/lib/contracts/addresses"
 import { usePaymasterCapabilities } from "@/lib/hooks/use-paymaster"
+import { extractErrorMessage } from "@/lib/error-utils"
 
 export type ExchangeStatus =
   | "idle"
@@ -92,16 +93,6 @@ export function useExchange(): UseExchangeResult {
     }
   }, [callsStatusFailed, callsStatusError, status])
 
-  const extractError = (err: unknown): string => {
-    if (err instanceof Error) {
-      const anyErr = err as unknown as { shortMessage?: string; cause?: { reason?: string } }
-      if (anyErr.shortMessage) return anyErr.shortMessage
-      if (anyErr.cause?.reason) return anyErr.cause.reason
-      return err.message
-    }
-    return "Unknown error"
-  }
-
   const doExchange = useCallback(
     async (fromType: bigint, toType: bigint, amount: bigint): Promise<Hash | undefined> => {
       if (!hasMegaContract) {
@@ -137,7 +128,7 @@ export function useExchange(): UseExchangeResult {
         return (batchId ?? hash) as Hash | undefined
       } catch (err) {
         setStatus("error")
-        setError(extractError(err))
+        setError(extractErrorMessage(err))
         return undefined
       }
     },
@@ -158,7 +149,7 @@ export function useExchange(): UseExchangeResult {
     status,
     isPending,
     isConfirmed: status === "confirmed",
-    error: error ?? (writeError ? extractError(writeError) : callsError ? extractError(callsError) : null),
+    error: error ?? (writeError ? extractErrorMessage(writeError) : callsError ? extractErrorMessage(callsError) : null),
     txHash,
     reset,
     isGasless: isPaymasterSupported,

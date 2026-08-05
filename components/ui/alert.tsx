@@ -11,6 +11,14 @@ const alertVariants = cva(
         default: "bg-background text-foreground",
         destructive:
           "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+        // DESIGN.md: success semantic is the brand link blue (#0070f3)
+        success:
+          "border-success/50 text-success dark:border-success [&>svg]:text-success",
+        // DESIGN.md: info uses the link-bg-soft pill palette
+        info: "border-link-bg-soft text-link-deep [&>svg]:text-link",
+        // DESIGN.md: warning palette (#f5a623 / #ab570a deep for contrast)
+        warning:
+          "border-warning/50 text-warning-deep dark:border-warning [&>svg]:text-warning",
       },
     },
     defaultVariants: {

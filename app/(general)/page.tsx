@@ -34,22 +34,13 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       {/* ═══════════════ Hero ═══════════════ */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              background:
-                "radial-gradient(ellipse 80% 60% at 50% -20%, #7928ca 0%, #ff0080 40%, transparent 70%)",
-            }}
-          />
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              background:
-                "radial-gradient(ellipse 60% 50% at 80% 50%, #007cf0 0%, #00dfd8 50%, transparent 70%)",
-            }}
-          />
-        </div>
+        {/* Mesh gradient at hero scale (DESIGN.md: the brand's only
+            decorative chrome — never miniaturised, never reduced to a
+            single stop). */}
+        <div
+          className="mesh-gradient absolute inset-x-0 -top-40 h-[560px] opacity-20 blur-3xl"
+          aria-hidden="true"
+        />
 
         <div className="container mx-auto max-w-[960px] px-6 pb-20 pt-32 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 shadow-vercel-sm">
@@ -117,7 +108,7 @@ export default function HomePage() {
 
       {/* ═══════════════ Products ═══════════════ */}
       <section className="border-t border-border">
-        <div className="container mx-auto max-w-[1200px] px-6 py-20">
+        <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Products"
             title="A growing ecosystem."
@@ -177,7 +168,7 @@ export default function HomePage() {
 
       {/* ═══════════════ Tech Stack ═══════════════ */}
       <section className="border-t border-border bg-card/50">
-        <div className="container mx-auto max-w-[1200px] px-6 py-20">
+        <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Infrastructure"
             title="Production-grade stack."
@@ -211,7 +202,7 @@ export default function HomePage() {
 
       {/* ═══════════════ Roadmap ═══════════════ */}
       <section className="border-t border-border">
-        <div className="container mx-auto max-w-[1200px] px-6 py-20">
+        <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Roadmap"
             title="Built incrementally."
@@ -249,7 +240,7 @@ export default function HomePage() {
 
       {/* ═══════════════ Team ═══════════════ */}
       <section className="border-t border-border bg-card/50">
-        <div className="container mx-auto max-w-[1200px] px-6 py-20">
+        <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Team"
             title="Built by cinagroup."
@@ -264,19 +255,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══════════════ CTA Footer ═══════════════ */}
-      <section className="border-t border-border">
+      {/* ═══════════════ CTA Footer — dark polarity band ═══════════════ */}
+      <section className="band-dark border-t border-border">
         <div className="container mx-auto max-w-[960px] px-6 py-24 text-center">
-          <h2 className="font-display text-4xl tracking-tight text-foreground sm:text-5xl">
-            Start building on CinaChain<span className="text-muted-foreground">.</span>
+          <h2 className="font-display text-4xl tracking-tight sm:text-5xl">
+            Start building on CinaChain<span className="text-white/50">.</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-[480px] text-base text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-[480px] text-base text-white/60">
             Mint your first NFT, earn badges, and join the ecosystem.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/mint"
-              className={cn(buttonVariants({ size: "lg" }), "btn-pill")}
+              className={cn(buttonVariants({ size: "lg" }), "btn-pill bg-white text-[#171717]")}
             >
               Mint Your First NFT
               <ArrowRight className="ml-2 size-4" />
@@ -285,7 +276,7 @@ export default function HomePage() {
               href={siteConfig.links.discord}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-[#7289da] px-6 text-base font-medium text-white transition-opacity hover:opacity-90"
+              className="inline-flex h-12 items-center gap-2 rounded-full border border-white/20 px-6 text-base font-medium text-white transition-opacity hover:opacity-90"
             >
               <FaDiscord className="size-4" />
               Join Discord
@@ -297,7 +288,7 @@ export default function HomePage() {
               href={siteConfig.links.github}
               target="_blank"
               rel="noreferrer noopener"
-              className="text-muted-foreground transition-colors hover:text-foreground"
+              className="text-white/50 transition-colors hover:text-white"
             >
               <FaGithub className="size-5" />
             </Link>
@@ -305,7 +296,7 @@ export default function HomePage() {
               href={siteConfig.links.twitter}
               target="_blank"
               rel="noreferrer noopener"
-              className="text-muted-foreground transition-colors hover:text-foreground"
+              className="text-white/50 transition-colors hover:text-white"
             >
               <FaTwitter className="size-5" />
             </Link>
@@ -313,13 +304,13 @@ export default function HomePage() {
               href={siteConfig.links.discord}
               target="_blank"
               rel="noreferrer noopener"
-              className="text-muted-foreground transition-colors hover:text-foreground"
+              className="text-white/50 transition-colors hover:text-white"
             >
               <FaDiscord className="size-5" />
             </Link>
           </div>
 
-          <div className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <div className="mt-8 flex items-center justify-center gap-2 text-xs text-white/50">
             <Lock className="size-3" />
             <span>Built on Base · Powered by Cloudflare</span>
           </div>
@@ -393,7 +384,7 @@ function ProductCard({
     <Link
       href={href}
       {...(external ? { target: "_blank", rel: "noreferrer noopener" } : {})}
-      className="group block rounded-xl border border-border bg-card p-6 shadow-vercel-card transition-all hover:-translate-y-0.5 hover:shadow-vercel-md"
+      className="group block rounded-lg border border-border bg-card p-6 shadow-vercel-card transition-all hover:-translate-y-0.5 hover:shadow-vercel-md"
     >
       <div className="flex items-start justify-between">
         <div className="flex size-12 items-center justify-center rounded-lg bg-secondary text-foreground">
@@ -406,7 +397,9 @@ function ProductCard({
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-[10px] font-semibold",
-              status === "Live" && "bg-[#50e3c2]/20 text-[#29bc9b]",
+              // Live keeps the brand cyan accent; Beta uses violet (both
+              // spec palette); success semantics use the success token.
+              status === "Live" && "bg-cyan/20 text-cyan-deep",
               status === "Beta" && "bg-violet/10 text-violet",
               status === "Coming Soon" && "bg-secondary text-muted-foreground"
             )}
@@ -439,7 +432,7 @@ function TechCard({
   description: string
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-vercel-sm">
+    <div className="rounded-lg border border-border bg-card p-5 shadow-vercel-sm">
       <div className="mb-3 flex size-9 items-center justify-center rounded-md bg-secondary text-foreground">
         {icon}
       </div>
@@ -463,13 +456,13 @@ function RoadmapCard({
   items: string[]
 }) {
   return (
-    <div className="relative rounded-xl border border-border bg-card p-5 shadow-vercel-card">
+    <div className="relative rounded-lg border border-border bg-card p-5 shadow-vercel-card">
       <div className="flex items-center justify-between">
         <span className="font-display text-2xl text-muted-foreground/20">
           {phase}
         </span>
         {status === "done" ? (
-          <span className="flex items-center gap-1 text-xs font-medium text-[#29bc9b]">
+          <span className="flex items-center gap-1 text-xs font-medium text-success">
             <CheckCircle2 className="size-3.5" />
             Done
           </span>
@@ -489,7 +482,7 @@ function RoadmapCard({
             <span
               className={cn(
                 "mt-1 size-1 shrink-0 rounded-full",
-                status === "done" ? "bg-[#29bc9b]" : "bg-violet"
+                status === "done" ? "bg-success" : "bg-violet"
               )}
             />
             {item}
@@ -502,7 +495,7 @@ function RoadmapCard({
 
 function TeamCard({ name, role }: { name: string; role: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6 text-center shadow-vercel-sm">
+    <div className="rounded-lg border border-border bg-card p-6 text-center shadow-vercel-sm">
       <div className="font-display mx-auto flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-[#7928ca] to-[#0070f3] text-xl text-white">
         {name.charAt(0)}
       </div>
