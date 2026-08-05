@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useAccount } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
 import {
@@ -25,32 +25,45 @@ import { MEGA_COLLECTION_INFO, MEGA_RATE_TEXT, MEGA_TYPES, formatAmount } from "
 import { useCinaMegaBalances, useCinaMegaMeta } from "@/lib/hooks/use-cina-mega"
 import { useMintUcina } from "@/lib/hooks/use-mint-ucina"
 import { useAccountType } from "@/lib/hooks/use-account-type"
-import { getMegaImageSources } from "@/lib/mega-media"
+import { getMegaTypeImageSources } from "@/lib/mega-media"
 
 function CollectionCard({
   type,
   balance,
-  uri,
+  cid,
 }: {
   type: number
   balance: bigint
-  uri: string
+  cid: string
 }) {
   const info = MEGA_COLLECTION_INFO[type]
-  const sources = getMegaImageSources(uri)
+  const sources = getMegaTypeImageSources(cid, type)
+  // Chain reads resolve asynchronously (wagmi query hydration): the SSR
+  // render sees an empty cid and renders the placeholder div. Without this
+  // gate the client's first render (hydrated cache) would emit <img> where
+  // the server emitted <div> — a hydration mismatch.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  const showImage = mounted && !!cid
   return (
     <Card className="overflow-hidden shadow-vercel-card">
       <div className="relative aspect-square w-full" style={{ background: `linear-gradient(135deg, ${info.color}22, transparent)` }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={sources[0]}
-          alt={info.name}
-          className="size-full object-cover"
-          onError={(e) => {
-            const next = sources.indexOf((e.currentTarget as HTMLImageElement).src) + 1
-            if (next < sources.length) (e.currentTarget as HTMLImageElement).src = sources[next]
-          }}
-        />
+        {showImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={sources[0]}
+            alt={info.name}
+            className="size-full object-cover"
+            onError={(e) => {
+              const next = sources.indexOf((e.currentTarget as HTMLImageElement).src) + 1
+              if (next < sources.length) (e.currentTarget as HTMLImageElement).src = sources[next]
+            }}
+          />
+        ) : (
+          <div className="flex size-full items-center justify-center text-6xl opacity-40">{info.icon}</div>
+        )}
         <span
           className="font-mono-tech absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold"
           style={{ background: `${info.color}22`, color: info.color }}
@@ -183,7 +196,7 @@ export default function CollectionsPage() {
             key={t}
             type={t}
             balance={balances[t] ?? 0n}
-            uri={cids[t] ? `ipfs://${cids[t]}/metadata.json` : ""}
+            cid={cids[t] ?? ""}
           />
         ))}
       </div>

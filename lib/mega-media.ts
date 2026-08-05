@@ -34,6 +34,18 @@ export function getMegaImageSources(ipfsUri: string): string[] {
   ]
 }
 
+/**
+ * Image sources for a token type card: the gateway serves `<cid>/<name>.svg`
+ * (metadata.json is NOT an image). Fallback order: worker → public gateways.
+ */
+export function getMegaTypeImageSources(cid: string, type: number): string[] {
+  const name = MEGA_COLLECTION_INFO[type]?.short ?? "ucina"
+  return [
+    `${MEDIA_GATEWAY}/${cid}/${name}.svg`,
+    ...FALLBACK_GATEWAYS.map((g) => `${g}${cid}/${name}.svg`),
+  ]
+}
+
 /** cid → token type via the contract's uri() strings (read-side helper). */
 export function typeFromUri(uri: string): number | null {
   const m = /^ipfs:\/\/([^/]+)\//.exec(uri)

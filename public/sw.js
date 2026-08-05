@@ -1,7 +1,7 @@
 // Service Worker for CinaChain PWA
 // 静态导出兼容方案
 
-const CACHE_NAME = "cinachain-v4"
+const CACHE_NAME = "cinachain-v5"
 const OFFLINE_URL = "/offline"
 
 // 需要缓存的静态资源
@@ -10,6 +10,8 @@ const PRECACHE_RESOURCES = [
   "/explore",
   "/mint",
   "/mint-batch",
+  "/collections",
+  "/exchange",
   "/dashboard",
   "/dashboard/account",
   "/dashboard/nfts",
@@ -38,6 +40,7 @@ const NO_CACHE_PATTERNS = [
   "cinachain-whitelist-api.cinagroup.workers.dev",
   "cinachain-paymaster.cinagroup.workers.dev",
   "cinachain-billing.cinagroup.workers.dev",
+  "cinachain-mega-media.cinagroup.workers.dev",
 ]
 
 // 安装事件：预缓存关键资源
