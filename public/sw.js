@@ -37,10 +37,10 @@ const NO_CACHE_PATTERNS = [
   "base-sepolia.publicnode.com",
   "cloudflare-ipfs.com",
   "ipfs.io",
-  "cinachain-whitelist-api.cinagroup.workers.dev",
-  "cinachain-paymaster.cinagroup.workers.dev",
-  "cinachain-billing.cinagroup.workers.dev",
-  "cinachain-mega-media.cinagroup.workers.dev",
+  "whitelist-api.cinachain.com",
+  "billing-api.cinachain.com",
+  "paymaster-api.cinachain.com",
+  "media.cinachain.com",
 ]
 
 // 安装事件：预缓存关键资源

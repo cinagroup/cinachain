@@ -5,7 +5,7 @@ import { MEGA_COLLECTION_INFO } from "./exchange"
 
 const MEDIA_GATEWAY =
   process.env.NEXT_PUBLIC_MEGA_MEDIA_URL ??
-  "https://cinachain-mega-media.cinagroup.workers.dev"
+  "https://media.cinachain.com"
 
 const FALLBACK_GATEWAYS = [
   "https://cloudflare-ipfs.com/ipfs/",

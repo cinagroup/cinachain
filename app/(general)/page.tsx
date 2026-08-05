@@ -166,7 +166,7 @@ export default function HomePage() {
               name="Edge API"
               tag="Cloudflare Workers"
               description="Whitelist verification and paymaster proxy running on Cloudflare's global edge network."
-              href="https://cinachain-whitelist-api.cinagroup.workers.dev/health"
+              href="https://whitelist-api.cinachain.com/health"
               cta="API Status"
               status="Live"
               external

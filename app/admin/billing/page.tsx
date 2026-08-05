@@ -28,7 +28,7 @@ import { useCreditBalance } from "@/lib/hooks/use-credit-balance"
 
 const BILLING_API_URL =
   process.env.NEXT_PUBLIC_BILLING_API_URL ||
-  "https://cinachain-billing.cinagroup.workers.dev"
+  "https://billing-api.cinachain.com"
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
 const POSITIVE_INT_RE = /^\d+$/

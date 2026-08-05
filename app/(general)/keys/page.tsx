@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 
 const BILLING_API_URL =
   process.env.NEXT_PUBLIC_BILLING_API_URL ||
-  "https://cinachain-billing.cinagroup.workers.dev"
+  "https://billing-api.cinachain.com"
 
 const MODELS = [
   { id: "demo", label: "Demo" },

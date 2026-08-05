@@ -117,7 +117,7 @@ export default function WhitelistManagementPage() {
     try {
       const apiUrl =
         process.env.NEXT_PUBLIC_WHITELIST_API_URL ||
-        "https://cinachain-whitelist-api.cinagroup.workers.dev"
+        "https://whitelist-api.cinachain.com"
 
       // Per-address mint limits (the worker stores them individually)
       const limits: Record<string, number> = {}

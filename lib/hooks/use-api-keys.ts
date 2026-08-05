@@ -8,7 +8,7 @@ import { useSiwe } from "@/lib/hooks/use-siwe"
 const KEYS_STORAGE = "cinachain-api-keys"
 const BILLING_API_URL =
   process.env.NEXT_PUBLIC_BILLING_API_URL ||
-  "https://cinachain-billing.cinagroup.workers.dev"
+  "https://billing-api.cinachain.com"
 
 export interface ApiKeyRecord {
   id: string

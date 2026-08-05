@@ -10,7 +10,7 @@ interface WhitelistResponse {
   message?: string
 }
 
-const FALLBACK_API_URL = "https://cinachain-whitelist-api.cinagroup.workers.dev"
+const FALLBACK_API_URL = "https://whitelist-api.cinachain.com"
 
 /**
  * 查询地址是否在白名单中的 hook

@@ -55,7 +55,7 @@ async function main() {
   // values; the on-chain fallback covers serving until then.
   if (!SKIP_GATEWAY_CHECK) {
     for (const t of TYPES) {
-      const url = `https://cinachain-mega-media.cinagroup.workers.dev/${t.cid}/metadata.json`
+      const url = `https://media.cinachain.com/${t.cid}/metadata.json`
       const r = await fetch(url)
       if (!r.ok) {
         throw new Error(`gateway check failed for ${t.name} (${r.status} ${url}) — aborting, nothing written`)

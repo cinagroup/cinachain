@@ -5,7 +5,7 @@ import type { Address } from "viem"
 
 const BILLING_API_URL =
   process.env.NEXT_PUBLIC_BILLING_API_URL ||
-  "https://cinachain-billing.cinagroup.workers.dev"
+  "https://billing-api.cinachain.com"
 
 export interface TierProgress {
   address: string

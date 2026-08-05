@@ -7,7 +7,7 @@ import { baseSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 
 const PK = process.env.DEPLOY_PRIVATE_KEY
-const BILLING_URL = process.env.BILLING_URL || "https://cinachain-billing.cinagroup.workers.dev"
+const BILLING_URL = process.env.BILLING_URL || "https://billing-api.cinachain.com"
 const ADMIN_KEY = process.env.ADMIN_KEY
 const BADGE = process.env.CINA_BADGE_CONTRACT || "0x72cc9adb6c877d233e9843ee2d00424b9766d0cf"
 const RPC = process.env.DEPLOY_RPC_URL || "https://sepolia.base.org"
