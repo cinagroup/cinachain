@@ -80,8 +80,7 @@ cinachain.com（品牌根域 → 门户/重定向）
 ## 5. 待办
 - [x] **Phase 1（2026-08-05 完成）**：nft.cinachain.com → Pages（已确认 active）；whitelist-api / billing-api / paymaster-api / media.cinachain.com → 4 worker（zone routes + proxied A 记录，全部健康 200）
 - [x] **Phase 2（2026-08-05 完成）**：env/hooks/scripts/app 全部切品牌域名；CSP 依赖 `*.cinachain.com` 通配；sw.js NO_CACHE 更新；泄漏 token 已从文档移除（bbcdce5 + 07b25a0）
-- [x] 验证：media metadata 200 / whitelist 200 / billing 200 / 生产页面 200
-- [ ] 根域 `cinachain.com` 门户/重定向（可选 Phase 3）
-- [ ] docs.cinachain.com 文档站（可选 Phase 3）
-- [ ] ⚠️ 本次使用的 `cfut_m9mT...` token 用完建议轮换（曾出现在对话）
+- [x] **Phase 3（2026-08-05 完成）**：`cinachain.com` / `www` → 品牌门户（Pages cinachain-portal，静态单页）；`docs.cinachain.com` → Docusaurus 文档站（Pages cinachain-docs，CI 自动部署）
+- [x] 验证：7 个域名全部 200（门户/主站/文档/3 API）
+- [ ] ⚠️ 使用的 `cfut_m9mT...` token 用完建议轮换（曾出现在对话）
 - [ ] 已知边缘：Pages 部署瞬间新 chunk 若被请求并缓存 404（immutable 头）→ 低频；预防 = 部署后 purge（需更高权限 token），暂不实施
