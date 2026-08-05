@@ -1,16 +1,63 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>CinaChain — Building the Future on Base</title>
   <meta name="description" content="CinaChain — NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base L2." />
-  <meta property="og:title" content="CinaChain" />
+  <link rel="canonical" href="https://cinachain.com/" />
+  <meta name="theme-color" content="#060a12" />
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="CinaChain" />
+  <meta property="og:title" content="CinaChain — Building the Future on Base" />
   <meta property="og:description" content="NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base L2." />
-  <meta property="og:url" content="https://cinachain.com" />
+  <meta property="og:url" content="https://cinachain.com/" />
+  <meta property="og:image" content="https://cinachain.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="CinaChain — built on Base L2" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CinaChain — Building the Future on Base" />
+  <meta name="twitter:description" content="NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base L2." />
+  <meta name="twitter:image" content="https://cinachain.com/og-image.png" />
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "CinaChain",
+        "url": "https://cinachain.com",
+        "logo": "https://cinachain.com/favicon.svg",
+        "sameAs": [
+          "https://github.com/cinagroup",
+          "https://x.com/cinachain",
+          "https://discord.gg/cinachain"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "name": "CinaChain",
+        "url": "https://cinachain.com/"
+      }
+    ]
+  }
+  </script>
+
   <style>
     :root { color-scheme: dark; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: #060a12;
@@ -20,15 +67,34 @@
       flex-direction: column;
       align-items: center;
     }
+    :focus-visible {
+      outline: 2px solid #50e3c2;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .skip-link {
+      position: absolute; left: -9999px; top: 0; z-index: 100;
+      background: #50e3c2; color: #060a12; font-weight: 600;
+      padding: 10px 16px; border-radius: 0 0 8px 0; text-decoration: none;
+    }
+    .skip-link:focus { left: 0; }
     .container { max-width: 960px; width: 100%; padding: 0 24px; }
-    header { width: 100%; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    header { width: 100%; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(6,10,18,0.8); backdrop-filter: blur(8px); }
     nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-    .logo { font-weight: 800; font-size: 20px; letter-spacing: 0.5px; color: #fff; text-decoration: none; }
+    .logo { font-weight: 800; font-size: 20px; letter-spacing: 0.5px; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .logo svg { display: block; }
     .logo span { color: #50e3c2; }
-    nav a.link { color: #94a3b8; text-decoration: none; margin-left: 20px; font-size: 14px; }
+    nav a.link { color: #94a3b8; text-decoration: none; margin-left: 20px; font-size: 14px; transition: color 0.15s ease; }
     nav a.link:hover { color: #fff; }
     main { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; }
-    .hero { text-align: center; padding: 96px 24px 64px; }
+    .hero { position: relative; text-align: center; padding: 96px 24px 64px; overflow: hidden; }
+    /* Brand mesh (DESIGN.md) as a faint atmospheric backdrop — hero scale only. */
+    .hero::before {
+      content: ""; position: absolute; inset: -20% 0 auto 0; height: 420px; opacity: 0.14;
+      background: linear-gradient(135deg, #007cf0 0%, #00dfd8 20%, #7928ca 40%, #ff0080 60%, #ff4d4d 80%, #f9cb28 100%);
+      filter: blur(60px); pointer-events: none;
+    }
+    .hero > * { position: relative; }
     .hero .eyebrow {
       display: inline-block; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
       letter-spacing: 2px; text-transform: uppercase; color: #50e3c2;
@@ -44,7 +110,9 @@
     }
     .btn:hover { transform: translateY(-1px); }
     .btn-primary { background: #fff; color: #060a12; }
+    .btn-primary:hover { box-shadow: 0 4px 24px rgba(80,227,194,0.25); }
     .btn-ghost { border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; }
+    .btn-ghost:hover { border-color: rgba(80,227,194,0.5); color: #fff; }
     .products { padding: 48px 24px 96px; width: 100%; }
     .products h2 { text-align: center; font-size: 28px; color: #fff; margin-bottom: 40px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
@@ -61,19 +129,33 @@
     .card p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
     footer { width: 100%; border-top: 1px solid rgba(255,255,255,0.08); padding: 32px 0; text-align: center; }
     footer p { color: #64748b; font-size: 13px; }
-    footer a { color: #94a3b8; text-decoration: none; margin: 0 10px; }
+    footer a { color: #94a3b8; text-decoration: none; margin: 0 10px; transition: color 0.15s ease; }
     footer a:hover { color: #fff; }
     @media (max-width: 640px) {
       .hero h1 { font-size: 38px; }
       .hero { padding: 64px 24px 40px; }
+      nav a.link { margin-left: 14px; font-size: 13px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .btn, .card, nav a.link, footer a { transition: none; }
+      .btn:hover { transform: none; }
     }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
   <header>
     <div class="container">
-      <nav>
-        <a class="logo" href="/">Cina<span>Chain</span></a>
+      <nav aria-label="Primary">
+        <a class="logo" href="/" aria-label="CinaChain home">
+          <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M20 14 44 14 50 20 50 44 44 50 20 50 14 44 14 20Z" fill="none" stroke="#50e3c2" stroke-width="3"/>
+            <circle cx="32" cy="32" r="10" fill="#50e3c2"/>
+          </svg>
+          Cina<span>Chain</span>
+        </a>
         <div>
           <a class="link" href="https://nft.cinachain.com">DApp</a>
           <a class="link" href="https://docs.cinachain.com">Docs</a>
@@ -83,7 +165,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main">
     <div class="container">
       <section class="hero">
         <span class="eyebrow">Building on Base L2</span>
@@ -96,9 +178,9 @@
       </section>
     </div>
 
-    <section class="products">
+    <section class="products" aria-labelledby="products-heading">
       <div class="container">
-        <h2>Products</h2>
+        <h2 id="products-heading">Products</h2>
         <div class="grid">
           <a class="card" href="https://nft.cinachain.com/explore">
             <span class="tag">ERC-721 · Live</span>
@@ -125,7 +207,7 @@
             <h3>Docs &amp; Guides</h3>
             <p>Architecture, deployment, domain plan, and integration guides.</p>
           </a>
-          <a class="card" href="https://cinachain-billing.cinagroup.workers.dev/health">
+          <a class="card" href="https://billing-api.cinachain.com/health">
             <span class="tag">Infrastructure</span>
             <h3>Edge API</h3>
             <p>Whitelist verification, billing metering, and media gateway on Cloudflare's edge.</p>

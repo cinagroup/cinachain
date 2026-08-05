@@ -1,0 +1,28 @@
+# Cloudflare Pages headers — production security + caching for the portal.
+# Notes:
+#   • script-src 'unsafe-inline' exists ONLY for the JSON-LD block; the page
+#     ships zero JavaScript (CSP script-src would otherwise be 'none').
+#   • HTML is cached 5 minutes so deploys propagate quickly; binary brand
+#     assets are immutable for 1 day.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'unsafe-inline'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+
+/index.html
+  Cache-Control: public, max-age=300, s-maxage=3600
+
+/og-image.png
+  Cache-Control: public, max-age=86400
+
+/favicon.svg
+  Cache-Control: public, max-age=86400
+
+/robots.txt
+  Cache-Control: public, max-age=3600
+
+/sitemap.xml
+  Cache-Control: public, max-age=3600
