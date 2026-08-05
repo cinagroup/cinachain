@@ -1,0 +1,25 @@
+{
+  "name": "CINA — CinaMega #3",
+  "description": "CINA — the flagship unit of the CinaMega collection. 1 CINA = 1,000 MCINA = 1,000,000 UCINA. Obtained only by exchanging up through the Cina economy.",
+  "image": "ipfs://bafkreihvzfjp5ufrid4s2ub6lv6xvpe7663b25tgwtpp27bi3ye4j7bcdm",
+  "external_url": "https://nft.cinachain.com/collections",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "CinaMega"
+    },
+    {
+      "trait_type": "TokenType",
+      "value": "3"
+    },
+    {
+      "trait_type": "Exchange Rate",
+      "value": "1 CINA = 1,000,000 UCINA"
+    },
+    {
+      "trait_type": "Supply",
+      "value": "Unlimited (billions)"
+    }
+  ],
+  "cid": "bafkreihvzfjp5ufrid4s2ub6lv6xvpe7663b25tgwtpp27bi3ye4j7bcdm"
+}

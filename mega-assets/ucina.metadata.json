@@ -1,0 +1,25 @@
+{
+  "name": "UCINA — CinaMega #1",
+  "description": "UCINA — the base unit of the CinaMega collection. Free to mint, unlimited supply, and the entry point to the Cina economy. Exchange 1,000,000 UCINA for 1 CINA.",
+  "image": "ipfs://bafkreieiapshe6qjvldpqyewrtamuok766qocs6xydu5gh7k3byejbv7oy",
+  "external_url": "https://nft.cinachain.com/collections",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "CinaMega"
+    },
+    {
+      "trait_type": "TokenType",
+      "value": "1"
+    },
+    {
+      "trait_type": "Exchange Rate",
+      "value": "1 UCINA = 1 unit"
+    },
+    {
+      "trait_type": "Supply",
+      "value": "Unlimited (billions)"
+    }
+  ],
+  "cid": "bafkreieiapshe6qjvldpqyewrtamuok766qocs6xydu5gh7k3byejbv7oy"
+}

@@ -1,0 +1,18 @@
+name = "cinachain-mega-media"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[r2_buckets]]
+binding = "CINA_MEGA_MEDIA"
+bucket_name = "cinachain-mega-media"
+
+[vars]
+# 4EVERLAND custom-domain gateway (NOT the public gateway). Set after
+# provisioning: e.g. https://cinachain-mega.4everland.link
+FOUR_EVERLAND_GATEWAY = ""
+# CinaMega contract on Base Sepolia — set after deploy-mega.mjs
+CINA_MEGA_ADDRESS = ""
+BASE_SEPOLIA_RPC = "https://sepolia.base.org"
+# cid:tokenType mapping from mega-assets/cids.json, e.g.
+# "QmUcinaDir:1,QmMcinaDir:2,QmCinaDir:3"
+MEGA_TYPE_CIDS = ""

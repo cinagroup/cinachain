@@ -63,6 +63,7 @@ const input = {
       "contracts/src/CinaNFT.sol": { "*": ["abi", "evm.bytecode.object"] },
       "contracts/src/CinaBadge.sol": { "*": ["abi", "evm.bytecode.object"] },
       "contracts/src/CinaCredit.sol": { "*": ["abi", "evm.bytecode.object"] },
+      "contracts/src/CinaMega.sol": { "*": ["abi", "evm.bytecode.object"] },
     },
   },
 }

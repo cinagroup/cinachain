@@ -1,0 +1,25 @@
+{
+  "name": "MCINA — CinaMega #2",
+  "description": "MCINA — the mid unit of the CinaMega collection. 1 MCINA = 1,000 UCINA. Obtained only by exchanging up from UCINA. 1,000 MCINA = 1 CINA.",
+  "image": "ipfs://bafkreihn7dgu7tfhptfas3g3ujrqfl43mvfdp4giodba4bay2d7yz3nzty",
+  "external_url": "https://nft.cinachain.com/collections",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "CinaMega"
+    },
+    {
+      "trait_type": "TokenType",
+      "value": "2"
+    },
+    {
+      "trait_type": "Exchange Rate",
+      "value": "1 MCINA = 1,000 UCINA"
+    },
+    {
+      "trait_type": "Supply",
+      "value": "Unlimited (billions)"
+    }
+  ],
+  "cid": "bafkreihn7dgu7tfhptfas3g3ujrqfl43mvfdp4giodba4bay2d7yz3nzty"
+}
