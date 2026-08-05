@@ -29,7 +29,17 @@ jobs:
       - name: Build static export
         # .env.production (committed, public values only) provides the
         # NEXT_PUBLIC_* vars — mirrors the local build exactly.
-        run: npm run build
+        run: |
+          set +e
+          npm run build > /tmp/build.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "::error::=== build.log tail ==="
+            tail -60 /tmp/build.log | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+          fi
+          exit $code
 
       - name: Strip null bytes (Windows-safe webpack output)
         run: node scripts/strip-nulls.mjs
