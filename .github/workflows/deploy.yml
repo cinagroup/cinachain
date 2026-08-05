@@ -100,3 +100,18 @@ jobs:
           fi
           npx --yes wrangler@3 pages deploy portal --project-name=cinachain-portal --commit-dirty=true
 
+      # Documentation site (docs.cinachain.com, Docusaurus).
+      - name: Deploy docs site
+        if: github.event_name == 'push'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: docs-site
+        run: |
+          npm ci --legacy-peer-deps
+          npx docusaurus build
+          if ! npx --yes wrangler@3 pages project list 2>/dev/null | grep -q "cinachain-docs"; then
+            npx --yes wrangler@3 pages project create cinachain-docs --production-branch=main
+          fi
+          npx --yes wrangler@3 pages deploy build --project-name=cinachain-docs --commit-dirty=true
+

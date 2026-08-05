@@ -1,0 +1,16 @@
+.hero {
+  min-height: calc(100vh - 60px);
+  display: flex;
+  align-items: center;
+  text-align: center;
+  background: radial-gradient(ellipse at top, rgba(80,227,194,0.08), transparent 60%);
+}
+.title { font-size: 56px; font-weight: 800; letter-spacing: -1px; }
+.title span { color: #50e3c2; }
+.subtitle { margin: 16px auto 32px; max-width: 520px; font-size: 17px; color: var(--ifm-color-emphasis-700); }
+.buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.primary, .secondary { padding: 10px 22px; border-radius: 999px; font-weight: 600; }
+.primary { background: var(--ifm-color-primary); color: #fff; }
+.primary:hover { text-decoration: none; color: #fff; opacity: 0.9; }
+.secondary { border: 1px solid var(--ifm-color-emphasis-300); color: var(--ifm-color-emphasis-700); }
+.secondary:hover { text-decoration: none; }

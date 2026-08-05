@@ -49,3 +49,5 @@ contracts/out/
 prod-mint.png
 dev-server.log
 .wrangler/
+docs-site/node_modules/
+docs-site/build/
