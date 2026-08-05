@@ -10,9 +10,8 @@ bucket_name = "cinachain-mega-media"
 # 4EVERLAND custom-domain gateway (NOT the public gateway). Set after
 # provisioning: e.g. https://cinachain-mega.4everland.link
 FOUR_EVERLAND_GATEWAY = ""
-# CinaMega contract on Base Sepolia — set after deploy-mega.mjs
-CINA_MEGA_ADDRESS = ""
+# CinaMega contract on Base Sepolia
+CINA_MEGA_ADDRESS = "0x3443febc3b4e49ea931091aa54871dbcbd972a5f"
 BASE_SEPOLIA_RPC = "https://sepolia.base.org"
-# cid:tokenType mapping from mega-assets/cids.json, e.g.
-# "QmUcinaDir:1,QmMcinaDir:2,QmCinaDir:3"
-MEGA_TYPE_CIDS = ""
+# cid:tokenType mapping from mega-assets/cids.json
+MEGA_TYPE_CIDS = "QmUZa75SwGeYPFrVTxCQApYcm8XgpBiAUdrsbh4EtJFYxU:1,Qme5t3gekoEcbBdVV2Vjz1ZktfeB6bsEBvGkwSR9SwSRz4:2,QmbmVXuZkzEQRVRhtENhYcE4zzJXBUjdm1kBtfwGFF2Awi:3"
