@@ -177,7 +177,7 @@ images: {
 #!/bin/bash
 
 ACCOUNT_ID="7ea8e46d8210bad342fa7595f7935fea"
-API_TOKEN="cfut_gSJPQNh3WWe0DXSBtjUp5cpAtBBw3atUPvXX4cqk9bc5a716"
+API_TOKEN="cfut_***ROTATED***"
 ZONE_ID="363c240a200996181b6192bdb03e7ce4"
 
 # 创建 IPFS DNSlink Gateway
