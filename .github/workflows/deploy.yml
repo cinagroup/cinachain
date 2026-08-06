@@ -6,13 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+# All deploy jobs run in parallel. The DApp static build is fragile on the
+# runner (a webpack module-resolution quirk in the Reown/wagmi chain), so the
+# portal/docs/workers are decoupled into their own jobs — a DApp build failure
+# must not block shipping the brand portal, docs site, or edge workers.
 jobs:
-  deploy:
+  dapp:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,44 +32,13 @@ jobs:
       - name: Build static export
         # .env.production (committed, public values only) provides the
         # NEXT_PUBLIC_* vars — mirrors the local build exactly.
-        run: |
-          set +e
-          npm run build > /tmp/build.log 2>&1
-          code=$?
-          if [ $code -ne 0 ]; then
-            echo "::error::=== build.log tail ==="
-            tail -60 /tmp/build.log | while IFS= read -r line; do
-              echo "::error::$line"
-            done
-          fi
-          exit $code
+        run: npm run build
 
       - name: Strip null bytes (Windows-safe webpack output)
         run: node scripts/strip-nulls.mjs
 
-      # Both Cloudflare secrets are REQUIRED. Missing CLOUDFLARE_ACCOUNT_ID
-      # broke every deploy since M1 (wrangler called /accounts//pages/...).
-      - name: Check Cloudflare secrets
-        run: |
-          echo "CLOUDFLARE_ACCOUNT_ID present: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}"
-          echo "CLOUDFLARE_API_TOKEN present: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}"
-          if [ "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" = "" ]; then
-            echo "::error::CLOUDFLARE_ACCOUNT_ID secret is not set — add it in"
-            echo "::error::repo Settings → Secrets and variables → Actions (exact name, uppercase)."
-          fi
-          if [ "${{ secrets.CLOUDFLARE_API_TOKEN }}" = "" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN secret is not set — add it in"
-            echo "::error::repo Settings → Secrets and variables → Actions (exact name, uppercase)."
-          fi
-          if [ "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" = "" ] || [ "${{ secrets.CLOUDFLARE_API_TOKEN }}" = "" ]; then
-            exit 1
-          fi
-
-      # Direct wrangler invocation instead of wrangler-action — the action's
-      # internal npm bootstrap failed on the runner (exit 1). npx resolves the
-      # pinned wrangler@3 from the worker's lockfile; no action wrapper needed.
-      # Create the Pages project if it does not exist yet (it never deployed).
       - name: Deploy to Cloudflare Pages
+        if: github.event_name == 'push'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -77,48 +49,100 @@ jobs:
           fi
           npx --yes wrangler@3 pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true
 
-      # Billing worker (metering gateway + scheduled indexer). Only on push
-      # to main — PRs get no worker deploy (no preview environment).
-      - name: Deploy billing worker
-        if: github.event_name == 'push'
+  workers:
+    # Edge workers depend only on their own wrangler + the committed source —
+    # independent of the Next.js build.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check Cloudflare secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN secret is not set."
+            exit 1
+          fi
+
+      # Billing worker (metering gateway + scheduled indexer).
+      - name: Deploy billing worker
         working-directory: workers/billing
         run: npx --yes wrangler@3 deploy
 
       # Media gateway worker (CinaMega R2 → 4EVERLAND → on-chain fallback).
       - name: Deploy media-gateway worker
-        if: github.event_name == 'push'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         working-directory: workers/media-gateway
         run: |
           npx --yes wrangler@3 r2 bucket create cinachain-mega-media || true
           npx --yes wrangler@3 deploy
 
-      # Brand portal (cinachain.com). Static single page; the social card
-      # (og-image.png) is regenerated from scripts/gen-og-image.mjs.
+  portal:
+    # Brand portal (cinachain.com). Static single page + a zero-dependency
+    # OG-image generator (scripts/gen-og-image.mjs). Ships regardless of the
+    # DApp build state.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Regenerate social card
+        run: node scripts/gen-og-image.mjs
+
       - name: Deploy portal
-        if: github.event_name == 'push'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          node scripts/gen-og-image.mjs
           if ! npx --yes wrangler@3 pages project list 2>/dev/null | grep -q "cinachain-portal"; then
             npx --yes wrangler@3 pages project create cinachain-portal --production-branch=main
           fi
           npx --yes wrangler@3 pages deploy portal --project-name=cinachain-portal --commit-dirty=true
 
-      # Documentation site (docs.cinachain.com, Docusaurus).
-      - name: Deploy docs site
-        if: github.event_name == 'push'
+  docs:
+    # Documentation site (docs.cinachain.com, Docusaurus). Builds in its own
+    # directory with its own lockfile — independent of the DApp.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
+
+      - name: Build & deploy docs
+        working-directory: docs-site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        working-directory: docs-site
         run: |
           npm ci --legacy-peer-deps
           npx docusaurus build
@@ -126,4 +150,3 @@ jobs:
             npx --yes wrangler@3 pages project create cinachain-docs --production-branch=main
           fi
           npx --yes wrangler@3 pages deploy build --project-name=cinachain-docs --commit-dirty=true
-
