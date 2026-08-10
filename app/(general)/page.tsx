@@ -1,35 +1,30 @@
-"use client"
-
+import { type ReactNode } from "react"
 import Link from "next/link"
 import {
-  FaDiscord,
-  FaGithub,
-  FaTwitter,
-} from "react-icons/fa"
-import {
-  Zap,
-  Shield,
+  ArrowRight,
+  Award,
+  CheckCircle2,
+  Code,
+  Coins,
   Globe,
   Layers,
-  Award,
-  Wallet,
-  Code,
-  CheckCircle2,
-  ArrowRight,
-  Sparkles,
-  Server,
   Lock,
-  Coins,
+  Server,
+  Shield,
+  Sparkles,
+  Users,
+  Wallet,
+  Zap,
 } from "lucide-react"
+import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa"
 
 import { siteConfig } from "@/config/site"
-import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { buttonVariants } from "@/components/ui/button"
+import { BrandMark, BrandName } from "@/components/brand/brand-mark"
+import { HeroStats } from "@/components/home/hero-stats"
 
 export default function HomePage() {
-  const { mintedCount, maxCount, isLoading } = useContractStats()
-
   return (
     <div className="min-h-screen bg-background">
       {/* ═══════════════ Hero ═══════════════ */}
@@ -53,7 +48,7 @@ export default function HomePage() {
           </div>
 
           <h1 className="font-display text-5xl leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl">
-            CinaChain
+            <BrandName />
             <span className="text-muted-foreground">.</span>
           </h1>
 
@@ -65,10 +60,7 @@ export default function HomePage() {
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/explore"
-              className={cn(
-                buttonVariants({ size: "lg" }),
-                "btn-pill"
-              )}
+              className={cn(buttonVariants({ size: "lg" }), "btn-pill")}
             >
               <Sparkles className="mr-2 size-4" />
               Explore NFT DApp
@@ -93,21 +85,12 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Live Stats */}
-          {!isLoading && mintedCount > 0 && (
-            <div className="mx-auto mt-12 flex max-w-screen-sm items-center justify-center gap-8 rounded-lg border border-border bg-card px-6 py-4 shadow-vercel-sm">
-              <HeroStat label="NFTs Minted" value={mintedCount.toLocaleString()} />
-              <Divider />
-              <HeroStat label="Max Supply" value={maxCount.toLocaleString()} />
-              <Divider />
-              <HeroStat label="Network" value="Base L2" />
-            </div>
-          )}
+          <HeroStats />
         </div>
       </section>
 
       {/* ═══════════════ Products ═══════════════ */}
-      <section className="border-t border-border">
+      <section className="content-auto-section border-t border-border">
         <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Products"
@@ -167,7 +150,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════ Tech Stack ═══════════════ */}
-      <section className="border-t border-border bg-card/50">
+      <section className="content-auto-section border-t border-border bg-card/50">
         <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Infrastructure"
@@ -201,7 +184,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════ Roadmap ═══════════════ */}
-      <section className="border-t border-border">
+      <section className="content-auto-section border-t border-border">
         <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Roadmap"
@@ -214,32 +197,48 @@ export default function HomePage() {
               phase="01"
               title="Infrastructure"
               status="done"
-              items={["Cloudflare Pages deploy", "Custom IPFS gateways", "RPC proxy worker"]}
+              items={[
+                "Cloudflare Pages deploy",
+                "Custom IPFS gateways",
+                "RPC proxy worker",
+              ]}
             />
             <RoadmapCard
               phase="02"
               title="NFT Platform"
               status="done"
-              items={["ERC-721 contract deployed", "Mint + whitelist system", "Dashboard & explore"]}
+              items={[
+                "ERC-721 contract deployed",
+                "Mint + whitelist system",
+                "Dashboard & explore",
+              ]}
             />
             <RoadmapCard
               phase="03"
               title="Admin & Badges"
               status="done"
-              items={["Admin control panel", "ERC-1155 badge system", "Gasless minting (CDP)"]}
+              items={[
+                "Admin control panel",
+                "ERC-1155 badge system",
+                "Gasless minting (CDP)",
+              ]}
             />
             <RoadmapCard
               phase="04"
               title="Scale & Expand"
               status="active"
-              items={["USDC Paymaster integration", "Mainnet deployment", "Marketplace integration"]}
+              items={[
+                "USDC Paymaster integration",
+                "Mainnet deployment",
+                "Marketplace integration",
+              ]}
             />
           </div>
         </div>
       </section>
 
       {/* ═══════════════ Team ═══════════════ */}
-      <section className="border-t border-border bg-card/50">
+      <section className="content-auto-section border-t border-border bg-card/50">
         <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Team"
@@ -248,15 +247,27 @@ export default function HomePage() {
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <TeamCard name="cinagroup" role="Core Team" />
-            <TeamCard name="CinaChain" role="Brand & Community" />
-            <TeamCard name="Open Source" role="Powered by the community" />
+            <TeamCard
+              icon={<Users className="size-8" />}
+              name="cinagroup"
+              role="Core Team"
+            />
+            <TeamCard
+              icon={<BrandMark size={40} />}
+              name="CinaChain"
+              role="Brand & Community"
+            />
+            <TeamCard
+              icon={<FaGithub className="size-8" />}
+              name="Open Source"
+              role="Powered by the community"
+            />
           </div>
         </div>
       </section>
 
       {/* ═══════════════ CTA Footer — dark polarity band ═══════════════ */}
-      <section className="band-dark border-t border-border">
+      <section className="content-auto-section band-dark border-t border-border">
         <div className="container mx-auto max-w-[960px] px-6 py-24 text-center">
           <h2 className="font-display text-4xl tracking-tight sm:text-5xl">
             Start building on CinaChain<span className="text-white/50">.</span>
@@ -267,7 +278,10 @@ export default function HomePage() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/mint"
-              className={cn(buttonVariants({ size: "lg" }), "btn-pill bg-white text-[#171717]")}
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "btn-pill bg-white text-[#171717]"
+              )}
             >
               Mint Your First NFT
               <ArrowRight className="ml-2 size-4" />
@@ -288,7 +302,8 @@ export default function HomePage() {
               href={siteConfig.links.github}
               target="_blank"
               rel="noreferrer noopener"
-              className="text-white/50 transition-colors hover:text-white"
+              aria-label="CinaChain on GitHub"
+              className="flex size-11 items-center justify-center text-white/50 transition-colors hover:text-white"
             >
               <FaGithub className="size-5" />
             </Link>
@@ -296,7 +311,8 @@ export default function HomePage() {
               href={siteConfig.links.twitter}
               target="_blank"
               rel="noreferrer noopener"
-              className="text-white/50 transition-colors hover:text-white"
+              aria-label="CinaChain on X"
+              className="flex size-11 items-center justify-center text-white/50 transition-colors hover:text-white"
             >
               <FaTwitter className="size-5" />
             </Link>
@@ -304,7 +320,8 @@ export default function HomePage() {
               href={siteConfig.links.discord}
               target="_blank"
               rel="noreferrer noopener"
-              className="text-white/50 transition-colors hover:text-white"
+              aria-label="CinaChain on Discord"
+              className="flex size-11 items-center justify-center text-white/50 transition-colors hover:text-white"
             >
               <FaDiscord className="size-5" />
             </Link>
@@ -321,21 +338,6 @@ export default function HomePage() {
 }
 
 // ─── Components ───
-
-function HeroStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="text-center">
-      <p className="font-display text-xl text-foreground">{value}</p>
-      <p className="font-mono-tech text-[10px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-    </div>
-  )
-}
-
-function Divider() {
-  return <div className="h-8 w-px bg-border" />
-}
 
 function SectionHeader({
   eyebrow,
@@ -478,7 +480,10 @@ function RoadmapCard({
       </h3>
       <ul className="mt-3 space-y-1.5">
         {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+          <li
+            key={i}
+            className="flex items-start gap-2 text-xs text-muted-foreground"
+          >
             <span
               className={cn(
                 "mt-1 size-1 shrink-0 rounded-full",
@@ -493,11 +498,19 @@ function RoadmapCard({
   )
 }
 
-function TeamCard({ name, role }: { name: string; role: string }) {
+function TeamCard({
+  icon,
+  name,
+  role,
+}: {
+  icon: ReactNode
+  name: string
+  role: string
+}) {
   return (
     <div className="rounded-lg border border-border bg-card p-6 text-center shadow-vercel-sm">
-      <div className="font-display mx-auto flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-[#7928ca] to-[#0070f3] text-xl text-white">
-        {name.charAt(0)}
+      <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-muted text-foreground">
+        {icon}
       </div>
       <h3 className="font-display mt-4 text-base tracking-tight text-foreground">
         {name}

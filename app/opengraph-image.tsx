@@ -23,44 +23,36 @@ export default function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "white",
+          backgroundColor: "#060a12",
           backgroundImage:
-            "linear-gradient(to bottom right, #FFF 25%, #FFF0CA 75%)",
+            "radial-gradient(circle at 50% 15%, rgba(80, 227, 194, 0.22), transparent 42%)",
         }}
       >
         <img
           alt="CinaChain Logo"
-          src={new URL(
-            "../public/logo-gradient.png",
-            import.meta.url
-          ).toString()}
-          style={{ width: "80px", height: "80px", marginBottom: "16px", opacity: 0.95 }}
+          src={new URL("../public/favicon.ico", import.meta.url).toString()}
+          style={{ width: "96px", height: "96px", marginBottom: "24px" }}
         />
         <h1
           style={{
             fontSize: "72px",
             fontFamily: "system-ui, -apple-system, sans-serif",
             fontWeight: 800,
-            background:
-              "linear-gradient(to bottom right, #000000 21.66%, #78716c 86.47%)",
-            backgroundClip: "text",
-            color: "transparent",
+            color: "#ffffff",
             lineHeight: "5rem",
             letterSpacing: "-0.02em",
             margin: 0,
             padding: 0,
           }}
         >
-          {siteConfig.name}
+          <span>Cina</span>
+          <span style={{ color: "#50e3c2" }}>Chain</span>
         </h1>
         <h3
           style={{
             fontSize: "24px",
             fontFamily: "system-ui, -apple-system, sans-serif",
-            background:
-              "linear-gradient(to bottom right, #000000 21.66%, #78716c 86.47%)",
-            backgroundClip: "text",
-            color: "transparent",
+            color: "#94a3b8",
             lineHeight: "5rem",
             letterSpacing: "-0.02em",
             margin: 0,

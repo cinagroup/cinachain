@@ -127,15 +127,18 @@
   }
 
   .shadow-vercel-md {
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08), 0 8px 8px -8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08),
+      0 8px 8px -8px rgba(0, 0, 0, 0.08);
   }
 
   .shadow-vercel-lg {
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08),
+      0 8px 16px -4px rgba(0, 0, 0, 0.08);
   }
 
   .shadow-vercel-card {
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 1px rgba(0, 0, 0, 0.04), 0 2px 2px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 1px rgba(0, 0, 0, 0.04),
+      0 2px 2px rgba(0, 0, 0, 0.08);
   }
 
   /* Vercel pill button — marketing CTA scale only (100px) */
@@ -163,5 +166,21 @@
   .band-dark {
     background-color: #171717;
     color: #ffffff;
+  }
+
+  .content-auto-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 700px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

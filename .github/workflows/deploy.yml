@@ -89,9 +89,9 @@ jobs:
           npx --yes wrangler@3 deploy
 
   portal:
-    # Brand portal (cinachain.com). Static single page + a zero-dependency
-    # OG-image generator (scripts/gen-og-image.mjs). Ships regardless of the
-    # DApp build state.
+    # Brand portal (cinachain.com). The reviewed 1200x630 social card is tracked
+    # in portal/ so CI cannot replace the official logo with generated artwork.
+    # Ships regardless of the DApp build state.
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -105,9 +105,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Regenerate social card
-        run: node scripts/gen-og-image.mjs
 
       - name: Deploy portal
         env:

@@ -15,13 +15,12 @@ interface SiteConfig {
   }
 }
 
-
 export const siteConfig: SiteConfig = {
   name: "CinaChain",
   title: "CinaChain - NFT DApp",
   emoji: "🔗",
   description:
-    "CinaChain NFT Platform built on Ethereum with Cloudflare Web3 infrastructure.",
+    "CinaChain NFT platform built on Base L2 with Cloudflare Web3 infrastructure.",
   localeDefault: "en",
   links: {
     docs: "https://docs.cinachain.com",

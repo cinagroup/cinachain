@@ -1,18 +1,10 @@
-"use client"
-
 import Link from "next/link"
 
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu"
 import { siteConfig } from "@/config/site"
 
 export function MainNav() {
   return (
-    <nav className="hidden items-center gap-1 md:flex">
+    <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
       {/* Core product links */}
       <Link
         href="/explore"
@@ -39,30 +31,18 @@ export function MainNav() {
         Exchange
       </Link>
 
-      <NavigationMenu>
-        <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuLink asChild>
-              <Link
-                href="/dashboard"
-                className="h-8 rounded-sm text-sm font-medium text-body transition-colors hover:text-foreground"
-              >
-                Dashboard
-              </Link>
-            </NavigationMenuLink>
-          </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuLink asChild>
-              <Link
-                href={siteConfig.links.docs}
-                className="h-8 rounded-sm text-sm font-medium text-body transition-colors hover:text-foreground"
-              >
-                Documentation
-              </Link>
-            </NavigationMenuLink>
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
+      <Link
+        href="/dashboard"
+        className="rounded-sm px-3 text-sm font-medium text-body transition-colors hover:text-foreground"
+      >
+        Dashboard
+      </Link>
+      <Link
+        href={siteConfig.links.docs}
+        className="rounded-sm px-3 text-sm font-medium text-body transition-colors hover:text-foreground"
+      >
+        Documentation
+      </Link>
     </nav>
   )
 }

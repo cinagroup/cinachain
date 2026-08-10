@@ -1,156 +1,80 @@
-// Service Worker for CinaChain PWA
-// 静态导出兼容方案
+// Service Worker for the statically exported CinaChain application.
 
-const CACHE_NAME = "cinachain-v5"
+const CACHE_NAME = "cinachain-v6"
 const OFFLINE_URL = "/offline"
+const PRECACHE_RESOURCES = [OFFLINE_URL, "/manifest.json", "/favicon.ico"]
 
-// 需要缓存的静态资源
-const PRECACHE_RESOURCES = [
-  "/",
-  "/explore",
-  "/mint",
-  "/mint-batch",
-  "/collections",
-  "/exchange",
-  "/dashboard",
-  "/dashboard/account",
-  "/dashboard/nfts",
-  "/dashboard/favorites",
-  "/offline",
-  "/manifest.json",
-  "/favicon.ico",
-  "/icon-192x192.png",
-  "/icon-512x512.png",
-]
-
-// 不缓存的域名和路径模式
-const NO_CACHE_PATTERNS = [
-  "rpc.cinachain.com",
-  "ipfs.cinachain.com",
-  "cdn.cinachain.com",
-  "meta.cinachain.com",
-  "/api/",
-  "eth.llamarpc.com",
-  "mainnet.base.org",
-  "rpc.sepolia.org",
-  "sepolia.base.org",
-  "base-sepolia.publicnode.com",
-  "cloudflare-ipfs.com",
-  "ipfs.io",
-  "whitelist-api.cinachain.com",
-  "billing-api.cinachain.com",
-  "paymaster-api.cinachain.com",
-  "media.cinachain.com",
-]
-
-// 安装事件：预缓存关键资源
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log("[Service Worker] Precaching resources")
-      return cache.addAll(PRECACHE_RESOURCES).catch(() => {
-        // Ignore precache failures
-        return null
-      })
-    })
+    caches
+      .open(CACHE_NAME)
+      .then((cache) =>
+        Promise.allSettled(
+          PRECACHE_RESOURCES.map((resource) => cache.add(resource))
+        )
+      )
   )
   self.skipWaiting()
 })
 
-// 激活事件：清理旧缓存
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => {
-            console.log("[Service Worker] Deleting old cache:", name)
-            return caches.delete(name)
-          })
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter(
+              (name) => name.startsWith("cinachain-") && name !== CACHE_NAME
+            )
+            .map((name) => caches.delete(name))
+        )
       )
-    })
+      .then(() => self.clients.claim())
   )
-  self.clients.claim()
 })
 
-// 检查 URL 是否应该被缓存
-function shouldCache(url) {
-  try {
-    const urlObj = new URL(url)
-    return !NO_CACHE_PATTERNS.some((pattern) =>
-      urlObj.hostname.includes(pattern) || urlObj.pathname.includes(pattern)
-    )
-  } catch {
-    return false
-  }
-}
-
-// Fetch 事件：智能缓存策略
 self.addEventListener("fetch", (event) => {
-  // POST 请求永不缓存
   if (event.request.method !== "GET") return
 
   const url = new URL(event.request.url)
 
-  // RPC/API 请求：直接网络请求，不缓存
-  if (!shouldCache(event.request.url)) return
-
-  // 静态资源：缓存优先
-  if (
-    url.pathname.endsWith(".js") ||
-    url.pathname.endsWith(".css") ||
-    url.pathname.endsWith(".png") ||
-    url.pathname.endsWith(".svg") ||
-    url.pathname.endsWith(".ico")
-  ) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached
-        return fetch(event.request).then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone()
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone).catch(() => {})
-            })
-          }
-          return response
-        }).catch(() => {
-          // Return empty response on network failure
-          return new Response("", { status: 408 })
-        })
-      })
-    )
+  // Let the browser handle APIs and cross-origin services directly.
+  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) {
     return
   }
 
-  // 页面请求：网络优先，失败时返回离线页面
+  // Navigations always prefer the deployed version. Only the offline page is
+  // cached, preventing an older HTML/RSC response from referencing removed
+  // deployment chunks.
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(OFFLINE_URL).catch(() => {
-          return new Response("Offline", { status: 503 })
-        })
+      fetch(event.request).catch(async () => {
+        return (
+          (await caches.match(OFFLINE_URL)) ||
+          new Response("Offline", { status: 503 })
+        )
       })
     )
     return
   }
 
-  // 其他 GET 请求：缓存优先
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached
-      return fetch(event.request).then((response) => {
-        if (response && response.status === 200) {
-          const clone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone).catch(() => {})
-          })
+  // Next.js build assets are content-hashed and therefore safe to cache.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.match(event.request).then(async (cached) => {
+        if (cached) return cached
+
+        const response = await fetch(event.request)
+        if (response.ok) {
+          const cache = await caches.open(CACHE_NAME)
+          await cache.put(event.request, response.clone())
         }
         return response
-      }).catch(() => {
-        return new Response("", { status: 408 })
       })
-    })
-  )
+    )
+  }
+
+  // RSC/prefetch payloads and branded assets remain network-managed so every
+  // deployment is observed immediately.
 })

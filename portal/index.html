@@ -9,7 +9,7 @@
   <link rel="canonical" href="https://cinachain.com/" />
   <meta name="theme-color" content="#060a12" />
 
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -38,7 +38,7 @@
         "@type": "Organization",
         "name": "CinaChain",
         "url": "https://cinachain.com",
-        "logo": "https://cinachain.com/favicon.svg",
+        "logo": "https://cinachain.com/favicon.ico",
         "sameAs": [
           "https://github.com/cinagroup",
           "https://x.com/cinachain",
@@ -82,9 +82,10 @@
     header { width: 100%; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(6,10,18,0.8); backdrop-filter: blur(8px); }
     nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
     .logo { font-weight: 800; font-size: 20px; letter-spacing: 0.5px; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; }
-    .logo svg { display: block; }
+    .logo-mark { display: block; width: 28px; height: 28px; border-radius: 999px; }
     .logo span { color: #50e3c2; }
-    nav a.link { color: #94a3b8; text-decoration: none; margin-left: 20px; font-size: 14px; transition: color 0.15s ease; }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    nav a.link { color: #94a3b8; text-decoration: none; padding: 12px 10px; font-size: 14px; transition: color 0.15s ease; }
     nav a.link:hover { color: #fff; }
     main { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; }
     .hero { position: relative; text-align: center; padding: 96px 24px 64px; overflow: hidden; }
@@ -113,7 +114,7 @@
     .btn-primary:hover { box-shadow: 0 4px 24px rgba(80,227,194,0.25); }
     .btn-ghost { border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; }
     .btn-ghost:hover { border-color: rgba(80,227,194,0.5); color: #fff; }
-    .products { padding: 48px 24px 96px; width: 100%; }
+    .products { padding: 48px 24px 96px; width: 100%; content-visibility: auto; contain-intrinsic-size: auto 720px; }
     .products h2 { text-align: center; font-size: 28px; color: #fff; margin-bottom: 40px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
     .card {
@@ -134,7 +135,7 @@
     @media (max-width: 640px) {
       .hero h1 { font-size: 38px; }
       .hero { padding: 64px 24px 40px; }
-      nav a.link { margin-left: 14px; font-size: 13px; }
+      nav a.link { padding-inline: 7px; font-size: 13px; }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
@@ -150,13 +151,10 @@
     <div class="container">
       <nav aria-label="Primary">
         <a class="logo" href="/" aria-label="CinaChain home">
-          <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true">
-            <path d="M20 14 44 14 50 20 50 44 44 50 20 50 14 44 14 20Z" fill="none" stroke="#50e3c2" stroke-width="3"/>
-            <circle cx="32" cy="32" r="10" fill="#50e3c2"/>
-          </svg>
+          <img class="logo-mark" src="/favicon.ico" alt="" aria-hidden="true" width="28" height="28" />
           Cina<span>Chain</span>
         </a>
-        <div>
+        <div class="nav-links">
           <a class="link" href="https://nft.cinachain.com">DApp</a>
           <a class="link" href="https://docs.cinachain.com">Docs</a>
           <a class="link" href="https://github.com/cinagroup">GitHub</a>

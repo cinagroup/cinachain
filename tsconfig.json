@@ -33,5 +33,14 @@
     "**/*.js",
     "*.cjs"
   ],
-  "exclude": ["node_modules", ".next", ".vscode", "generated", "workers", "**/wagmi.config.ts", "wagmi.config.ts"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    ".vscode",
+    "generated",
+    "workers",
+    "docs-site",
+    "**/wagmi.config.ts",
+    "wagmi.config.ts"
+  ]
 }

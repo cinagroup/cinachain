@@ -4,6 +4,7 @@ import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa"
 
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
+import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 
 export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
   const classes = cn(className, "border-t border-border bg-background")
@@ -26,7 +27,10 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
         { label: "ERC-20", href: "/integration/erc20" },
         { label: "ERC-721", href: "/integration/erc721" },
         { label: "ERC-1155", href: "/integration/erc1155" },
-        { label: "Sign-In With Ethereum", href: "/integration/sign-in-with-ethereum" },
+        {
+          label: "Sign-In With Ethereum",
+          href: "/integration/sign-in-with-ethereum",
+        },
       ],
     },
     {
@@ -50,12 +54,16 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
       <div className="container max-w-[1200px] px-6 py-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="size-5 rounded-full bg-foreground" />
-              <span className="font-display text-sm tracking-tight text-foreground">CinaChain</span>
-            </div>
+            <Link
+              href="/"
+              aria-label="CinaChain home"
+              className="inline-flex items-center gap-2"
+            >
+              <BrandMark size={24} />
+              <BrandName className="text-sm" />
+            </Link>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              NFT Platform built on Ethereum with Cloudflare Web3 infrastructure.
+              NFT platform built on Base L2 with Cloudflare Web3 infrastructure.
             </p>
           </div>
           {columns.map((col) => (
@@ -83,13 +91,25 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
             &copy; {new Date().getFullYear()} cinagroup. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            <Link href={siteConfig.links.github} className="text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              href={siteConfig.links.github}
+              aria-label="CinaChain on GitHub"
+              className="flex size-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+            >
               <FaGithub className="size-4" />
             </Link>
-            <Link href={siteConfig.links.twitter} className="text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              href={siteConfig.links.twitter}
+              aria-label="CinaChain on X"
+              className="flex size-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+            >
               <FaTwitter className="size-4" />
             </Link>
-            <Link href={siteConfig.links.discord} className="text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              href={siteConfig.links.discord}
+              aria-label="CinaChain on Discord"
+              className="flex size-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+            >
               <FaDiscord className="size-4" />
             </Link>
           </div>

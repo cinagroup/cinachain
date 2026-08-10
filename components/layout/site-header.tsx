@@ -1,14 +1,14 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 
 import useScroll from "@/lib/hooks/use-scroll"
 import { cn } from "@/lib/utils"
+import { SignInButton } from "@/components/blockchain/sign-in-button"
+import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 import { MainNav } from "@/components/layout/main-nav"
 import { MobileNav } from "@/components/layout/mobile-nav"
 import { ModeToggle } from "@/components/shared/mode-toggle"
-import { SignInButton } from "@/components/blockchain/sign-in-button"
 
 export function SiteHeader() {
   const scrolled = useScroll(0)
@@ -23,15 +23,13 @@ export function SiteHeader() {
     >
       <div className="container flex h-16 max-w-[1400px] items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/favicon.ico"
-              alt="CinaChain Logo"
-              width={24}
-              height={24}
-              className="rounded-full"
-            />
-            <span className="font-display text-sm tracking-tight">CinaChain</span>
+          <Link
+            href="/"
+            aria-label="CinaChain home"
+            className="flex items-center gap-2"
+          >
+            <BrandMark priority size={28} />
+            <BrandName className="text-sm" />
           </Link>
           <MainNav />
         </div>

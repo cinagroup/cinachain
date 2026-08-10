@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link, { type LinkProps } from "next/link"
-import { useRouter } from "next/navigation"
 import { LuMenu } from "react-icons/lu"
 
 import { menuDashboard } from "@/config/menu-dashboard"
@@ -17,7 +16,14 @@ import {
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { SignInButton } from "@/components/blockchain/sign-in-button"
+import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 
 import { ModeToggle } from "../shared/mode-toggle"
 
@@ -30,33 +36,56 @@ export function MobileNav() {
         <SheetTrigger asChild>
           <Button
             variant="ghost"
-            className="px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+            size="icon"
+            aria-label="Open navigation menu"
+            className="size-11 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
           >
             <LuMenu className="size-5" />
-            <span className="sr-only">Toggle Menu</span>
           </Button>
         </SheetTrigger>
       </div>
       <SheetContent side="right" className="pr-0">
+        <SheetTitle className="sr-only">Navigation menu</SheetTitle>
         <div className="flex items-center justify-between">
-          <MobileLink href="/" className="font-display text-lg" onOpenChange={setOpen}>
-            {siteConfig.name}
+          <MobileLink
+            href="/"
+            className="flex items-center gap-2"
+            onOpenChange={setOpen}
+          >
+            <BrandMark size={28} />
+            <BrandName className="text-base" />
           </MobileLink>
           <ModeToggle />
         </div>
         <ScrollArea className="my-4 mr-4 h-[calc(100vh-8rem)] pb-10">
           <div className="flex flex-col space-y-3">
             {/* Core navigation */}
-            <MobileLink href="/explore" className="text-base font-medium" onOpenChange={setOpen}>
+            <MobileLink
+              href="/explore"
+              className="text-base font-medium"
+              onOpenChange={setOpen}
+            >
               Explore
             </MobileLink>
-            <MobileLink href="/mint" className="text-base font-medium" onOpenChange={setOpen}>
+            <MobileLink
+              href="/mint"
+              className="text-base font-medium"
+              onOpenChange={setOpen}
+            >
               Mint
             </MobileLink>
-            <MobileLink href="/collections" className="text-base font-medium" onOpenChange={setOpen}>
+            <MobileLink
+              href="/collections"
+              className="text-base font-medium"
+              onOpenChange={setOpen}
+            >
               Collections
             </MobileLink>
-            <MobileLink href="/exchange" className="text-base font-medium" onOpenChange={setOpen}>
+            <MobileLink
+              href="/exchange"
+              className="text-base font-medium"
+              onOpenChange={setOpen}
+            >
               Exchange
             </MobileLink>
 
@@ -94,6 +123,10 @@ export function MobileNav() {
             >
               Documentation
             </MobileLink>
+
+            <div className="pr-4 pt-2">
+              <SignInButton />
+            </div>
           </div>
         </ScrollArea>
       </SheetContent>
@@ -114,12 +147,10 @@ function MobileLink({
   children,
   ...props
 }: MobileLinkProps) {
-  const router = useRouter()
   return (
     <Link
       href={href}
       onClick={() => {
-        router.push(href.toString())
         onOpenChange?.(false)
       }}
       className={cn(className)}
