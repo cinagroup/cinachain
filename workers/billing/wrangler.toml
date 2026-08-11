@@ -8,6 +8,10 @@ preview_urls = false
 pattern = "billing.cinachain.com"
 custom_domain = true
 
+[[routes]]
+pattern = "billing-api.cinachain.com/*"
+zone_name = "cinachain.com"
+
 [[kv_namespaces]]
 binding = "CINA_BILLING_KV"
 id = "b7aaab94dc9f438c919ec40c53112d68"
