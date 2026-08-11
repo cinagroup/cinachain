@@ -144,6 +144,26 @@ describe("billing worker", () => {
     expect(typeof billingWorker.scheduled).toBe("function")
   })
 
+  it("redirects insecure requests to HTTPS before reading secrets", async () => {
+    const env = makeEnv()
+    env.ADMIN_KEY.get = vi
+      .fn()
+      .mockRejectedValue(new Error("store unavailable"))
+
+    const res = await callWorker(
+      env,
+      new Request("http://billing.test/v1/admin/pricing?source=smoke", {
+        headers: { "X-Admin-Key": TEST_ADMIN_KEY },
+      })
+    )
+
+    expect(res.status).toBe(308)
+    expect(res.headers.get("Location")).toBe(
+      "https://billing.test/v1/admin/pricing?source=smoke"
+    )
+    expect(env.ADMIN_KEY.get).not.toHaveBeenCalled()
+  })
+
   it("does not read admin secrets for public health checks", async () => {
     const env = makeEnv()
     env.ADMIN_KEY.get = vi

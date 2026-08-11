@@ -280,6 +280,11 @@ export default {
 
   async fetch(request, env) {
     const url = new URL(request.url)
+    if (url.protocol === "http:") {
+      url.protocol = "https:"
+      return Response.redirect(url.toString(), 308)
+    }
+
     if (request.method === "OPTIONS")
       return new Response(null, { status: 204, headers: corsHeaders(request) })
 
