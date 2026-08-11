@@ -100,7 +100,14 @@ npm run secrets:billing:check
 
 ```powershell
 $Wrangler = (Resolve-Path ".\workers\billing\node_modules\.bin\wrangler.cmd").Path
+$null = git fetch origin main
+$Branch = (git branch --show-current).Trim()
 $Commit = (git rev-parse HEAD).Trim()
+$OriginMain = (git rev-parse origin/main).Trim()
+
+if ($Branch -ne "main") { throw "Production deploy requires the main branch." }
+if ($Commit -ne $OriginMain) { throw "Local main must exactly match origin/main." }
+if ((git status --porcelain).Count -ne 0) { throw "Production deploy requires a clean worktree." }
 ```
 
 ### NFT DApp

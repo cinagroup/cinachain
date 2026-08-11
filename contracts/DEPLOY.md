@@ -1,8 +1,8 @@
-# CinaNFT 合约部署指南 — Base L2
+# CinaNFT 合约部署指南 — Base Sepolia Testnet
 
 ## 网络
 
-CinaChain DApp 运行在 **Base L2**（Coinbase 的以太坊 L2）上，具有极低的 gas 费用（比以太坊主网低 100-500 倍）。
+CinaChain DApp 当前运行在 **Base Sepolia Testnet**（Base L2 的测试网络）上，用于在主网上线前验证合约与交易流程。
 
 | 网络 | Chain ID | RPC | 浏览器 |
 |------|---------|-----|--------|

@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # CinaChain Docs
 
-A full-stack Web3 ecosystem on **Base L2** — NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Cloudflare.
+A full-stack Web3 ecosystem on **Base Sepolia Testnet** — NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Cloudflare.
 
 ## Products
 
