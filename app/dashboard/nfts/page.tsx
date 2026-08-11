@@ -1,34 +1,45 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
+import { Loader2, PackageOpen } from "lucide-react"
 import { useAccount } from "wagmi"
-import { useNftBalance } from "@/lib/hooks/use-nft-balance"
-import { useTokensOfOwner, OWNED_PAGE_SIZE } from "@/lib/hooks/use-tokens-of-owner"
+
 import { useBatchTokenUris } from "@/lib/hooks/use-batch-token-uris"
+import {
+  OWNED_PAGE_SIZE,
+  useTokensOfOwner,
+} from "@/lib/hooks/use-tokens-of-owner"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
+import { ChainReadNotice } from "@/components/shared/chain-read-notice"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
-import { PackageOpen, Loader2 } from "lucide-react"
-import Link from "next/link"
 
 export default function MyNftsPage() {
   const { address } = useAccount()
-  const { data: nftBalance, isLoading: balanceLoading } = useNftBalance(address)
 
   // Paged enumeration — "Load more" appends the next 50 tokens
   const [offset, setOffset] = useState(0)
-  const { tokenIds, count, hasMore, isLoading: tokensLoading } = useTokensOfOwner(
-    address,
-    offset
-  )
+  const { tokenIds, count, hasMore, status, isRetrying, refetch } =
+    useTokensOfOwner(address, offset)
 
   // ONE multicall for all tokenURI reads of the current page
   const { uriByTokenId, isPending: batchLoading } = useBatchTokenUris(tokenIds)
 
-  const isLoading = balanceLoading || tokensLoading || batchLoading
-  const showGrid = !isLoading && tokenIds.length > 0
+  const metadataLoading = tokenIds.length > 0 && batchLoading
+  const isLoading = status === "loading" || metadataLoading
+  const showGrid =
+    !metadataLoading &&
+    (status === "success" || status === "stale") &&
+    tokenIds.length > 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,10 +64,38 @@ export default function MyNftsPage() {
           </CardHeader>
           <CardContent>
             <div className="font-display text-4xl">
-              {balanceLoading ? "..." : nftBalance?.toString() || "0"}
+              {status === "loading"
+                ? "..."
+                : status === "error"
+                ? "Unavailable"
+                : count.toLocaleString()}
             </div>
           </CardContent>
         </Card>
+
+        {status === "error" && (
+          <div className="mb-6">
+            <ChainReadNotice
+              description="We could not read this wallet's NFT balance or ownership data. An empty collection is not being inferred."
+              isRetrying={isRetrying}
+              onRetry={() => void refetch()}
+              state="error"
+              title="NFT ownership data unavailable"
+            />
+          </div>
+        )}
+
+        {status === "stale" && (
+          <div className="mb-6">
+            <ChainReadNotice
+              description="The latest refresh failed. The balance and NFTs below are from the last complete on-chain response."
+              isRetrying={isRetrying}
+              onRetry={() => void refetch()}
+              state="stale"
+              title="Showing last known ownership data"
+            />
+          </div>
+        )}
 
         {/* Loading */}
         {isLoading && (
@@ -85,9 +124,9 @@ export default function MyNftsPage() {
                 <Button
                   variant="outline"
                   onClick={() => setOffset((o) => o + OWNED_PAGE_SIZE)}
-                  disabled={tokensLoading}
+                  disabled={isLoading}
                 >
-                  {tokensLoading ? (
+                  {isLoading ? (
                     <Loader2 className="mr-2 size-4 animate-spin" />
                   ) : null}
                   Load More ({count - offset - tokenIds.length} more)
@@ -95,15 +134,16 @@ export default function MyNftsPage() {
               )}
               {!hasMore && (
                 <p className="text-sm text-muted-foreground">
-                  Showing {Math.min(offset + tokenIds.length, count)} of {count} owned NFTs.
+                  Showing {Math.min(offset + tokenIds.length, count)} of {count}{" "}
+                  owned NFTs.
                 </p>
               )}
             </div>
           </div>
         )}
 
-        {/* Empty state — also catches enumeration failure */}
-        {!isLoading && tokenIds.length === 0 && (
+        {/* Empty is shown only after a complete, successful ownership read. */}
+        {status === "empty" && (
           <div className="rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
             <PackageOpen className="mx-auto size-12 text-muted-foreground/40" />
             <p className="mt-4 text-base text-muted-foreground">

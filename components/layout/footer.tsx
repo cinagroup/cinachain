@@ -2,6 +2,7 @@ import { HTMLAttributes } from "react"
 import Link from "next/link"
 import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa"
 
+import { DEPLOYMENT_STAGE, PRIMARY_NETWORK_LABEL } from "@/config/deployment"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { BrandMark, BrandName } from "@/components/brand/brand-mark"
@@ -63,7 +64,8 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
               <BrandName className="text-sm" />
             </Link>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              NFT platform built on Base L2 with Cloudflare Web3 infrastructure.
+              NFT platform on {PRIMARY_NETWORK_LABEL} ({DEPLOYMENT_STAGE}) with
+              Cloudflare Web3 infrastructure.
             </p>
           </div>
           {columns.map((col) => (

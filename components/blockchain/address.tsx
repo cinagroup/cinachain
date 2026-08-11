@@ -1,6 +1,7 @@
 import { HTMLAttributes } from "react"
 import { type Address as AddressType } from "viem"
-import { useAccount } from "wagmi"
+
+import { getBlockExplorerUrl } from "@/config/deployment"
 
 import { LinkComponent } from "../shared/link-component"
 
@@ -17,18 +18,16 @@ export const Address = ({
   isLink,
   ...props
 }: AddressProps) => {
-  const { chain } = useAccount()
-  const blockExplorerUrl = chain?.blockExplorers?.default.url
   const formattedAddress = truncate
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
     : address
 
-  if (isLink && blockExplorerUrl) {
+  if (isLink) {
     return (
       <LinkComponent
         isExternal
         className={className}
-        href={`${blockExplorerUrl}/address/${address}`}
+        href={getBlockExplorerUrl("address", address)}
         {...props}
       >
         {formattedAddress}

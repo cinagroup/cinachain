@@ -25,8 +25,11 @@ export const TransactionStatus = ({
   return (
     <>
       <div
-        className={cn("flex items-center justify-between", className)}
         {...props}
+        className={cn("flex items-center justify-between", className)}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
       >
         {(isLoadingTx || isSuccess) && (
           <>
@@ -36,8 +39,8 @@ export const TransactionStatus = ({
         )}
       </div>
       {isError && (
-        <div className="break-words font-medium text-red-500">
-          Error: {error?.shortMessage}
+        <div className="break-words font-medium text-red-500" role="alert">
+          Error: {error?.shortMessage ?? "Transaction failed."}
         </div>
       )}
     </>

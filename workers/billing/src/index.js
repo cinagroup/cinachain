@@ -1,18 +1,27 @@
 // workers/billing/src/index.js
 // Billing gateway: API-key auth -> meter -> KV ledger -> 429.
 import {
-  computeUsable,
   applyConsumption,
-  getTier,
   checkQuota,
+  computeUsable,
   costToWei,
-  tiersEarned,
-  tierProgress,
+  getTier,
   tierBadgeId,
+  tierProgress,
+  tiersEarned,
 } from "./lib/billing-core.js"
-import { runIndexer, listAllKeys } from "./lib/indexer-run.js"
-import { DEFAULT_PRICING, estimateCostWithPricing, applyPricingOverrides } from "./lib/pricing.js"
-import { ingressRecord, validateDeclaredMicro, ingressStatusTransitions, encryptKey } from "./lib/ingress.js"
+import { listAllKeys, runIndexer } from "./lib/indexer-run.js"
+import {
+  encryptKey,
+  ingressRecord,
+  ingressStatusTransitions,
+  validateDeclaredMicro,
+} from "./lib/ingress.js"
+import {
+  applyPricingOverrides,
+  DEFAULT_PRICING,
+  estimateCostWithPricing,
+} from "./lib/pricing.js"
 import {
   BINDING_URI,
   CHAIN_ID,
@@ -43,7 +52,9 @@ function checkRegRateLimit(request) {
   const n = regBuckets.get(k) ?? 0
   if (n >= 5) return false
   regBuckets.set(k, n + 1)
-  if (regBuckets.size > 5000) for (const [key] of regBuckets) if (!key.endsWith(`:${now}`)) regBuckets.delete(key)
+  if (regBuckets.size > 5000)
+    for (const [key] of regBuckets)
+      if (!key.endsWith(`:${now}`)) regBuckets.delete(key)
   return true
 }
 
@@ -57,19 +68,26 @@ function checkReadRateLimit(request, limit = 20, windowMin = 10) {
   const n = readBuckets.get(k) ?? 0
   if (n >= limit) return false
   readBuckets.set(k, n + 1)
-  if (readBuckets.size > 5000) for (const [key] of readBuckets) if (!key.endsWith(`:${now}`)) readBuckets.delete(key)
+  if (readBuckets.size > 5000)
+    for (const [key] of readBuckets)
+      if (!key.endsWith(`:${now}`)) readBuckets.delete(key)
   return true
 }
 
 /** Tiers earned but not yet minted (spec §5: platform mints on crossing) */
 export function computePendingBadges(cumulativeSpend, mintedTierBadges = []) {
-  return tiersEarned(cumulativeSpend).filter((t) => !mintedTierBadges.includes(t))
+  return tiersEarned(cumulativeSpend).filter(
+    (t) => !mintedTierBadges.includes(t)
+  )
 }
 
 function withLedgerLock(address, fn) {
   const prev = inflight.get(address) ?? Promise.resolve()
   const next = prev.then(fn, fn)
-  inflight.set(address, next.catch(() => {}))
+  inflight.set(
+    address,
+    next.catch(() => {})
+  )
   // GC: drop the resolved entry
   next.finally(() => {
     if (inflight.get(address) === next) inflight.delete(address)
@@ -124,21 +142,36 @@ async function fetchBalance(env, address) {
 export async function handleUsage(body, ledger, pricing = DEFAULT_PRICING) {
   try {
     const tokens = BigInt(body.tokens ?? 0)
-    if (tokens <= 0n) return { status: 400, body: { error: "tokens must be > 0" } }
-    const costMicro = estimateCostWithPricing(pricing, body.model ?? "demo", tokens, getTier(ledger.cumulativeSpend ?? 0n))
+    if (tokens <= 0n)
+      return { status: 400, body: { error: "tokens must be > 0" } }
+    const costMicro = estimateCostWithPricing(
+      pricing,
+      body.model ?? "demo",
+      tokens,
+      getTier(ledger.cumulativeSpend ?? 0n)
+    )
     const costWei = costToWei(costMicro)
     const usable = computeUsable(ledger.onchainSnapshot, ledger.committedUsage)
     if (!checkQuota(usable, costWei)) {
-      return { status: 429, body: { error: "Credit Insufficient", usableWei: usable.toString() } }
+      return {
+        status: 429,
+        body: { error: "Credit Insufficient", usableWei: usable.toString() },
+      }
     }
     const updated = applyConsumption(ledger, costWei)
     const tier = getTier(updated.cumulativeSpend)
-    const remaining = computeUsable(ledger.onchainSnapshot, updated.committedUsage)
+    const remaining = computeUsable(
+      ledger.onchainSnapshot,
+      updated.committedUsage
+    )
     return {
       status: 200,
       body: {
         tier,
-        pendingBadges: computePendingBadges(updated.cumulativeSpend, ledger.mintedTierBadges ?? []),
+        pendingBadges: computePendingBadges(
+          updated.cumulativeSpend,
+          ledger.mintedTierBadges ?? []
+        ),
         chargedWei: costWei.toString(),
         chargedMicro: costMicro.toString(),
         remainingWei: remaining.toString(),
@@ -146,14 +179,19 @@ export async function handleUsage(body, ledger, pricing = DEFAULT_PRICING) {
       },
     }
   } catch (err) {
-    return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+    return {
+      status: 400,
+      body: { error: err instanceof Error ? err.message : "Invalid request" },
+    }
   }
 }
 
 async function hashKey(apiKey) {
   const data = new TextEncoder().encode(apiKey)
   const digest = await crypto.subtle.digest("SHA-256", data)
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("")
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
 }
 
 function corsHeaders(request) {
@@ -172,26 +210,36 @@ function corsHeaders(request) {
 // far below Number.MAX_SAFE_INTEGER, so no precision loss. Everything else is
 // already .toString()'d at the call site.
 function json(request, body, status = 200) {
-  return new Response(JSON.stringify(body, (_k, v) => (typeof v === "bigint" ? Number(v) : v)), {
-    status,
-    headers: { ...corsHeaders(request), "Content-Type": "application/json" },
-  })
+  return new Response(
+    JSON.stringify(body, (_k, v) => (typeof v === "bigint" ? Number(v) : v)),
+    {
+      status,
+      headers: { ...corsHeaders(request), "Content-Type": "application/json" },
+    }
+  )
 }
 
 export default {
   /** Spec §4.3: cron-driven indexer keeps ledger snapshots in sync */
   async scheduled(_event, env, ctx) {
     ctx.waitUntil(
-      runIndexer(env).catch((err) => console.error("[indexer] failed:", err?.message ?? err))
+      runIndexer(env).catch((err) =>
+        console.error("[indexer] failed:", err?.message ?? err)
+      )
     )
   },
 
   async fetch(request, env) {
     const url = new URL(request.url)
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) })
+    if (request.method === "OPTIONS")
+      return new Response(null, { status: 204, headers: corsHeaders(request) })
 
     if (url.pathname === "/health") {
-      return json(request, { ok: true, service: "cinachain-billing", kvBound: !!env.CINA_BILLING_KV })
+      return json(request, {
+        ok: true,
+        service: "cinachain-billing",
+        kvBound: !!env.CINA_BILLING_KV,
+      })
     }
 
     if (url.pathname === "/v1/usage" && request.method === "POST") {
@@ -203,11 +251,15 @@ export default {
       const keyRow = keyRowRaw ? JSON.parse(keyRowRaw) : null
       if (!keyRow) return json(request, { error: "Invalid API key" }, 401)
 
-      const ledgerKey = keyRow.kind === "cust" ? `cust:${keyRow.custId}` : `ledger:${keyRow.address}`
+      const ledgerKey =
+        keyRow.kind === "cust"
+          ? `cust:${keyRow.custId}`
+          : `ledger:${keyRow.address}`
       // lock: bare (lowercased) address for self keys — matches the
       // /v1/credits, /v1/tier and /v1/admin/badges confirm locks;
       // cust:<id> for custodial — matches the POST /v1/custodial/credit lock
-      const lockKey = keyRow.kind === "cust" ? `cust:${keyRow.custId}` : keyRow.address
+      const lockKey =
+        keyRow.kind === "cust" ? `cust:${keyRow.custId}` : keyRow.address
 
       const res = await withLedgerLock(lockKey, async () => {
         try {
@@ -218,7 +270,9 @@ export default {
             // DB-backed balance — the pool holds the real tokens (spec §6.1)
             snapshot = BigInt(stored.balanceWei ?? 0)
           } else {
-            snapshot = (await refreshSnapshot(env, keyRow.address)) ?? BigInt(stored.onchainSnapshot ?? 0)
+            snapshot =
+              (await refreshSnapshot(env, keyRow.address)) ??
+              BigInt(stored.onchainSnapshot ?? 0)
           }
           const ledger = {
             onchainSnapshot: snapshot,
@@ -234,13 +288,22 @@ export default {
           let pricing = DEFAULT_PRICING
           try {
             const pricingRaw = await env.CINA_BILLING_KV.get("pricing")
-            if (pricingRaw) pricing = applyPricingOverrides(DEFAULT_PRICING, JSON.parse(pricingRaw))
+            if (pricingRaw)
+              pricing = applyPricingOverrides(
+                DEFAULT_PRICING,
+                JSON.parse(pricingRaw)
+              )
           } catch (err) {
-            console.error(`[billing] pricing fallback to defaults: ${err?.message ?? err}`)
+            console.error(
+              `[billing] pricing fallback to defaults: ${err?.message ?? err}`
+            )
           }
           const res = await handleUsage({ model, tokens }, ledger, pricing)
           if (res.status === 200) {
-            const updated = applyConsumption(ledger, BigInt(res.body.chargedWei))
+            const updated = applyConsumption(
+              ledger,
+              BigInt(res.body.chargedWei)
+            )
             const merged = {
               ...stored,
               committedUsage: updated.committedUsage.toString(),
@@ -254,14 +317,20 @@ export default {
               // balanceWei (DB) unchanged by consumption; usage is committed
               await env.CINA_BILLING_KV.put(ledgerKey, JSON.stringify(merged))
             } else {
-              await env.CINA_BILLING_KV.put(ledgerKey, JSON.stringify({
-                ...merged,
-                onchainSnapshot: snapshot.toString(),
-              }))
+              await env.CINA_BILLING_KV.put(
+                ledgerKey,
+                JSON.stringify({
+                  ...merged,
+                  onchainSnapshot: snapshot.toString(),
+                })
+              )
             }
             // Consumption report (spec §7.2): best-effort after the commit —
             // a history failure must not fail-closed a committed charge.
-            const histKey = keyRow.kind === "cust" ? `hist:cust:${keyRow.custId}` : `hist:${keyRow.address}`
+            const histKey =
+              keyRow.kind === "cust"
+                ? `hist:cust:${keyRow.custId}`
+                : `hist:${keyRow.address}`
             try {
               let hist = []
               try {
@@ -269,13 +338,25 @@ export default {
                 hist = histRaw ? JSON.parse(histRaw) : []
                 if (!Array.isArray(hist)) hist = []
               } catch {
-                console.error(`[billing] resetting corrupted history ${histKey}`)
+                console.error(
+                  `[billing] resetting corrupted history ${histKey}`
+                )
               }
-              hist.push({ ts: Date.now(), model: body.model ?? "demo", tokens: String(body.tokens ?? 0), chargedWei: res.body.chargedWei, tier: res.body.tier })
+              hist.push({
+                ts: Date.now(),
+                model: body.model ?? "demo",
+                tokens: String(body.tokens ?? 0),
+                chargedWei: res.body.chargedWei,
+                tier: res.body.tier,
+              })
               const trimmed = hist.slice(-100)
               await env.CINA_BILLING_KV.put(histKey, JSON.stringify(trimmed))
             } catch (err) {
-              console.error(`[billing] history write-back failed for ${histKey}: ${err?.message ?? err}`)
+              console.error(
+                `[billing] history write-back failed for ${histKey}: ${
+                  err?.message ?? err
+                }`
+              )
             }
             // Key ingress confirmation (spec §6.3): attribute this charge to
             // a pooled key; flip to minting once confirmed >= declared.
@@ -291,24 +372,41 @@ export default {
                     // spec §6.3: attribution is only valid for the pooled key
                     // that actually served this charge — skip mismatches.
                     if (rec.keyHash !== keyHash) {
-                      console.error(`[billing] ingress key mismatch for ${body.ingressId}`)
+                      console.error(
+                        `[billing] ingress key mismatch for ${body.ingressId}`
+                      )
                       return
                     }
                     if (rec.status === "pending") {
-                      rec.confirmedMicro = (BigInt(rec.confirmedMicro ?? 0) + BigInt(res.body.chargedMicro)).toString()
-                      if (BigInt(rec.confirmedMicro) >= BigInt(rec.declaredMicro)) rec.status = "minting"
+                      rec.confirmedMicro = (
+                        BigInt(rec.confirmedMicro ?? 0) +
+                        BigInt(res.body.chargedMicro)
+                      ).toString()
+                      if (
+                        BigInt(rec.confirmedMicro) >= BigInt(rec.declaredMicro)
+                      )
+                        rec.status = "minting"
                       await env.CINA_BILLING_KV.put(ingKey, JSON.stringify(rec))
                     }
                   }
                 } catch (err) {
-                  console.error(`[billing] ingress attribution failed for ${body.ingressId}: ${err?.message ?? err}`)
+                  console.error(
+                    `[billing] ingress attribution failed for ${
+                      body.ingressId
+                    }: ${err?.message ?? err}`
+                  )
                 }
               })
             }
           }
           return res
         } catch (err) {
-          return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+          return {
+            status: 400,
+            body: {
+              error: err instanceof Error ? err.message : "Invalid request",
+            },
+          }
         }
       })
       return json(request, res.body, res.status)
@@ -320,7 +418,9 @@ export default {
         try {
           const raw = await env.CINA_BILLING_KV.get(`ledger:${address}`)
           const ledger = raw ? JSON.parse(raw) : null
-          const onchain = (await refreshSnapshot(env, address)) ?? (ledger ? BigInt(ledger.onchainSnapshot ?? 0) : 0n)
+          const onchain =
+            (await refreshSnapshot(env, address)) ??
+            (ledger ? BigInt(ledger.onchainSnapshot ?? 0) : 0n)
           const committed = ledger ? BigInt(ledger.committedUsage ?? 0) : 0n
           const usable = computeUsable(onchain, committed)
           return {
@@ -332,7 +432,9 @@ export default {
             usableCredit: Number(usable) / 1e18,
           }
         } catch (err) {
-          return { error: err instanceof Error ? err.message : "Invalid request" }
+          return {
+            error: err instanceof Error ? err.message : "Invalid request",
+          }
         }
       })
       return json(request, res)
@@ -357,7 +459,9 @@ export default {
             mintedBadges: ledger?.mintedTierBadges ?? [],
           }
         } catch (err) {
-          return { error: err instanceof Error ? err.message : "Invalid request" }
+          return {
+            error: err instanceof Error ? err.message : "Invalid request",
+          }
         }
       })
       return json(request, res)
@@ -367,7 +471,9 @@ export default {
     if (url.pathname.startsWith("/v1/history/") && request.method === "GET") {
       const address = url.pathname.split("/").pop().toLowerCase()
       const rawLimit = Number(url.searchParams.get("limit") ?? 100)
-      const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 100
+      const limit = Number.isFinite(rawLimit)
+        ? Math.min(Math.max(rawLimit, 1), 100)
+        : 100
       try {
         const raw = await env.CINA_BILLING_KV.get(`hist:${address}`)
         const entries = raw ? JSON.parse(raw) : []
@@ -378,21 +484,29 @@ export default {
     }
 
     // ── Custodial accounts (spec §6.1: hot wallet pool + DB bookkeeping) ──
-    if (url.pathname === "/v1/custodial/accounts" && request.method === "POST") {
-      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+    if (
+      url.pathname === "/v1/custodial/accounts" &&
+      request.method === "POST"
+    ) {
+      if (!checkRegRateLimit(request))
+        return json(request, { error: "Too many requests" }, 429)
       const body = await request.json().catch(() => ({}))
       const { owner } = body
-      if (!/^0x[a-fA-F0-9]{40}$/.test(owner ?? "")) return json(request, { error: "Invalid owner" }, 400)
+      if (!/^0x[a-fA-F0-9]{40}$/.test(owner ?? ""))
+        return json(request, { error: "Invalid owner" }, 400)
       const id = `cust_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`
-      await env.CINA_BILLING_KV.put(`cust:${id}`, JSON.stringify({
-        owner: owner.toLowerCase(),
-        balanceWei: "0",
-        committedUsage: "0",
-        cumulativeSpend: "0",
-        pendingTierBadges: [],
-        mintedTierBadges: [],
-        createdAt: Date.now(),
-      }))
+      await env.CINA_BILLING_KV.put(
+        `cust:${id}`,
+        JSON.stringify({
+          owner: owner.toLowerCase(),
+          balanceWei: "0",
+          committedUsage: "0",
+          cumulativeSpend: "0",
+          pendingTierBadges: [],
+          mintedTierBadges: [],
+          createdAt: Date.now(),
+        })
+      )
       return json(request, { ok: true, id })
     }
 
@@ -407,14 +521,24 @@ export default {
         try {
           const raw = await env.CINA_BILLING_KV.get(key)
           const ledger = raw ? JSON.parse(raw) : null
-          if (!ledger) return { status: 404, body: { error: "Account not found" } }
+          if (!ledger)
+            return { status: 404, body: { error: "Account not found" } }
           const add = BigInt(amountWei ?? 0)
-          if (add <= 0n) return { status: 400, body: { error: "amountWei must be > 0" } }
+          if (add <= 0n)
+            return { status: 400, body: { error: "amountWei must be > 0" } }
           ledger.balanceWei = (BigInt(ledger.balanceWei ?? 0) + add).toString()
           await env.CINA_BILLING_KV.put(key, JSON.stringify(ledger))
-          return { status: 200, body: { ok: true, balanceWei: ledger.balanceWei } }
+          return {
+            status: 200,
+            body: { ok: true, balanceWei: ledger.balanceWei },
+          }
         } catch (err) {
-          return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+          return {
+            status: 400,
+            body: {
+              error: err instanceof Error ? err.message : "Invalid request",
+            },
+          }
         }
       })
       return json(request, res.body, res.status)
@@ -431,16 +555,27 @@ export default {
         try {
           const raw = await env.CINA_BILLING_KV.get(key)
           const ledger = raw ? JSON.parse(raw) : null
-          if (!ledger) return { status: 404, body: { error: "Account not found" } }
+          if (!ledger)
+            return { status: 404, body: { error: "Account not found" } }
           const sub = BigInt(amountWei ?? 0)
-          if (sub <= 0n) return { status: 400, body: { error: "amountWei must be > 0" } }
+          if (sub <= 0n)
+            return { status: 400, body: { error: "amountWei must be > 0" } }
           const current = BigInt(ledger.balanceWei ?? 0)
-          if (current < sub) return { status: 400, body: { error: "Insufficient balance" } }
+          if (current < sub)
+            return { status: 400, body: { error: "Insufficient balance" } }
           ledger.balanceWei = (current - sub).toString()
           await env.CINA_BILLING_KV.put(key, JSON.stringify(ledger))
-          return { status: 200, body: { ok: true, balanceWei: ledger.balanceWei } }
+          return {
+            status: 200,
+            body: { ok: true, balanceWei: ledger.balanceWei },
+          }
         } catch (err) {
-          return { status: 400, body: { error: err instanceof Error ? err.message : "Invalid request" } }
+          return {
+            status: 400,
+            body: {
+              error: err instanceof Error ? err.message : "Invalid request",
+            },
+          }
         }
       })
       return json(request, res.body, res.status)
@@ -475,54 +610,96 @@ export default {
 
     // Key ingress submit (spec §6.3): register a key + declared amount
     if (url.pathname === "/v1/ingress" && request.method === "POST") {
-      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+      if (!checkRegRateLimit(request))
+        return json(request, { error: "Too many requests" }, 429)
       const body = await request.json().catch(() => ({}))
       const { apiKey, model, declaredMicro, owner } = body
-      if (!apiKey || typeof apiKey !== "string" || apiKey.length < 20) return json(request, { error: "Invalid apiKey" }, 400)
-      if (!/^0x[a-fA-F0-9]{40}$/.test(owner ?? "")) return json(request, { error: "Invalid owner" }, 400)
-      if (!model || !["demo", "gpt-4o-mini", "deepseek-v3", "hunyuan"].includes(model)) return json(request, { error: "Invalid model" }, 400)
+      if (!apiKey || typeof apiKey !== "string" || apiKey.length < 20)
+        return json(request, { error: "Invalid apiKey" }, 400)
+      if (!/^0x[a-fA-F0-9]{40}$/.test(owner ?? ""))
+        return json(request, { error: "Invalid owner" }, 400)
+      if (
+        !model ||
+        !["demo", "gpt-4o-mini", "deepseek-v3", "hunyuan"].includes(model)
+      )
+        return json(request, { error: "Invalid model" }, 400)
       let declared
       try {
         declared = validateDeclaredMicro(declaredMicro)
       } catch (err) {
-        return json(request, { error: err instanceof Error ? err.message : "Invalid declaredMicro" }, 400)
+        return json(
+          request,
+          {
+            error: err instanceof Error ? err.message : "Invalid declaredMicro",
+          },
+          400
+        )
       }
       const keyHash = await hashKey(apiKey)
       // reject duplicate submissions of the same key
       const existingRaw = await env.CINA_BILLING_KV.get(`keyhash:${keyHash}`)
-      if (existingRaw) return json(request, { error: "Key already registered" }, 409)
+      if (existingRaw)
+        return json(request, { error: "Key already registered" }, 409)
       // optional upstream validation probe (testnet: unset -> skip)
       if (env.INGRESS_VALIDATE_URL) {
         try {
           const probe = await fetch(env.INGRESS_VALIDATE_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
             body: JSON.stringify({ model }),
             signal: AbortSignal.timeout(10_000),
           })
-          if (!probe.ok) return json(request, { error: "Key validation failed" }, 400)
+          if (!probe.ok)
+            return json(request, { error: "Key validation failed" }, 400)
         } catch {
           return json(request, { error: "Key validation failed" }, 400)
         }
       }
       const secretHex = env.INGRESS_ENC_KEY
-      if (!secretHex || secretHex.length !== 64 || secretHex === "0".repeat(64)) {
-        return json(request, { error: "Ingress encryption not configured" }, 500)
+      if (
+        !secretHex ||
+        !/^[0-9a-f]{64}$/i.test(secretHex) ||
+        secretHex === "0".repeat(64)
+      ) {
+        return json(
+          request,
+          { error: "Ingress encryption not configured" },
+          500
+        )
       }
       const encrypted = await encryptKey(secretHex, apiKey)
       const id = `ing_${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}`
-      const rec = ingressRecord({ owner: owner.toLowerCase(), model, declaredMicro: declared, keyHash })
-      await env.CINA_BILLING_KV.put(`ing:${id}`, JSON.stringify({ ...rec, encrypted }))
+      const rec = ingressRecord({
+        owner: owner.toLowerCase(),
+        model,
+        declaredMicro: declared,
+        keyHash,
+      })
+      await env.CINA_BILLING_KV.put(
+        `ing:${id}`,
+        JSON.stringify({ ...rec, encrypted })
+      )
       await env.CINA_BILLING_KV.put(`keyhash:${keyHash}`, id)
-      return json(request, { ok: true, id, status: rec.status, declaredMicro: rec.declaredMicro, model: rec.model })
+      return json(request, {
+        ok: true,
+        id,
+        status: rec.status,
+        declaredMicro: rec.declaredMicro,
+        model: rec.model,
+      })
     }
 
     // Public: list own ingress records (spec §6.3: user can view pending status).
     // Never exposes key material — id/model/micro amounts/status/createdAt only.
     if (url.pathname === "/v1/ingress" && request.method === "GET") {
-      if (!checkReadRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+      if (!checkReadRateLimit(request))
+        return json(request, { error: "Too many requests" }, 429)
       const owner = (url.searchParams.get("owner") ?? "").toLowerCase()
-      if (!/^0x[a-fA-F0-9]{40}$/.test(owner)) return json(request, { error: "Invalid owner" }, 400)
+      if (!/^0x[a-fA-F0-9]{40}$/.test(owner))
+        return json(request, { error: "Invalid owner" }, 400)
       const keys = await listAllKeys(env.CINA_BILLING_KV, "ing:")
       const records = []
       for (const { name } of keys) {
@@ -549,7 +726,9 @@ export default {
     }
 
     // Admin: confirm an ingress mint (moves minting -> minted, records txHash)
-    const ingConfirmMatch = url.pathname.match(/^\/v1\/ingress\/([a-zA-Z0-9_]+)\/confirm$/)
+    const ingConfirmMatch = url.pathname.match(
+      /^\/v1\/ingress\/([a-zA-Z0-9_]+)\/confirm$/
+    )
     if (ingConfirmMatch && request.method === "POST") {
       if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
         return json(request, { error: "Unauthorized" }, 401)
@@ -559,7 +738,8 @@ export default {
       const key = `ing:${id}`
       const res = await withLedgerLock(`ing:${id}`, async () => {
         const raw = await env.CINA_BILLING_KV.get(key)
-        if (!raw) return { status: 404, body: { error: "Ingress record not found" } }
+        if (!raw)
+          return { status: 404, body: { error: "Ingress record not found" } }
         let rec
         try {
           rec = JSON.parse(raw)
@@ -573,9 +753,15 @@ export default {
           // record is a conflicting double-mint attempt and stays rejected.
           const txHash = body.txHash ?? null
           if (rec.status === "minted" && rec.txHash === txHash) {
-            return { status: 200, body: { ok: true, id, status: rec.status, alreadyMinted: true } }
+            return {
+              status: 200,
+              body: { ok: true, id, status: rec.status, alreadyMinted: true },
+            }
           }
-          return { status: 400, body: { error: `Invalid transition from ${rec.status}` } }
+          return {
+            status: 400,
+            body: { error: `Invalid transition from ${rec.status}` },
+          }
         }
         rec.status = "minted"
         rec.txHash = body.txHash ?? null
@@ -622,43 +808,83 @@ export default {
     // SIWE-signed binding message proving address ownership (EOA recovery or
     // EIP-1271 eth_call); counterfactual smart accounts must deploy first.
     if (url.pathname === "/v1/keys" && request.method === "POST") {
-      if (!checkRegRateLimit(request)) return json(request, { error: "Too many requests" }, 429)
+      if (!checkRegRateLimit(request))
+        return json(request, { error: "Too many requests" }, 429)
       const body = await request.json().catch(() => ({}))
       const { apiKey, address, custId, message, signature } = body
-      if (!apiKey || typeof apiKey !== "string" || apiKey.length < 20) return json(request, { error: "Invalid apiKey" }, 400)
+      if (!apiKey || typeof apiKey !== "string" || apiKey.length < 20)
+        return json(request, { error: "Invalid apiKey" }, 400)
       const hash = await hashKey(apiKey)
       if (address) {
-        if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return json(request, { error: "Invalid address" }, 400)
+        if (!/^0x[a-fA-F0-9]{40}$/.test(address))
+          return json(request, { error: "Invalid address" }, 400)
         // -- Address-ownership proof (spec §6.1) ----------------------------
         const parsed = parseBindingMessage(message)
         if (!parsed || parsed.address.toLowerCase() !== address.toLowerCase()) {
-          return json(request, { error: "message must be a valid binding message for this address" }, 400)
+          return json(
+            request,
+            {
+              error: "message must be a valid binding message for this address",
+            },
+            400
+          )
         }
-        if (parsed.uri !== BINDING_URI || parsed.chainId !== CHAIN_ID.toString()) {
-          return json(request, { error: "message must target billing-api.cinachain.com on Base Sepolia" }, 400)
+        if (
+          parsed.uri !== BINDING_URI ||
+          parsed.chainId !== CHAIN_ID.toString()
+        ) {
+          return json(
+            request,
+            {
+              error:
+                "message must target billing-api.cinachain.com on Base Sepolia",
+            },
+            400
+          )
         }
         // Freshness: issuedAt within the last 5 minutes (and not from the
         // future by more than a minute of clock skew).
         const issued = Date.parse(parsed.issuedAt)
         const skew = Date.now() - issued
         if (Number.isNaN(issued) || skew > 5 * 60 * 1000 || skew < -60 * 1000) {
-          return json(request, { error: "message expired; sign a fresh one" }, 400)
+          return json(
+            request,
+            { error: "message expired; sign a fresh one" },
+            400
+          )
         }
         // Nonce replay protection: one use per nonce, kept for 1 hour.
-        const nonceKey = `nonce:${await hashKey(`${parsed.nonce}${address.toLowerCase()}`)}`
+        const nonceKey = `nonce:${await hashKey(
+          `${parsed.nonce}${address.toLowerCase()}`
+        )}`
         if (await env.CINA_BILLING_KV.get(nonceKey)) {
-          return json(request, { error: "Nonce already used; sign a fresh message" }, 400)
+          return json(
+            request,
+            { error: "Nonce already used; sign a fresh message" },
+            400
+          )
         }
-        const proof = await verifyOwnership(env, { address, message, signature })
+        const proof = await verifyOwnership(env, {
+          address,
+          message,
+          signature,
+        })
         if (!proof.ok) return json(request, { error: proof.error }, 403)
         await env.CINA_BILLING_KV.put(nonceKey, "1", { expirationTtl: 3600 })
-        await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ kind: "self", address: address.toLowerCase() }))
+        await env.CINA_BILLING_KV.put(
+          `key:${hash}`,
+          JSON.stringify({ kind: "self", address: address.toLowerCase() })
+        )
         return json(request, { ok: true, address: address.toLowerCase() })
       }
       if (custId) {
         const custRaw = await env.CINA_BILLING_KV.get(`cust:${custId}`)
-        if (!custRaw) return json(request, { error: "Custodial account not found" }, 404)
-        await env.CINA_BILLING_KV.put(`key:${hash}`, JSON.stringify({ kind: "cust", custId }))
+        if (!custRaw)
+          return json(request, { error: "Custodial account not found" }, 404)
+        await env.CINA_BILLING_KV.put(
+          `key:${hash}`,
+          JSON.stringify({ kind: "cust", custId })
+        )
         return json(request, { ok: true, custId })
       }
       return json(request, { error: "address or custId required" }, 400)
@@ -667,7 +893,10 @@ export default {
     // Admin: list addresses with pending tier badges (spec §5 minting flow)
     // Scans both self-hosted ledgers (ledger:<address>) and custodial rows
     // (cust:<id>) so badges accrued on custodial accounts are visible too.
-    if (url.pathname === "/v1/admin/pending-badges" && request.method === "GET") {
+    if (
+      url.pathname === "/v1/admin/pending-badges" &&
+      request.method === "GET"
+    ) {
       if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
         return json(request, { error: "Unauthorized" }, 401)
       }
@@ -683,10 +912,15 @@ export default {
           } catch (err) {
             // One malformed row (e.g. manual/console edit) must not abort the
             // admin listing — skip it and carry on (mirrors indexer-run.js).
-            console.error(`[admin] skipping malformed ${name}:`, err?.message ?? err)
+            console.error(
+              `[admin] skipping malformed ${name}:`,
+              err?.message ?? err
+            )
             continue
           }
-          const badges = (ledger.pendingTierBadges ?? []).filter((t) => tierBadgeId(t) !== null)
+          const badges = (ledger.pendingTierBadges ?? []).filter(
+            (t) => tierBadgeId(t) !== null
+          )
           if (!badges.length) continue
           if (prefix === "cust:") {
             pending.push({
@@ -711,16 +945,23 @@ export default {
     // A custodial account may be confirmed by its owner address + custId in
     // the body; the write then lands on cust:<custId> (never a phantom
     // ledger:<address> row) and the lock uses the custId.
-    const confirmMatch = url.pathname.match(/^\/v1\/admin\/badges\/(0x[a-fA-F0-9]{40})\/([a-z]+)\/confirm$/)
+    const confirmMatch = url.pathname.match(
+      /^\/v1\/admin\/badges\/(0x[a-fA-F0-9]{40})\/([a-z]+)\/confirm$/
+    )
     if (confirmMatch && request.method === "POST") {
       if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
         return json(request, { error: "Unauthorized" }, 401)
       }
       const [, address, tier] = confirmMatch
-      if (tierBadgeId(tier) === null) return json(request, { error: "Invalid tier" }, 400)
+      if (tierBadgeId(tier) === null)
+        return json(request, { error: "Invalid tier" }, 400)
       const body = await request.json().catch(() => ({}))
-      const targetKey = body.custId ? `cust:${body.custId}` : `ledger:${address.toLowerCase()}`
-      const lockKey = body.custId ? `cust:${body.custId}` : address.toLowerCase()
+      const targetKey = body.custId
+        ? `cust:${body.custId}`
+        : `ledger:${address.toLowerCase()}`
+      const lockKey = body.custId
+        ? `cust:${body.custId}`
+        : address.toLowerCase()
       const res = await withLedgerLock(lockKey, async () => {
         const raw = await env.CINA_BILLING_KV.get(targetKey)
         let ledger
@@ -730,12 +971,20 @@ export default {
           return { error: "Ledger data corrupted" }
         }
         const minted = [...new Set([...(ledger.mintedTierBadges ?? []), tier])]
-        await env.CINA_BILLING_KV.put(targetKey, JSON.stringify({
-          ...ledger,
-          pendingTierBadges: (ledger.pendingTierBadges ?? []).filter((t) => t !== tier),
-          mintedTierBadges: minted,
-          badgeTxHashes: { ...(ledger.badgeTxHashes ?? {}), [tier]: body.txHash ?? null },
-        }))
+        await env.CINA_BILLING_KV.put(
+          targetKey,
+          JSON.stringify({
+            ...ledger,
+            pendingTierBadges: (ledger.pendingTierBadges ?? []).filter(
+              (t) => t !== tier
+            ),
+            mintedTierBadges: minted,
+            badgeTxHashes: {
+              ...(ledger.badgeTxHashes ?? {}),
+              [tier]: body.txHash ?? null,
+            },
+          })
+        )
         return { ok: true, address, tier, custId: body.custId ?? null }
       })
       return json(request, res)
@@ -743,7 +992,8 @@ export default {
 
     // Admin: view pricing (default + overrides)
     if (url.pathname === "/v1/admin/pricing" && request.method === "GET") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) return json(request, { error: "Unauthorized" }, 401)
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY)
+        return json(request, { error: "Unauthorized" }, 401)
       const raw = await env.CINA_BILLING_KV.get("pricing")
       let overrides = {}
       try {
@@ -758,14 +1008,25 @@ export default {
     // Validates against the default table BEFORE persisting, so a bad override
     // never lands in KV and never breaks the usage hot path.
     if (url.pathname === "/v1/admin/pricing" && request.method === "PUT") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) return json(request, { error: "Unauthorized" }, 401)
+      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY)
+        return json(request, { error: "Unauthorized" }, 401)
       const body = await request.json().catch(() => ({}))
       try {
-        const merged = applyPricingOverrides(DEFAULT_PRICING, body.overrides ?? null)
-        await env.CINA_BILLING_KV.put("pricing", JSON.stringify(body.overrides ?? {}))
+        const merged = applyPricingOverrides(
+          DEFAULT_PRICING,
+          body.overrides ?? null
+        )
+        await env.CINA_BILLING_KV.put(
+          "pricing",
+          JSON.stringify(body.overrides ?? {})
+        )
         return json(request, { ok: true, merged })
       } catch (err) {
-        return json(request, { error: err instanceof Error ? err.message : "Invalid pricing" }, 400)
+        return json(
+          request,
+          { error: err instanceof Error ? err.message : "Invalid pricing" },
+          400
+        )
       }
     }
 
@@ -774,7 +1035,9 @@ export default {
       if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
         return json(request, { error: "Unauthorized" }, 401)
       }
-      const res = await runIndexer(env).catch((err) => ({ error: err instanceof Error ? err.message : "indexer failed" }))
+      const res = await runIndexer(env).catch((err) => ({
+        error: err instanceof Error ? err.message : "indexer failed",
+      }))
       return json(request, res)
     }
 

@@ -16,15 +16,14 @@ interface RootProviderProps {
  * NOTE: no `useIsMounted` gate here. Previously the gate returned `null`
  * until mount, which made the static export ship an empty <body> and hurt
  * LCP/SEO. Theme hydration is covered by `suppressHydrationWarning` on
- * <html> (app/layout.tsx) and wallet state is hydrated client-side by
- * AppKit (ssr: false), so real content now renders from the exported
- * HTML immediately.
+ * <html> (app/layout.tsx). AppKit/Wagmi use their SSR-safe path and hydrate
+ * wallet state client-side, so real content renders in exported HTML.
  */
 export default function RootProvider({ children }: RootProviderProps) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="light"
       enableSystem
       disableTransitionOnChange
     >

@@ -4,6 +4,11 @@ import Link from "next/link"
 import { cinaIntegrations } from "@/data/cina-integrations"
 import { LuBook } from "react-icons/lu"
 
+import {
+  EXPLORER_NAME,
+  getBlockExplorerUrl,
+  PRIMARY_NETWORK_NAME,
+} from "@/config/deployment"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -64,20 +69,18 @@ export default function Erc20Page() {
                 <Card>
                   <CardContent className="flex flex-col">
                     <span className="mb-4 text-lg">
-                      Access the token page where you can update the url
-                      parameters to select which ERC20 token to view
+                      Inspect the selected ERC20 token on {PRIMARY_NETWORK_NAME}
+                      .
                     </span>
                     <Link
                       className={cn(
                         buttonVariants({ variant: "default", size: "sm" })
                       )}
-                      // No dynamic token page exists on this static export —
-                      // link to Base USDC on Basescan instead of a dead route
-                      href={`https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`}
+                      href={getBlockExplorerUrl("token", token)}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      View USDC on Basescan
+                      View token on {EXPLORER_NAME}
                     </Link>
                   </CardContent>
                 </Card>

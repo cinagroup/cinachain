@@ -1,20 +1,40 @@
 "use client"
 
 import { useState } from "react"
-import { useAccount } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
-import { AlertCircle, ArrowLeftRight, CheckCircle2, ExternalLink, Loader2 } from "lucide-react"
+import {
+  AlertCircle,
+  ArrowLeftRight,
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+} from "lucide-react"
+import { useAccount } from "wagmi"
 
-import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { EXPLORER_NAME, getBlockExplorerUrl } from "@/config/deployment"
 import { hasMegaContract } from "@/lib/contracts/addresses"
-import { convertAmount, MEGA_COLLECTION_INFO, MEGA_RATE_TEXT, MEGA_TYPES, MEGA_UNITS, formatAmount } from "@/lib/exchange"
+import {
+  convertAmount,
+  formatAmount,
+  MEGA_COLLECTION_INFO,
+  MEGA_RATE_TEXT,
+  MEGA_TYPES,
+  MEGA_UNITS,
+} from "@/lib/exchange"
 import { useCinaMegaBalances } from "@/lib/hooks/use-cina-mega"
 import { useExchange } from "@/lib/hooks/use-exchange"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 
 function TypeSelect({
   id,
@@ -37,7 +57,8 @@ function TypeSelect({
     >
       {MEGA_TYPES.map((t) => (
         <option key={t} value={t}>
-          {MEGA_COLLECTION_INFO[t].icon} {MEGA_COLLECTION_INFO[t].name} ({MEGA_COLLECTION_INFO[t].units})
+          {MEGA_COLLECTION_INFO[t].icon} {MEGA_COLLECTION_INFO[t].name} (
+          {MEGA_COLLECTION_INFO[t].units})
         </option>
       ))}
     </select>
@@ -48,7 +69,16 @@ export default function ExchangePage() {
   const { address } = useAccount()
   const queryClient = useQueryClient()
   const { balances } = useCinaMegaBalances(address)
-  const { exchange, status, isPending, isConfirmed, error, txHash, isGasless, reset } = useExchange()
+  const {
+    exchange,
+    status,
+    isPending,
+    isConfirmed,
+    error,
+    txHash,
+    isGasless,
+    reset,
+  } = useExchange()
 
   const [fromType, setFromType] = useState(1)
   const [toType, setToType] = useState(2)
@@ -60,7 +90,8 @@ export default function ExchangePage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            CinaMega contract not configured. Set NEXT_PUBLIC_CINA_MEGA_CONTRACT.
+            CinaMega contract not configured. Set
+            NEXT_PUBLIC_CINA_MEGA_CONTRACT.
           </AlertDescription>
         </Alert>
       </div>
@@ -111,8 +142,9 @@ export default function ExchangePage() {
         Exchange CinaMega<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Convert between UCINA, MCINA and CINA at the fixed rate. Exchanges are atomic — your source
-        tokens are burned and the destination minted in the same transaction.
+        Convert between UCINA, MCINA and CINA at the fixed rate. Exchanges are
+        atomic — your source tokens are burned and the destination minted in the
+        same transaction.
       </p>
 
       <div className="font-mono-tech mt-6 rounded-md border border-border bg-secondary p-4 text-sm">
@@ -133,12 +165,12 @@ export default function ExchangePage() {
           <AlertDescription>
             Exchanged!{" "}
             <a
-              href={`https://sepolia.basescan.org/tx/${txHash}`}
+              href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Basescan <ExternalLink className="size-3" />
+              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -158,8 +190,9 @@ export default function ExchangePage() {
           <CardDescription>
             {address ? (
               <>
-                You hold: UCINA {formatAmount(balances[1] ?? 0n)} · MCINA {formatAmount(balances[2] ?? 0n)} ·
-                CINA {formatAmount(balances[3] ?? 0n)}
+                You hold: UCINA {formatAmount(balances[1] ?? 0n)} · MCINA{" "}
+                {formatAmount(balances[2] ?? 0n)} · CINA{" "}
+                {formatAmount(balances[3] ?? 0n)}
               </>
             ) : (
               "Connect a wallet to exchange"
@@ -169,7 +202,15 @@ export default function ExchangePage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="exchange-from-type">You give (source)</Label>
-            <TypeSelect id="exchange-from-type" value={fromType} onChange={(t) => { setFromType(t); reset() }} disabled={isPending} />
+            <TypeSelect
+              id="exchange-from-type"
+              value={fromType}
+              onChange={(t) => {
+                setFromType(t)
+                reset()
+              }}
+              disabled={isPending}
+            />
             <Input
               type="number"
               min="1"
@@ -182,7 +223,8 @@ export default function ExchangePage() {
             />
             {exceedsBalance && (
               <p className="text-xs text-destructive">
-                Insufficient balance — you hold {formatAmount(balance)} {MEGA_COLLECTION_INFO[fromType].name}
+                Insufficient balance — you hold {formatAmount(balance)}{" "}
+                {MEGA_COLLECTION_INFO[fromType].name}
               </p>
             )}
           </div>
@@ -202,13 +244,25 @@ export default function ExchangePage() {
 
           <div className="space-y-2">
             <Label htmlFor="exchange-to-type">You receive (destination)</Label>
-            <TypeSelect id="exchange-to-type" value={toType} onChange={(t) => { setToType(t); reset() }} disabled={isPending} />
+            <TypeSelect
+              id="exchange-to-type"
+              value={toType}
+              onChange={(t) => {
+                setToType(t)
+                reset()
+              }}
+              disabled={isPending}
+            />
             <div className="rounded-md border border-border bg-secondary p-4">
               <div className="flex items-baseline justify-between">
-                <span className="text-sm text-muted-foreground">You receive</span>
+                <span className="text-sm text-muted-foreground">
+                  You receive
+                </span>
                 <span className="font-display text-lg">
                   {conversion.ok
-                    ? `${formatAmount(conversion.toAmount)} ${MEGA_COLLECTION_INFO[toType].name}`
+                    ? `${formatAmount(conversion.toAmount)} ${
+                        MEGA_COLLECTION_INFO[toType].name
+                      }`
                     : conversion.error === "too-small"
                     ? `0 ${MEGA_COLLECTION_INFO[toType].name}`
                     : "—"}
@@ -216,13 +270,18 @@ export default function ExchangePage() {
               </div>
               {conversion.ok && conversion.dust > 0n && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Dust burned: {formatAmount(conversion.dust)} units (floor conversion)
+                  Dust burned: {formatAmount(conversion.dust)} units (floor
+                  conversion)
                 </p>
               )}
               {conversion.error === "too-small" && (
                 <p className="mt-1 text-xs text-warning-deep">
-                  Amount too small — minimum for 1 {MEGA_COLLECTION_INFO[toType].name}:{" "}
-                  {formatAmount((MEGA_UNITS[toType] + MEGA_UNITS[fromType] - 1n) / MEGA_UNITS[fromType])}{" "}
+                  Amount too small — minimum for 1{" "}
+                  {MEGA_COLLECTION_INFO[toType].name}:{" "}
+                  {formatAmount(
+                    (MEGA_UNITS[toType] + MEGA_UNITS[fromType] - 1n) /
+                      MEGA_UNITS[fromType]
+                  )}{" "}
                   {MEGA_COLLECTION_INFO[fromType].name}
                 </p>
               )}
@@ -232,7 +291,12 @@ export default function ExchangePage() {
           {!address ? (
             <AppKitConnectButton className="w-full" />
           ) : (
-            <Button size="lg" className="w-full" disabled={!canSubmit} onClick={handleExchange}>
+            <Button
+              size="lg"
+              className="w-full"
+              disabled={!canSubmit}
+              onClick={handleExchange}
+            >
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
@@ -242,9 +306,11 @@ export default function ExchangePage() {
                 <>
                   Exchange{" "}
                   {conversion.ok
-                    ? `${formatAmount(parsedAmount)} ${MEGA_COLLECTION_INFO[fromType].name} → ${formatAmount(
-                        conversion.toAmount
-                      )} ${MEGA_COLLECTION_INFO[toType].name}`
+                    ? `${formatAmount(parsedAmount)} ${
+                        MEGA_COLLECTION_INFO[fromType].name
+                      } → ${formatAmount(conversion.toAmount)} ${
+                        MEGA_COLLECTION_INFO[toType].name
+                      }`
                     : ""}
                 </>
               )}

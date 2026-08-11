@@ -10,10 +10,11 @@ id = "b7aaab94dc9f438c919ec40c53112d68"
 API_VERSION = "v1"
 CINA_CREDIT_ADDRESS = "0x78f5aebc75b7d197b10622cccabe8429617836d7"
 BASE_SEPOLIA_RPC = "https://sepolia.base.org"
-# Testnet admin key — mainnet: replace with secret + SIWE (M2 known limit)
-ADMIN_KEY = "cinachain-admin-dev-2026"
-# AES-GCM key for pooled ingress keys (32-byte hex; testnet — mainnet: secret)
-INGRESS_ENC_KEY = "0000000000000000000000000000000000000000000000000000000000000000"
+
+# Required encrypted Worker bindings. Provision them with `wrangler secret put`
+# or scripts/provision-billing-secrets.mjs; never store their values here.
+[secrets]
+required = ["ADMIN_KEY", "INGRESS_ENC_KEY"]
 
 [triggers]
 crons = ["* * * * *"]

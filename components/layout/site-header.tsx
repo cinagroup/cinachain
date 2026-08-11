@@ -21,7 +21,7 @@ export function SiteHeader() {
       )}
       style={{ height: "64px" }}
     >
-      <div className="container flex h-16 max-w-[1400px] items-center justify-between">
+      <div className="container flex h-16 max-w-screen-ultra items-center justify-between">
         <div className="flex items-center gap-6">
           <Link
             href="/"
@@ -35,13 +35,6 @@ export function SiteHeader() {
         </div>
         <MobileNav />
         <div className="hidden items-center gap-2 md:flex">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center justify-center rounded-sm px-2 text-sm font-medium text-body transition-colors hover:text-foreground"
-            style={{ height: "28px" }}
-          >
-            Dashboard
-          </Link>
           <ModeToggle />
           <SignInButton />
           <Link

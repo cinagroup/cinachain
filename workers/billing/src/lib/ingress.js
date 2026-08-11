@@ -21,7 +21,8 @@ export function ingressRecord({ owner, model, declaredMicro, keyHash }) {
 /** Validate a declared amount (micro-credit): positive integer, capped */
 export function validateDeclaredMicro(raw) {
   const s = String(raw ?? "")
-  if (!/^\d+$/.test(s)) throw new Error("declaredMicro must be a positive integer")
+  if (!/^\d+$/.test(s))
+    throw new Error("declaredMicro must be a positive integer")
   const v = BigInt(s)
   if (v <= 0n) throw new Error("declaredMicro must be a positive integer")
   if (v > MAX_DECLARED_MICRO) throw new Error("declaredMicro too large")
@@ -41,9 +42,16 @@ export function ingressStatusTransitions(from, to) {
 }
 
 // AES-GCM key encryption for pooled ingress keys (spec §6.3: plaintext
-// never leaves the platform). INGRESS_ENC_KEY = 32-byte hex (testnet var;
-// mainnet: worker secret).
+// never leaves the platform). INGRESS_ENC_KEY is always a 32-byte Worker
+// secret encoded as hexadecimal.
 export function hexToBytes(hex) {
+  if (
+    typeof hex !== "string" ||
+    hex.length % 2 !== 0 ||
+    !/^[0-9a-f]+$/i.test(hex)
+  ) {
+    throw new Error("value must be even-length hexadecimal")
+  }
   return Uint8Array.from(hex.match(/.{2}/g).map((b) => parseInt(b, 16)))
 }
 export function bytesToHex(bytes) {
@@ -51,14 +59,30 @@ export function bytesToHex(bytes) {
 }
 
 export async function encryptKey(secretHex, rawKey) {
-  const key = await crypto.subtle.importKey("raw", hexToBytes(secretHex), { name: "AES-GCM" }, false, ["encrypt"])
+  const key = await crypto.subtle.importKey(
+    "raw",
+    hexToBytes(secretHex),
+    { name: "AES-GCM" },
+    false,
+    ["encrypt"]
+  )
   const iv = crypto.getRandomValues(new Uint8Array(12))
-  const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(rawKey))
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    new TextEncoder().encode(rawKey)
+  )
   return { iv: bytesToHex(iv), cipher: bytesToHex(new Uint8Array(cipher)) }
 }
 
 export async function decryptKey(secretHex, { iv, cipher }) {
-  const key = await crypto.subtle.importKey("raw", hexToBytes(secretHex), { name: "AES-GCM" }, false, ["decrypt"])
+  const key = await crypto.subtle.importKey(
+    "raw",
+    hexToBytes(secretHex),
+    { name: "AES-GCM" },
+    false,
+    ["decrypt"]
+  )
   const plain = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: hexToBytes(iv) },
     key,

@@ -1,28 +1,58 @@
 "use client"
 
+import Link from "next/link"
+import {
+  CheckCircle2,
+  ExternalLink,
+  KeyRound,
+  Loader2,
+  Shield,
+  Wallet,
+} from "lucide-react"
 import { useAccount, useEnsName } from "wagmi"
+
+import {
+  EXPLORER_NAME,
+  getBlockExplorerUrl,
+  PRIMARY_CHAIN_ID,
+  PRIMARY_NETWORK_LABEL,
+} from "@/config/deployment"
+import { useSiwe } from "@/lib/hooks/use-siwe"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { SignInButton } from "@/components/blockchain/sign-in-button"
 import { WalletAddress } from "@/components/blockchain/wallet-address"
 import { WalletBalance } from "@/components/blockchain/wallet-balance"
 import { WalletEnsName } from "@/components/blockchain/wallet-ens-name"
+import { CopyButton } from "@/components/shared/copy-button"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { CopyButton } from "@/components/shared/copy-button"
-import { SignInButton } from "@/components/blockchain/sign-in-button"
-import { useSiwe } from "@/lib/hooks/use-siwe"
-import Link from "next/link"
-import { ExternalLink, Shield, Wallet, KeyRound, CheckCircle2, Loader2 } from "lucide-react"
 
 export default function AccountPage() {
   const { address, chain } = useAccount()
-  const { session, isAuthenticated, signIn, signOut, isLoading: siweLoading } = useSiwe()
+  const {
+    session,
+    isAuthenticated,
+    signIn,
+    signOut,
+    isLoading: siweLoading,
+  } = useSiwe()
 
   // ENS resolution (independent of SIWE session)
   const { data: ensName, isLoading: ensLoading } = useEnsName({ address })
 
-  // Chain-aware explorer URL
-  const explorerBase = chain?.blockExplorers?.default?.url || "https://basescan.org"
+  const connectedNetwork =
+    chain?.id === PRIMARY_CHAIN_ID
+      ? PRIMARY_NETWORK_LABEL
+      : chain
+      ? `${chain.name} (unsupported)`
+      : "Unknown"
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,7 +112,7 @@ export default function AccountPage() {
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">Network</p>
                   <p className="text-sm font-medium text-foreground">
-                    {chain?.name || "Unknown"}
+                    {connectedNetwork}
                   </p>
                 </div>
 
@@ -94,14 +124,19 @@ export default function AccountPage() {
                 </div>
 
                 <div className="border-t border-border pt-2">
-                  <Button asChild variant="outline" size="sm" className="w-full">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
                     <Link
-                      href={`${explorerBase}/address/${address ?? ""}`}
+                      href={getBlockExplorerUrl("address", address ?? "")}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <ExternalLink className="mr-2 size-4" />
-                      View on Explorer
+                      View on {EXPLORER_NAME}
                     </Link>
                   </Button>
                 </div>
@@ -119,7 +154,9 @@ export default function AccountPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">SIWE Status</p>
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    SIWE Status
+                  </p>
                   <div className="flex items-center gap-2">
                     <div
                       className={`size-2 rounded-full ${
@@ -186,18 +223,20 @@ export default function AccountPage() {
           <Card className="mt-6 shadow-vercel-card">
             <CardHeader>
               <CardTitle>Quick Links</CardTitle>
-              <CardDescription>Useful resources for your wallet</CardDescription>
+              <CardDescription>
+                Useful resources for your wallet
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-3">
                 <Button asChild variant="outline" className="justify-start">
                   <Link
-                    href={`${explorerBase}/address/${address ?? ""}`}
+                    href={getBlockExplorerUrl("address", address ?? "")}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     <ExternalLink className="mr-2 size-4" />
-                    Block Explorer
+                    {EXPLORER_NAME}
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="justify-start">
@@ -226,7 +265,8 @@ export default function AccountPage() {
               Connect your wallet<span className="text-foreground">.</span>
             </h1>
             <p className="mt-4 max-w-md text-base text-muted-foreground">
-              Connect your wallet to view your account details, manage settings, and access exclusive features.
+              Connect your wallet to view your account details, manage settings,
+              and access exclusive features.
             </p>
             <div className="mt-8">
               <SignInButton />

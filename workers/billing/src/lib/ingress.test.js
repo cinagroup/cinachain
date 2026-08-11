@@ -1,10 +1,23 @@
 // workers/billing/src/lib/ingress.js tests
-import { describe, it, expect } from "vitest"
-import { ingressRecord, ingressStatusTransitions, validateDeclaredMicro, encryptKey, decryptKey } from "./ingress.js"
+import { describe, expect, it } from "vitest"
+
+import {
+  decryptKey,
+  encryptKey,
+  hexToBytes,
+  ingressRecord,
+  ingressStatusTransitions,
+  validateDeclaredMicro,
+} from "./ingress.js"
 
 describe("ingressRecord", () => {
   it("builds a pending record with defaults", () => {
-    const rec = ingressRecord({ owner: "0xaaa", model: "demo", declaredMicro: "500000000", keyHash: "0xdead" })
+    const rec = ingressRecord({
+      owner: "0xaaa",
+      model: "demo",
+      declaredMicro: "500000000",
+      keyHash: "0xdead",
+    })
     expect(rec.owner).toBe("0xaaa")
     expect(rec.model).toBe("demo")
     expect(rec.declaredMicro).toBe("500000000")
@@ -60,5 +73,9 @@ describe("ingress key encryption", () => {
   it("decrypt with wrong key fails", async () => {
     const enc = await encryptKey(SECRET, "sk-ingress_wrongkey_0123456789abcdef")
     await expect(decryptKey("cd".repeat(32), enc)).rejects.toThrow()
+  })
+  it("rejects malformed hexadecimal before importing a key", () => {
+    expect(() => hexToBytes("zz")).toThrow(/hexadecimal/)
+    expect(() => hexToBytes("abc")).toThrow(/hexadecimal/)
   })
 })

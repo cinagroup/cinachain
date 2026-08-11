@@ -524,7 +524,7 @@ wrangler.toml [vars] 追加：
 
 ```toml
 # AES-GCM key for pooled ingress keys (32-byte hex; testnet — mainnet: secret)
-INGRESS_ENC_KEY = "0000000000000000000000000000000000000000000000000000000000000000"
+INGRESS_ENC_KEY = <set-via-cloudflare-secret>
 ```
 
 - [ ] **Step 6: 追加提交端点路由测试（index.test.js "M3 ingress submit" describe）**

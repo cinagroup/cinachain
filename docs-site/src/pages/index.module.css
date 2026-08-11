@@ -3,14 +3,57 @@
   display: flex;
   align-items: center;
   text-align: center;
-  background: radial-gradient(ellipse at top, rgba(80,227,194,0.08), transparent 60%);
+  background: radial-gradient(
+    ellipse at top,
+    rgba(80, 227, 194, 0.08),
+    transparent 60%
+  );
 }
-.title { font-size: 56px; font-weight: 800; letter-spacing: -1px; }
-.title span { color: #50e3c2; }
-.subtitle { margin: 16px auto 32px; max-width: 520px; font-size: 17px; color: var(--ifm-color-emphasis-700); }
-.buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.primary, .secondary { padding: 10px 22px; border-radius: 999px; font-weight: 600; }
-.primary { background: var(--ifm-color-primary); color: #fff; }
-.primary:hover { text-decoration: none; color: #fff; opacity: 0.9; }
-.secondary { border: 1px solid var(--ifm-color-emphasis-300); color: var(--ifm-color-emphasis-700); }
-.secondary:hover { text-decoration: none; }
+.title {
+  font-size: var(--type-display-xl-size);
+  font-weight: var(--type-display-xl-weight);
+  line-height: var(--type-display-xl-line-height);
+  letter-spacing: var(--type-display-xl-tracking);
+}
+.title span {
+  color: var(--color-cyan-deep);
+}
+.subtitle {
+  margin: var(--spacing-md) auto var(--spacing-xl);
+  max-width: 520px;
+  font-size: var(--type-body-lg-size);
+  line-height: var(--type-body-lg-line-height);
+  color: var(--color-body);
+}
+.buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.primary,
+.secondary {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--spacing-lg);
+  border-radius: var(--radius-pill);
+  font-size: 16px;
+  font-weight: 500;
+}
+.primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.primary:hover {
+  text-decoration: none;
+  color: var(--color-on-primary);
+  opacity: 0.9;
+}
+.secondary {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  color: var(--ifm-color-emphasis-700);
+}
+.secondary:hover {
+  text-decoration: none;
+}

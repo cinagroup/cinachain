@@ -1,16 +1,33 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
-import type { Hash, Address } from "viem"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import {
+  AlertCircle,
+  Award,
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+} from "lucide-react"
+import type { Address, Hash } from "viem"
+import { useWaitForTransactionReceipt, useWriteContract } from "wagmi"
+
+import { EXPLORER_NAME, getBlockExplorerUrl } from "@/config/deployment"
+import {
+  CINA_ERC1155_CONTRACT,
+  hasErc1155Contract,
+} from "@/lib/contracts/addresses"
+import { BADGE_INFO } from "@/lib/hooks/use-badges"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Award, Loader2, CheckCircle2, ExternalLink, AlertCircle } from "lucide-react"
-import { CINA_ERC1155_CONTRACT, hasErc1155Contract } from "@/lib/contracts/addresses"
-import { BADGE_INFO } from "@/lib/hooks/use-badges"
 
 const BADGE_ABI = [
   {
@@ -71,7 +88,7 @@ export default function AdminBadgesPage() {
       })
       setTxHash(hash)
     } catch (err) {
-      const anyErr = err  as { shortMessage?: string; message?: string }
+      const anyErr = err as { shortMessage?: string; message?: string }
       setError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge")
     }
   }
@@ -82,7 +99,8 @@ export default function AdminBadgesPage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            Badge contract not configured. Set NEXT_PUBLIC_CINA_ERC1155_CONTRACT.
+            Badge contract not configured. Set
+            NEXT_PUBLIC_CINA_ERC1155_CONTRACT.
           </AlertDescription>
         </Alert>
       </div>
@@ -114,12 +132,12 @@ export default function AdminBadgesPage() {
           <AlertDescription>
             Badge minted!{" "}
             <a
-              href={`https://sepolia.basescan.org/tx/${txHash}`}
+              href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Basescan <ExternalLink className="size-3" />
+              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -210,20 +228,29 @@ export default function AdminBadgesPage() {
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
           <CardTitle>Badge Types</CardTitle>
-          <CardDescription>Standard badge types available for minting</CardDescription>
+          <CardDescription>
+            Standard badge types available for minting
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Object.entries(BADGE_INFO).map(([id, info]) => (
-              <div key={id} className="rounded-md border border-border bg-secondary p-3">
+              <div
+                key={id}
+                className="rounded-md border border-border bg-secondary p-3"
+              >
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{info.icon}</span>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{info.name}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {info.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">#{id}</p>
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{info.description}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {info.description}
+                </p>
               </div>
             ))}
           </div>

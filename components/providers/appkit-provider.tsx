@@ -2,14 +2,13 @@
 
 import { useEffect, useMemo, type ReactNode } from "react"
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
-import { baseSepolia } from "@reown/appkit/networks"
 import { createAppKit } from "@reown/appkit/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createStorage, noopStorage } from "@wagmi/core"
 import { useTheme } from "next-themes"
 import { WagmiProvider } from "wagmi"
 
-import { transports } from "@/config/networks"
+import { chains, transports } from "@/config/networks"
 import { siteConfig } from "@/config/site"
 
 const PROJECT_ID =
@@ -37,30 +36,37 @@ if (!PROJECT_ID && process.env.NODE_ENV === "development") {
 // on typeof window/localStorage).
 export const wagmiAdapter = new WagmiAdapter({
   projectId: PROJECT_ID,
-  networks: [baseSepolia],
+  networks: chains,
   transports,
+  ssr: true,
   storage: createStorage({
     storage: typeof window !== "undefined" ? window.localStorage : noopStorage,
   }),
 })
 
-export const appKit = createAppKit({
-  adapters: [wagmiAdapter],
-  projectId: PROJECT_ID,
-  networks: [baseSepolia],
-  features: {
-    // Email + social login -> Reown smart accounts (ERC-4337), coexisting
-    // with external EOA connectors in the same modal.
-    email: true,
-    socials: ["google", "x", "github"],
-  },
-  metadata: {
-    name: siteConfig.title,
-    description: siteConfig.description,
-    url: typeof window !== "undefined" ? window.location.href : "",
-    icons: [],
-  },
-})
+// createAppKit initializes browser-only Coinbase/Base telemetry. Client
+// components are still prerendered during `next build`, so defer that side
+// effect until the client bundle evaluates with a real `window`.
+export const appKit =
+  typeof window !== "undefined"
+    ? createAppKit({
+        adapters: [wagmiAdapter],
+        projectId: PROJECT_ID,
+        networks: chains,
+        features: {
+          // Email + social login -> Reown smart accounts (ERC-4337), coexisting
+          // with external EOA connectors in the same modal.
+          email: true,
+          socials: ["google", "x", "github"],
+        },
+        metadata: {
+          name: siteConfig.title,
+          description: siteConfig.description,
+          url: window.location.href,
+          icons: [],
+        },
+      })
+    : null
 
 export function AppKitProvider({ children }: { children: ReactNode }) {
   const { resolvedTheme } = useTheme()
@@ -84,7 +90,7 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
   // ThemeProvider (root-provider.tsx), so useTheme() is available here.
   useEffect(() => {
     try {
-      appKit.setThemeMode?.(resolvedTheme === "dark" ? "dark" : "light")
+      appKit?.setThemeMode?.(resolvedTheme === "dark" ? "dark" : "light")
     } catch {
       /* ignore */
     }

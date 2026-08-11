@@ -1,16 +1,27 @@
 "use client"
 
-import { useAccount } from "wagmi"
 import Link from "next/link"
 import { ExternalLink, Loader2 } from "lucide-react"
-import CinaNftImage from "@/components/CinaNftImage"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FavoriteButton } from "@/components/favorites/favorite-button"
-import { useTokenMetadata } from "@/lib/hooks/use-token-metadata"
-import { useReadContract } from "wagmi"
-import { CINA_NFT_CONTRACT } from "@/lib/contracts/addresses"
+import { useAccount, useReadContract } from "wagmi"
+
+import {
+  EXPLORER_NAME,
+  getBlockExplorerUrl,
+  PRIMARY_NETWORK_NAME,
+} from "@/config/deployment"
 import { CINA_NFT_ABI } from "@/lib/contracts/abi"
+import { CINA_NFT_CONTRACT } from "@/lib/contracts/addresses"
+import { useTokenMetadata } from "@/lib/hooks/use-token-metadata"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import CinaNftImage from "@/components/CinaNftImage"
+import { FavoriteButton } from "@/components/favorites/favorite-button"
 
 export default function NftDetailClient({ tokenId }: { tokenId: string }) {
   const { address } = useAccount()
@@ -103,7 +114,10 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
               </div>
             )}
             {!isLoading && image && (
-              <CinaNftImage ipfsCidUrl={image} alt={name || `NFT #${tokenId}`} />
+              <CinaNftImage
+                ipfsCidUrl={image}
+                alt={name || `NFT #${tokenId}`}
+              />
             )}
             {!isLoading && !image && (
               <div className="flex size-full items-center justify-center">
@@ -124,11 +138,13 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
           <div className="flex gap-3">
             <Button asChild variant="outline" className="flex-1">
               <Link
-                href={`https://sepolia.basescan.org/token/${CINA_NFT_CONTRACT}?a=${tokenId}`}
+                href={getBlockExplorerUrl("token", CINA_NFT_CONTRACT, {
+                  a: tokenId,
+                })}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Etherscan <ExternalLink className="ml-1 size-3" />
+                {EXPLORER_NAME} <ExternalLink className="ml-1 size-3" />
               </Link>
             </Button>
             <Button asChild variant="outline" className="flex-1">
@@ -168,7 +184,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
               </CardHeader>
               <CardContent>
                 <Link
-                  href={`https://sepolia.basescan.org/address/${owner}`}
+                  href={getBlockExplorerUrl("address", owner)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-mono-tech break-all text-sm text-link transition-colors hover:text-link-deep"
@@ -234,12 +250,13 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                   <dt className="text-muted-foreground">Contract Address</dt>
                   <dd>
                     <Link
-                      href={`https://sepolia.basescan.org/address/${CINA_NFT_CONTRACT}`}
+                      href={getBlockExplorerUrl("address", CINA_NFT_CONTRACT)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono-tech text-link transition-colors hover:text-link-deep"
                     >
-                      {CINA_NFT_CONTRACT.slice(0, 6)}...{CINA_NFT_CONTRACT.slice(-4)}
+                      {CINA_NFT_CONTRACT.slice(0, 6)}...
+                      {CINA_NFT_CONTRACT.slice(-4)}
                     </Link>
                   </dd>
                 </div>
@@ -249,7 +266,9 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Blockchain</dt>
-                  <dd className="font-medium text-foreground">Base</dd>
+                  <dd className="font-medium text-foreground">
+                    {PRIMARY_NETWORK_NAME}
+                  </dd>
                 </div>
               </dl>
             </CardContent>

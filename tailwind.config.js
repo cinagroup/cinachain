@@ -1,4 +1,5 @@
 const { fontFamily } = require("tailwindcss/defaultTheme")
+const tokens = require("./design/tokens.json")
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -68,25 +69,52 @@ module.exports = {
         "highlight-pink": "var(--color-highlight-pink)",
       },
       borderRadius: {
-        lg: `var(--radius)`,
-        md: `calc(var(--radius) - 2px)`,
-        sm: "calc(var(--radius) - 4px)",
-        pill: "100px",
+        none: tokens.radius.none,
+        xs: tokens.radius.xs,
+        sm: tokens.radius.sm,
+        md: tokens.radius.md,
+        lg: tokens.radius.lg,
+        xl: tokens.radius.xl,
+        "pill-sm": tokens.radius.pillSm,
+        pill: tokens.radius.pill,
+        full: tokens.radius.full,
       },
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
+        mono: ["var(--font-mono)", ...fontFamily.mono],
       },
       spacing: {
-        "xxs": "var(--spacing-xxs)",
-        "nav": "var(--spacing-sm)",
-        "section": "var(--spacing-5xl)",
+        xxs: "var(--spacing-xxs)",
+        xs: "var(--spacing-xs)",
+        sm: "var(--spacing-sm)",
+        md: "var(--spacing-md)",
+        lg: "var(--spacing-lg)",
+        xl: "var(--spacing-xl)",
+        "2xl": "var(--spacing-2xl)",
+        "3xl": "var(--spacing-3xl)",
+        "4xl": "var(--spacing-4xl)",
+        "5xl": "var(--spacing-5xl)",
+        "6xl": "var(--spacing-6xl)",
+        nav: "var(--spacing-sm)",
+        section: "var(--spacing-section)",
+      },
+      screens: {
+        tablet: tokens.breakpoint.tablet,
+        desktop: tokens.breakpoint.desktop,
+        wide: tokens.breakpoint.wide,
+        ultra: tokens.breakpoint.ultra,
       },
       boxShadow: {
-        "vercel-sm": "0 1px 1px rgba(0,0,0,0.04), 0 2px 2px rgba(0,0,0,0.08)",
-        "vercel-md": "0 2px 2px rgba(0,0,0,0.08), 0 8px 8px -8px rgba(0,0,0,0.08)",
-        "vercel-lg": "0 2px 2px rgba(0,0,0,0.08), 0 8px 16px -4px rgba(0,0,0,0.08)",
-        "vercel-card": "0 0 0 1px rgba(0,0,0,0.08), 0 1px 1px rgba(0,0,0,0.04), 0 2px 2px rgba(0,0,0,0.08)",
-        "vercel-modal": "0 1px 1px rgba(0,0,0,0.04), 0 8px 16px -4px rgba(0,0,0,0.08), 0 24px 32px -8px rgba(0,0,0,0.12)",
+        "vercel-sm": "var(--shadow-level-2)",
+        "vercel-md": "var(--shadow-level-3)",
+        "vercel-lg": "var(--shadow-level-4)",
+        "vercel-card": "var(--shadow-level-2)",
+        "vercel-modal": "var(--shadow-level-5)",
+        "elevation-1": "var(--shadow-level-1)",
+        "elevation-2": "var(--shadow-level-2)",
+        "elevation-3": "var(--shadow-level-3)",
+        "elevation-4": "var(--shadow-level-4)",
+        "elevation-5": "var(--shadow-level-5)",
       },
       keyframes: {
         "accordion-down": {

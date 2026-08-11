@@ -27,7 +27,7 @@ const buttonVariants = cva(
         // Link style
         link: "text-link underline-offset-4 hover:text-link-deep hover:underline",
         // Brand link blue (spec link color)
-        blue: "bg-[#0070f3] text-white hover:bg-[#0761d1] shadow-vercel-sm",
+        blue: "bg-link text-white shadow-vercel-sm hover:bg-link-deep",
       },
       size: {
         default: "h-9 px-4 py-2 text-sm",

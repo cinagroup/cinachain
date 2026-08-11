@@ -10,10 +10,17 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && node scripts/strip-nulls.mjs",
+    "design:tokens": "node scripts/generate-design-tokens.mjs",
+    "design:tokens:check": "node scripts/generate-design-tokens.mjs --check",
+    "security:config": "node scripts/check-no-tracked-worker-secrets.mjs",
+    "security:tooling:test": "vitest run scripts/__tests__/secret-tooling.test.js",
+    "secrets:billing": "node scripts/provision-billing-secrets.mjs",
+    "secrets:billing:check": "node scripts/verify-billing-secret-names.mjs",
     "start": "next start",
     "test": "vitest run",
-    "lint": "eslint '**/*.{ts,tsx}'",
-    "lint-fix": "eslint '**/*.{ts,tsx}' --fix",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint-fix": "eslint . --ext .ts,.tsx --fix",
+    "typecheck": "tsc --noEmit --pretty false",
     "format": "prettier . --list-different",
     "format-fix": "prettier . --write",
     "run-ci": "concurrently -c \"auto\" -p \"name\" -n \"format,lint\" \"pnpm format\"  \"pnpm lint\"  ",
@@ -23,7 +30,7 @@
   },
   "engines": {
     "npm": ">=7.0.0",
-    "node": ">=20.19.0"
+    "node": ">=22.0.0"
   },
   "packageManager": "pnpm@7.1.8",
   "dependencies": {

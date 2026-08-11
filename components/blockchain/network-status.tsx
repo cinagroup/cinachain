@@ -3,6 +3,11 @@
 import Link from "next/link"
 import { useAccount, useBlockNumber } from "wagmi"
 
+import {
+  EXPLORER_LINK,
+  PRIMARY_CHAIN_ID,
+  PRIMARY_NETWORK_LABEL,
+} from "@/config/deployment"
 import { cn } from "@/lib/utils"
 import { GetNetworkColor } from "@/lib/utils/get-network-color"
 import { Badge } from "@/components/ui/badge"
@@ -18,32 +23,61 @@ const badgeVariants: Record<ReturnType<typeof GetNetworkColor>, string> = {
 
 export function NetworkStatus() {
   const { address, chain } = useAccount()
+  const isPrimaryNetwork = chain?.id === PRIMARY_CHAIN_ID
   // Only poll the block number while a wallet is connected — visitors on
-  // marketing pages shouldn't generate constant RPC traffic.
+  // marketing pages and unsupported networks should not generate primary
+  // RPC traffic.
   const { data } = useBlockNumber({
+    chainId: PRIMARY_CHAIN_ID,
     watch: true,
-    query: { enabled: !!address, refetchInterval: 12_000 },
+    query: {
+      enabled: Boolean(address && isPrimaryNetwork),
+      refetchInterval: 12_000,
+    },
   })
-  const blockExplorerUrl = chain?.blockExplorers?.default.url
+  if (!address || !chain) return null
 
-  if (!address || !chain || !blockExplorerUrl) return null
-
-  return (
-    <Link
-      href={blockExplorerUrl}
-      className="fixed bottom-6 left-6 z-10 flex items-center overflow-hidden rounded-full bg-muted text-muted-foreground shadow-vercel-md"
-    >
+  const content = (
+    <>
       <Badge
         className={cn(
           "font-display rounded-full py-2 text-xs uppercase leading-none tracking-wider",
           badgeVariants[GetNetworkColor(chain.name)]
         )}
       >
-        {chain.name}
+        {isPrimaryNetwork
+          ? PRIMARY_NETWORK_LABEL
+          : `${chain.name} (unsupported)`}
       </Badge>
-      {data !== undefined && (
+      {isPrimaryNetwork && data !== undefined && (
         <p className="mx-2 text-xs">#{data.toString()}</p>
       )}
+    </>
+  )
+
+  const className =
+    "fixed bottom-6 left-6 z-10 flex min-h-11 items-center overflow-hidden rounded-full bg-muted text-muted-foreground shadow-vercel-md"
+
+  if (!isPrimaryNetwork) {
+    return (
+      <div role="status" aria-live="polite" className={className}>
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href={EXPLORER_LINK}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`View ${PRIMARY_NETWORK_LABEL} on the block explorer`}
+      className={cn(
+        className,
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      )}
+    >
+      {content}
     </Link>
   )
 }

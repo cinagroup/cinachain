@@ -1,6 +1,8 @@
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Site
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+import { DEPLOYMENT_STAGE, PRIMARY_NETWORK_LABEL } from "./deployment"
+
 interface SiteConfig {
   name: string
   title: string
@@ -19,8 +21,7 @@ export const siteConfig: SiteConfig = {
   name: "CinaChain",
   title: "CinaChain - NFT DApp",
   emoji: "🔗",
-  description:
-    "CinaChain NFT platform built on Base L2 with Cloudflare Web3 infrastructure.",
+  description: `CinaChain NFT platform on ${PRIMARY_NETWORK_LABEL} (${DEPLOYMENT_STAGE}) with Cloudflare Web3 infrastructure.`,
   localeDefault: "en",
   links: {
     docs: "https://docs.cinachain.com",

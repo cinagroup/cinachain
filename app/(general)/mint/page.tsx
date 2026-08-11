@@ -12,6 +12,7 @@ import {
 import { formatEther } from "viem"
 import { useAccount, useReadContracts } from "wagmi"
 
+import { EXPLORER_NAME, getBlockExplorerUrl } from "@/config/deployment"
 import { CINA_NFT_ABI } from "@/lib/contracts/abi"
 import {
   CINA_NFT_CONTRACT,
@@ -341,12 +342,13 @@ export default function MintPage() {
                   <AlertDescription>
                     Mint successful!{" "}
                     <a
-                      href={`https://sepolia.basescan.org/tx/${txHash}`}
+                      href={getBlockExplorerUrl("tx", txHash)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 underline"
                     >
-                      View on Etherscan <ExternalLink className="size-3" />
+                      View on {EXPLORER_NAME}{" "}
+                      <ExternalLink className="size-3" />
                     </a>
                   </AlertDescription>
                 </Alert>

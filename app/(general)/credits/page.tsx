@@ -11,6 +11,7 @@ import {
   useWriteContract,
 } from "wagmi"
 
+import { EXPLORER_NAME, getBlockExplorerUrl } from "@/config/deployment"
 import {
   CINA_CREDIT_CONTRACT,
   hasCreditContract,
@@ -336,12 +337,13 @@ export default function CreditsPage() {
                       : "Top-up confirmed!"}{" "}
                     Your credit balance has been updated.{" "}
                     <a
-                      href={`https://sepolia.basescan.org/tx/${txHash}`}
+                      href={getBlockExplorerUrl("tx", txHash)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 underline"
                     >
-                      View on Etherscan <ExternalLink className="size-3" />
+                      View on {EXPLORER_NAME}{" "}
+                      <ExternalLink className="size-3" />
                     </a>
                   </AlertDescription>
                 </Alert>

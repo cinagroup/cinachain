@@ -1,17 +1,31 @@
 "use client"
 
+import { PRIMARY_NETWORK_NAME } from "@/config/deployment"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
 
 export function HeroStats() {
-  const { mintedCount, maxCount, isLoading } = useContractStats()
-
-  if (isLoading || mintedCount <= 0) return null
+  const { data: stats, status } = useContractStats()
+  const unavailableValue = status === "loading" ? "..." : "Unavailable"
 
   return (
-    <dl className="mx-auto mt-12 flex max-w-screen-sm items-center justify-center divide-x divide-border rounded-lg border border-border bg-card px-2 py-4 shadow-vercel-sm">
-      <HeroStat label="NFTs Minted" value={mintedCount.toLocaleString()} />
-      <HeroStat label="Max Supply" value={maxCount.toLocaleString()} />
-      <HeroStat label="Network" value="Base L2" />
+    <dl
+      aria-busy={status === "loading"}
+      aria-label={
+        status === "stale"
+          ? "Collection statistics, last known values"
+          : undefined
+      }
+      className="mx-auto mt-12 flex max-w-screen-sm items-center justify-center divide-x divide-border rounded-lg border border-border bg-card px-2 py-4 shadow-vercel-sm"
+    >
+      <HeroStat
+        label="NFTs Minted"
+        value={stats?.mintedCount.toLocaleString() ?? unavailableValue}
+      />
+      <HeroStat
+        label="Max Supply"
+        value={stats?.maxCount.toLocaleString() ?? unavailableValue}
+      />
+      <HeroStat label="Network" value={PRIMARY_NETWORK_NAME} />
     </dl>
   )
 }

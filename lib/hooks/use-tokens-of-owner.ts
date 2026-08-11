@@ -1,7 +1,13 @@
 import { useReadContract, useReadContracts } from "wagmi"
-import { CINA_NFT_CONTRACT, hasNftContract } from "@/lib/contracts/addresses"
+
+import { getChainReadStatus } from "@/lib/chain-read-state"
 import { CINA_NFT_ABI } from "@/lib/contracts/abi"
+import { CINA_NFT_CONTRACT, hasNftContract } from "@/lib/contracts/addresses"
 import { useNftBalance } from "@/lib/hooks/use-nft-balance"
+
+const INCOMPLETE_OWNERSHIP_ERROR = new Error(
+  "The NFT contract returned incomplete ownership data"
+)
 
 const ENUM_ABI = [
   {
@@ -30,11 +36,12 @@ export function useTokensOfOwner(
 ) {
   const balanceQuery = useNftBalance(address)
   const count = balanceQuery.data !== undefined ? Number(balanceQuery.data) : 0
+  const pageLength = Math.max(0, Math.min(limit, count - offset))
 
   const contractsQuery = useReadContracts({
     contracts:
       address && hasNftContract && count > offset
-        ? Array.from({ length: Math.min(limit, count - offset) }, (_, i) => ({
+        ? Array.from({ length: pageLength }, (_, i) => ({
             address: CINA_NFT_CONTRACT,
             abi: ENUM_ABI,
             functionName: "tokenOfOwnerByIndex" as const,
@@ -47,18 +54,54 @@ export function useTokensOfOwner(
     },
   })
 
-  const tokenIds = (contractsQuery.data ?? [])
+  const failedRead = contractsQuery.data?.find(
+    (read) => read.status === "failure"
+  )
+  const successfulTokenIds = (contractsQuery.data ?? [])
     .filter((r) => r.status === "success" && r.result !== undefined)
     .map((r) => (r.result as bigint).toString())
+  const hasCompletePage =
+    pageLength === 0 ||
+    (successfulTokenIds.length === pageLength && failedRead === undefined)
+  const hasData = balanceQuery.data !== undefined && hasCompletePage
+  const error =
+    balanceQuery.error ??
+    contractsQuery.error ??
+    (failedRead?.status === "failure" ? failedRead.error : null) ??
+    (!balanceQuery.isPending && !contractsQuery.isPending && !hasData
+      ? INCOMPLETE_OWNERSHIP_ERROR
+      : null)
+  const status = getChainReadStatus({
+    isConfigured: !!address && hasNftContract,
+    isPending:
+      balanceQuery.isPending || (pageLength > 0 && contractsQuery.isPending),
+    hasData,
+    hasError: error !== null,
+    isRefetchError:
+      balanceQuery.isRefetchError || contractsQuery.isRefetchError,
+    isEmpty: count === 0,
+  })
+  const tokenIds = hasCompletePage ? successfulTokenIds : []
 
-  const hasMore = count > offset + tokenIds.length
+  const hasMore = hasData && count > offset + tokenIds.length
+
+  const refetch = async () => {
+    const requests: Array<Promise<unknown>> = [balanceQuery.refetch()]
+    if (pageLength > 0) requests.push(contractsQuery.refetch())
+    await Promise.all(requests)
+  }
 
   return {
     tokenIds,
     count,
     hasMore,
-    isLoading: balanceQuery.isLoading || contractsQuery.isLoading,
-    isError: balanceQuery.isError || contractsQuery.isError,
+    status,
+    error,
+    isLoading: status === "loading",
+    isError: status === "error",
+    isStale: status === "stale",
+    isRetrying: balanceQuery.isRefetching || contractsQuery.isRefetching,
+    refetch,
   }
 }
 

@@ -1,4 +1,3 @@
-import "@/styles/app.css"
 import "@/styles/globals.css"
 
 import { ReactNode } from "react"
@@ -6,7 +5,7 @@ import type { Metadata, Viewport } from "next"
 import { env } from "@/env.mjs"
 
 import { siteConfig } from "@/config/site"
-import { fontSans } from "@/lib/fonts"
+import { fontMono, fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 import RootProvider from "@/components/providers/root-provider"
@@ -15,7 +14,10 @@ import { PWARegister } from "@/components/pwa/pwa-register"
 const url = env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
 export const viewport: Viewport = {
-  themeColor: "#171717",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#131313" },
+  ],
   width: "device-width",
   initialScale: 1,
 }
@@ -73,7 +75,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <body
           className={cn(
             "min-h-screen bg-background font-sans antialiased",
-            fontSans.variable
+            fontSans.variable,
+            fontMono.variable
           )}
         >
           <RootProvider>{children}</RootProvider>

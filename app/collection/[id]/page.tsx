@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
+
+import { PRIMARY_NETWORK_NAME } from "@/config/deployment"
 import { generateStaticParams as generateParams } from "@/lib/static-params"
+
 import NftDetailClient from "./NftDetailClient"
 
 // 预生成静态参数（支持静态导出）
@@ -18,13 +21,13 @@ export function generateMetadata({
   const tokenId = params.id
   return {
     title: `CinaChain NFT #${tokenId}`,
-    description: `CinaChain NFT #${tokenId} — a collectible on the Base network.`,
+    description: `CinaChain NFT #${tokenId} — a collectible on ${PRIMARY_NETWORK_NAME}.`,
     alternates: {
       canonical: `/collection/${tokenId}`,
     },
     openGraph: {
       title: `CinaChain NFT #${tokenId}`,
-      description: `CinaChain NFT #${tokenId} — a collectible on the Base network.`,
+      description: `CinaChain NFT #${tokenId} — a collectible on ${PRIMARY_NETWORK_NAME}.`,
       url: `/collection/${tokenId}`,
     },
   }

@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
+
+import { hasNftContract } from "@/lib/contracts/addresses"
 import { useTokenMetadata } from "@/lib/hooks/use-token-metadata"
 import CinaNftImage from "@/components/CinaNftImage"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
-import { hasNftContract } from "@/lib/contracts/addresses"
 
 interface NftCardProps {
   tokenId: string
@@ -24,14 +25,17 @@ export function NftCard({
   showFavorite = true,
   preloadedTokenURI,
 }: NftCardProps) {
-  const { metadata, image, name, isLoading, isError } = useTokenMetadata(
+  const { metadata, image, name, isLoading } = useTokenMetadata(
     tokenId,
     preloadedTokenURI
   )
 
   return (
-    <Link href={`/collection/${tokenId}`} className="group block">
-      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-vercel-card transition-all hover:-translate-y-0.5 hover:shadow-vercel-md">
+    <div className="group relative overflow-hidden rounded-lg border border-border bg-card shadow-vercel-card transition-all hover:-translate-y-0.5 hover:shadow-vercel-md">
+      <Link
+        href={`/collection/${tokenId}`}
+        className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
         <div className="relative aspect-square bg-secondary">
           {isLoading && (
             <div className="flex h-full items-center justify-center">
@@ -51,13 +55,6 @@ export function NftCard({
             </div>
           )}
 
-          {/* Favorite button overlay */}
-          {showFavorite && !isLoading && hasNftContract && (
-            <div className="absolute right-2 top-2 rounded-md bg-background/80 backdrop-blur-sm">
-              <FavoriteButton tokenId={tokenId} size="sm" />
-            </div>
-          )}
-
           {/* ERC-721 badge */}
           <div className="absolute left-2 top-2">
             <span className="rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-sm">
@@ -74,12 +71,25 @@ export function NftCard({
           </div>
           {metadata?.attributes && metadata.attributes.length > 0 && (
             <p className="mt-1 truncate text-xs text-muted-foreground">
-              {metadata.attributes.slice(0, 2).map((a) => `${a.trait_type}: ${a.value}`).join(" · ")}
+              {metadata.attributes
+                .slice(0, 2)
+                .map((a) => `${a.trait_type}: ${a.value}`)
+                .join(" · ")}
             </p>
           )}
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      {showFavorite && !isLoading && hasNftContract && (
+        <div className="absolute right-2 top-2 z-10 rounded-md bg-background/80 backdrop-blur-sm">
+          <FavoriteButton
+            className="size-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            tokenId={tokenId}
+            size="sm"
+          />
+        </div>
+      )}
+    </div>
   )
 }
 

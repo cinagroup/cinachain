@@ -408,8 +408,7 @@ API_VERSION = "v1"
 CINA_CREDIT_ADDRESS = "0x78f5aebc75b7d197b10622cccabe8429617836d7"
 BASE_SEPOLIA_RPC = "https://sepolia.base.org"
 # Testnet admin key — mainnet: replace with secret + SIWE (M2 known limit)
-ADMIN_KEY = "cinachain-admin-dev-2026"
-
+ADMIN_KEY = <set-via-cloudflare-secret>
 [triggers]
 crons = ["* * * * *"]
 ```

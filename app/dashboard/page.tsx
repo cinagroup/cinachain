@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useAccount, useBalance, useEnsName } from "wagmi"
-import { Loader2 } from "lucide-react"
+import { Award, Loader2 } from "lucide-react"
 
 import { WalletAddress } from "@/components/blockchain/wallet-address"
 import { WalletEnsName } from "@/components/blockchain/wallet-ens-name"
@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { SignInButton } from "@/components/blockchain/sign-in-button"
 import { PWAInstallPrompt } from "@/components/pwa/install-prompt"
+import { ChainReadNotice } from "@/components/shared/chain-read-notice"
 import { useNftBalance } from "@/lib/hooks/use-nft-balance"
 import { useWhitelist } from "@/lib/hooks/use-whitelist"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
@@ -88,7 +89,7 @@ function TierProgressCard({ address }: { address?: Address }) {
               <>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#7928ca] to-[#0070f3]"
+                    className="h-full rounded-full bg-violet"
                     style={{ width: `${data.progressBps / 100}%` }}
                   />
                 </div>
@@ -101,8 +102,9 @@ function TierProgressCard({ address }: { address?: Address }) {
               <p className="mt-2 text-xs text-muted-foreground">Top tier reached</p>
             )}
             {data.pendingBadges.length > 0 && (
-              <p className="mt-2 text-xs font-medium text-violet">
-                🎖 Badge pending: {data.pendingBadges.join(", ")}
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-violet">
+                <Award aria-hidden="true" className="size-3.5" />
+                Badge pending: {data.pendingBadges.join(", ")}
               </p>
             )}
           </>
@@ -117,7 +119,12 @@ export default function PageDashboard() {
   const { data: nftBalance, isLoading: nftLoading } = useNftBalance(address)
   const { data: balance, isLoading: balanceLoading } = useBalance({ address })
   const { data: whitelistData, isLoading: whitelistLoading } = useWhitelist(address)
-  const { mintedCount, maxCount } = useContractStats()
+  const {
+    data: contractStats,
+    status: contractStatsStatus,
+    isRetrying: isRetryingContractStats,
+    refetch: refetchContractStats,
+  } = useContractStats()
 
   const balanceStr = balance
     ? trimFormattedBalance(formatUnits(balance.value, balance.decimals), 4)
@@ -169,10 +176,40 @@ export default function PageDashboard() {
             />
             <StatCard
               label="Collection Progress"
-              value={`${mintedCount.toLocaleString()} / ${maxCount.toLocaleString()}`}
-              sublabel="Total minted"
+              value={
+                contractStats
+                  ? `${contractStats.mintedCount.toLocaleString()} / ${contractStats.maxCount.toLocaleString()}`
+                  : "Unavailable"
+              }
+              sublabel={
+                contractStatsStatus === "stale"
+                  ? "Last complete on-chain response"
+                  : "Total minted"
+              }
+              isLoading={contractStatsStatus === "loading"}
             />
           </div>
+
+          {(contractStatsStatus === "error" ||
+            contractStatsStatus === "stale") && (
+            <div className="mt-6">
+              <ChainReadNotice
+                description={
+                  contractStatsStatus === "stale"
+                    ? "The latest refresh failed. Collection progress uses the last complete on-chain response."
+                    : "Collection progress is unavailable because the contract reads did not return a complete response."
+                }
+                isRetrying={isRetryingContractStats}
+                onRetry={() => void refetchContractStats()}
+                state={contractStatsStatus}
+                title={
+                  contractStatsStatus === "stale"
+                    ? "Showing last known collection progress"
+                    : "Collection progress unavailable"
+                }
+              />
+            </div>
+          )}
 
           {/* Membership Tier */}
           <div className="mt-8">

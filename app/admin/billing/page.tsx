@@ -1,17 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAccount, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
-import type { Address, Hash } from "viem"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   AlertCircle,
   ArrowLeftRight,
+  BadgeCheck,
   BookOpen,
   CheckCircle2,
   Coins,
@@ -20,15 +14,36 @@ import {
   Pause,
   Play,
   ShieldAlert,
-  BadgeCheck,
 } from "lucide-react"
-import { CINA_CREDIT_CONTRACT, hasCreditContract } from "@/lib/contracts/addresses"
+import type { Address, Hash } from "viem"
+import {
+  useAccount,
+  usePublicClient,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi"
+
+import { EXPLORER_NAME, getBlockExplorerUrl } from "@/config/deployment"
+import {
+  CINA_CREDIT_CONTRACT,
+  hasCreditContract,
+} from "@/lib/contracts/addresses"
 import { CINA_CREDIT_ABI } from "@/lib/contracts/cina-credit"
 import { useCreditBalance } from "@/lib/hooks/use-credit-balance"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 const BILLING_API_URL =
-  process.env.NEXT_PUBLIC_BILLING_API_URL ||
-  "https://billing-api.cinachain.com"
+  process.env.NEXT_PUBLIC_BILLING_API_URL || "https://billing-api.cinachain.com"
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/
 const POSITIVE_INT_RE = /^\d+$/
@@ -46,7 +61,12 @@ export default function BillingManagementPage() {
   const { address } = useAccount()
   const queryClient = useQueryClient()
   const publicClient = usePublicClient()
-  const { creditRate, isPaused, isLoading: creditLoading, formatCredit } = useCreditBalance(address)
+  const {
+    creditRate,
+    isPaused,
+    isLoading: creditLoading,
+    formatCredit,
+  } = useCreditBalance(address)
 
   const { writeContractAsync, isPending } = useWriteContract()
   const [txHash, setTxHash] = useState<Hash | null>(null)
@@ -64,7 +84,14 @@ export default function BillingManagementPage() {
 
   // Tier badge minting (spec §5: platform mints on tier crossing)
   const [adminKey, setAdminKey] = useState("")
-  const [pendingList, setPendingList] = useState<Array<{ address: string; badges: string[]; cumulativeSpend: string; custId?: string }>>([])
+  const [pendingList, setPendingList] = useState<
+    Array<{
+      address: string
+      badges: string[]
+      cumulativeSpend: string
+      custId?: string
+    }>
+  >([])
   const [isFetchingPending, setIsFetchingPending] = useState(false)
   const [badgeError, setBadgeError] = useState<string | null>(null)
 
@@ -113,7 +140,12 @@ export default function BillingManagementPage() {
   const isBusy = isPending || (!!txHash && !confirmed && !reverted)
 
   const runWrite = async (
-    functionName: "setRate" | "mintTo" | "pause" | "unpause" | "setRedeemEnabled",
+    functionName:
+      | "setRate"
+      | "mintTo"
+      | "pause"
+      | "unpause"
+      | "setRedeemEnabled",
     label: string,
     args?: readonly unknown[]
   ) => {
@@ -131,7 +163,7 @@ export default function BillingManagementPage() {
       setTxHash(hash)
       setSuccessAction(label)
     } catch (err) {
-      const anyErr = err  as { shortMessage?: string; message?: string }
+      const anyErr = err as { shortMessage?: string; message?: string }
       setError(anyErr.shortMessage ?? anyErr.message ?? `Failed to ${label}`)
     }
   }
@@ -147,21 +179,43 @@ export default function BillingManagementPage() {
       const body = await res.json()
       setPendingList(body.pending ?? [])
     } catch (err) {
-      setBadgeError(err instanceof Error ? err.message : "Failed to load pending badges")
+      setBadgeError(
+        err instanceof Error ? err.message : "Failed to load pending badges"
+      )
     } finally {
       setIsFetchingPending(false)
     }
   }
 
   const BADGE_MINT_ABI = [
-    { name: "mint", type: "function", stateMutability: "nonpayable",
-      inputs: [{ name: "to", type: "address" }, { name: "tokenId", type: "uint256" }, { name: "amount", type: "uint256" }],
-      outputs: [] },
+    {
+      name: "mint",
+      type: "function",
+      stateMutability: "nonpayable",
+      inputs: [
+        { name: "to", type: "address" },
+        { name: "tokenId", type: "uint256" },
+        { name: "amount", type: "uint256" },
+      ],
+      outputs: [],
+    },
   ] as const
-  const TIER_IDS: Record<string, bigint> = { bronze: 100n, silver: 101n, gold: 102n, diamond: 103n, whale: 104n }
-  const BADGE_CONTRACT = process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT || "0x72cc9adb6c877d233e9843ee2d00424b9766d0cf"
+  const TIER_IDS: Record<string, bigint> = {
+    bronze: 100n,
+    silver: 101n,
+    gold: 102n,
+    diamond: 103n,
+    whale: 104n,
+  }
+  const BADGE_CONTRACT =
+    process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT ||
+    "0x72cc9adb6c877d233e9843ee2d00424b9766d0cf"
 
-  const mintPending = async (item: { address: string; badges: string[]; custId?: string }) => {
+  const mintPending = async (item: {
+    address: string
+    badges: string[]
+    custId?: string
+  }) => {
     setBadgeError(null)
     try {
       if (!publicClient) throw new Error("No public client available")
@@ -174,19 +228,32 @@ export default function BillingManagementPage() {
         })
         // wait for mining before confirming in the ledger (review: gate on receipt)
         const receipt = await publicClient.waitForTransactionReceipt({ hash })
-        if (receipt.status !== "success") throw new Error(`mint reverted for ${tier}`)
-        const confirmRes = await fetch(`${BILLING_API_URL}/v1/admin/badges/${item.address}/${tier}/confirm`, {
-          method: "POST",
-          headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
-          body: JSON.stringify({ txHash: hash, ...(item.custId ? { custId: item.custId } : {}) }),
-        })
-        if (!confirmRes.ok) throw new Error(`confirm failed: ${confirmRes.status}`)
+        if (receipt.status !== "success")
+          throw new Error(`mint reverted for ${tier}`)
+        const confirmRes = await fetch(
+          `${BILLING_API_URL}/v1/admin/badges/${item.address}/${tier}/confirm`,
+          {
+            method: "POST",
+            headers: {
+              "X-Admin-Key": adminKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              txHash: hash,
+              ...(item.custId ? { custId: item.custId } : {}),
+            }),
+          }
+        )
+        if (!confirmRes.ok)
+          throw new Error(`confirm failed: ${confirmRes.status}`)
       }
       setSuccessAction("Tier badges minted")
       await fetchPending()
     } catch (err) {
-      const anyErr = err  as { shortMessage?: string; message?: string }
-      setBadgeError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge")
+      const anyErr = err as { shortMessage?: string; message?: string }
+      setBadgeError(
+        anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge"
+      )
     }
   }
 
@@ -194,17 +261,23 @@ export default function BillingManagementPage() {
     setBadgeError(null)
     setCustMsg(null)
     try {
-      if (!custId || !/^\d+$/.test(custAmountWei)) throw new Error("Valid account id and amountWei required")
+      if (!custId || !/^\d+$/.test(custAmountWei))
+        throw new Error("Valid account id and amountWei required")
       const res = await fetch(`${BILLING_API_URL}/v1/custodial/${op}`, {
         method: "POST",
-        headers: { "X-Admin-Key": adminKey, "Content-Type": "application/json" },
+        headers: {
+          "X-Admin-Key": adminKey,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ id: custId, amountWei: custAmountWei }),
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? `${op} failed: ${res.status}`)
       setCustMsg(`${op} ok — balanceWei ${String(body.balanceWei)}`)
     } catch (err) {
-      setBadgeError(err instanceof Error ? err.message : "Custodial operation failed")
+      setBadgeError(
+        err instanceof Error ? err.message : "Custodial operation failed"
+      )
     }
   }
 
@@ -214,14 +287,17 @@ export default function BillingManagementPage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            Credit contract address not configured. Set NEXT_PUBLIC_CINA_CREDIT_CONTRACT in environment.
+            Credit contract address not configured. Set
+            NEXT_PUBLIC_CINA_CREDIT_CONTRACT in environment.
           </AlertDescription>
         </Alert>
       </div>
     )
   }
 
-  const rateInt = POSITIVE_INT_RE.test(newRate.trim()) ? parseInt(newRate.trim(), 10) : NaN
+  const rateInt = POSITIVE_INT_RE.test(newRate.trim())
+    ? parseInt(newRate.trim(), 10)
+    : NaN
   const currentRate = creditRate !== undefined ? Number(creditRate) : NaN
   const shownRate = !Number.isNaN(rateInt) ? rateInt : currentRate
 
@@ -234,8 +310,8 @@ export default function BillingManagementPage() {
         Billing Management<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Manage the CinaCredit exchange rate, issue credit, inspect the ledger, and control emergency
-        top-up operations.
+        Manage the CinaCredit exchange rate, issue credit, inspect the ledger,
+        and control emergency top-up operations.
       </p>
 
       {/* Paused warning */}
@@ -262,12 +338,12 @@ export default function BillingManagementPage() {
           <AlertDescription>
             {successAction} successful!{" "}
             <a
-              href={`https://sepolia.basescan.org/tx/${txHash}`}
+              href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Etherscan <ExternalLink className="size-3" />
+              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -288,12 +364,12 @@ export default function BillingManagementPage() {
           <AlertDescription className="break-all">
             Transaction reverted on-chain — the action failed.{" "}
             <a
-              href={`https://sepolia.basescan.org/tx/${txHash}`}
+              href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Etherscan <ExternalLink className="size-3" />
+              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -313,8 +389,17 @@ export default function BillingManagementPage() {
             <div className="flex items-center justify-between rounded-md border border-border bg-secondary p-4">
               <span className="text-sm font-medium">Current Rate</span>
               <span className="font-mono-tech text-sm text-foreground">
-                1 ETH = {creditLoading ? "…" : !Number.isNaN(shownRate) ? shownRate.toLocaleString() : "—"}{" "}
-                credit (current: {creditLoading || creditRate === undefined ? "—" : formatCredit(creditRate)})
+                1 ETH ={" "}
+                {creditLoading
+                  ? "…"
+                  : !Number.isNaN(shownRate)
+                  ? shownRate.toLocaleString()
+                  : "—"}{" "}
+                credit (current:{" "}
+                {creditLoading || creditRate === undefined
+                  ? "—"
+                  : formatCredit(creditRate)}
+                )
               </span>
             </div>
             <div className="space-y-2">
@@ -337,10 +422,16 @@ export default function BillingManagementPage() {
                   setError("Rate must be a positive integer")
                   return
                 }
-                if (!window.confirm(`Set exchange rate to ${newRate.trim()} credit per 1 ETH?`)) {
+                if (
+                  !window.confirm(
+                    `Set exchange rate to ${newRate.trim()} credit per 1 ETH?`
+                  )
+                ) {
                   return
                 }
-                void runWrite("setRate", "Rate update", [BigInt(newRate.trim())])
+                void runWrite("setRate", "Rate update", [
+                  BigInt(newRate.trim()),
+                ])
               }}
               disabled={isBusy || !newRate.trim()}
               variant="outline"
@@ -358,7 +449,9 @@ export default function BillingManagementPage() {
               <Coins className="size-5" />
               Issue Credit
             </CardTitle>
-            <CardDescription>Mint credit directly to a recipient address</CardDescription>
+            <CardDescription>
+              Mint credit directly to a recipient address
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
@@ -393,18 +486,30 @@ export default function BillingManagementPage() {
             <Button
               onClick={() => {
                 if (!ADDRESS_RE.test(recipient)) {
-                  setError("Invalid recipient address — must be 0x + 40 hex characters")
+                  setError(
+                    "Invalid recipient address — must be 0x + 40 hex characters"
+                  )
                   return
                 }
-                if (!POSITIVE_INT_RE.test(amount.trim()) || BigInt(amount) <= 0n) {
+                if (
+                  !POSITIVE_INT_RE.test(amount.trim()) ||
+                  BigInt(amount) <= 0n
+                ) {
                   setError("Amount must be a positive integer")
                   return
                 }
                 const weiAmount = BigInt(amount) * WEI_PER_CREDIT
-                if (!window.confirm(`Issue ${amount} credit (${weiAmount} wei units) to ${recipient}?`)) {
+                if (
+                  !window.confirm(
+                    `Issue ${amount} credit (${weiAmount} wei units) to ${recipient}?`
+                  )
+                ) {
                   return
                 }
-                void runWrite("mintTo", "Credit issuance", [recipient, weiAmount])
+                void runWrite("mintTo", "Credit issuance", [
+                  recipient,
+                  weiAmount,
+                ])
               }}
               disabled={isBusy || !recipient || !amount.trim()}
               variant="outline"
@@ -422,7 +527,9 @@ export default function BillingManagementPage() {
               <BookOpen className="size-5" />
               Ledger
             </CardTitle>
-            <CardDescription>Credit ledger for the connected admin address</CardDescription>
+            <CardDescription>
+              Credit ledger for the connected admin address
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {ledgerError ? (
@@ -470,12 +577,20 @@ export default function BillingManagementPage() {
               <ShieldAlert className="size-5" />
               Emergency Controls
             </CardTitle>
-            <CardDescription>Pause, resume, or enable redemption</CardDescription>
+            <CardDescription>
+              Pause, resume, or enable redemption
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between rounded-md border border-border bg-secondary p-4">
               <span className="text-sm font-medium">Top-ups Status</span>
-              <span className={isPaused ? "font-semibold text-red-500" : "font-semibold text-green-500"}>
+              <span
+                className={
+                  isPaused
+                    ? "font-semibold text-red-500"
+                    : "font-semibold text-green-500"
+                }
+              >
                 {creditLoading ? "…" : isPaused ? "Paused" : "Active"}
               </span>
             </div>
@@ -542,7 +657,8 @@ export default function BillingManagementPage() {
             Tier Badge Minting
           </CardTitle>
           <CardDescription>
-            Addresses that crossed a tier threshold but have no on-chain badge yet
+            Addresses that crossed a tier threshold but have no on-chain badge
+            yet
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -554,8 +670,17 @@ export default function BillingManagementPage() {
               onChange={(e) => setAdminKey(e.target.value)}
               className="max-w-[240px]"
             />
-            <Button variant="outline" size="sm" onClick={fetchPending} disabled={isFetchingPending}>
-              {isFetchingPending ? <Loader2 className="size-4 animate-spin" /> : "Refresh"}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchPending}
+              disabled={isFetchingPending}
+            >
+              {isFetchingPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                "Refresh"
+              )}
             </Button>
           </div>
           {badgeError && (
@@ -568,14 +693,25 @@ export default function BillingManagementPage() {
           ) : (
             <ul className="mt-4 space-y-3">
               {pendingList.map((item) => (
-                <li key={`${item.custId ?? item.address}`} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+                <li
+                  key={`${item.custId ?? item.address}`}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3"
+                >
                   <div>
-                    <p className="font-mono-tech text-xs text-foreground">{item.address}</p>
+                    <p className="font-mono-tech text-xs text-foreground">
+                      {item.address}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {item.badges.join(", ")} · cumulative {(Number(item.cumulativeSpend) / 1e18).toLocaleString()} credit
+                      {item.badges.join(", ")} · cumulative{" "}
+                      {(Number(item.cumulativeSpend) / 1e18).toLocaleString()}{" "}
+                      credit
                     </p>
                   </div>
-                  <Button size="sm" onClick={() => mintPending(item)} disabled={isBusy || !adminKey}>
+                  <Button
+                    size="sm"
+                    onClick={() => mintPending(item)}
+                    disabled={isBusy || !adminKey}
+                  >
                     Mint
                   </Button>
                 </li>
@@ -593,25 +729,46 @@ export default function BillingManagementPage() {
             Custodial Accounts
           </CardTitle>
           <CardDescription>
-            DB bookkeeping on top of the hot-wallet pool — credit on deposit, debit after pool withdrawal
+            DB bookkeeping on top of the hot-wallet pool — credit on deposit,
+            debit after pool withdrawal
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="custId">Account ID</Label>
-              <Input id="custId" placeholder="cust_..." value={custId} onChange={(e) => setCustId(e.target.value)} />
+              <Input
+                id="custId"
+                placeholder="cust_..."
+                value={custId}
+                onChange={(e) => setCustId(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="custAmount">Amount (wei)</Label>
-              <Input id="custAmount" placeholder="1000000000000000000" value={custAmountWei} onChange={(e) => setCustAmountWei(e.target.value)} />
+              <Input
+                id="custAmount"
+                placeholder="1000000000000000000"
+                value={custAmountWei}
+                onChange={(e) => setCustAmountWei(e.target.value)}
+              />
             </div>
           </div>
           <div className="mt-4 flex gap-3">
-            <Button variant="outline" size="sm" onClick={() => custOperate("credit")} disabled={!adminKey}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => custOperate("credit")}
+              disabled={!adminKey}
+            >
               Credit
             </Button>
-            <Button variant="outline" size="sm" onClick={() => custOperate("debit")} disabled={!adminKey}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => custOperate("debit")}
+              disabled={!adminKey}
+            >
               Debit
             </Button>
           </div>

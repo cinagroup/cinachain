@@ -32,6 +32,8 @@ yarn-error.log*
 .env
 .env*.local
 .env*.prd
+.dev.vars*
+!*.dev.vars.example
 
 # vercel
 .vercel
@@ -41,11 +43,13 @@ yarn-error.log*
 next-env.d.ts
 workers/*/node_modules/
 workers/*/package-lock.json
+!workers/billing/package-lock.json
 contracts/openzeppelin/
 contracts/out/
 
 # Playwright test artifacts
 .playwright-mcp/
+/artifacts/
 prod-mint.png
 dev-server.log
 .wrangler/

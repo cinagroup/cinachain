@@ -1,98 +1,12 @@
+@import "./generated/design-tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Vercel-inspired design tokens */
-    --background: 0 0% 98%; /* #fafafa canvas-soft */
-    --foreground: 0 0% 9%; /* #171717 ink */
-
-    --card: 0 0% 100%; /* #ffffff canvas */
-    --card-foreground: 0 0% 9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-
-    --primary: 0 0% 9%; /* #171717 */
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 0 0% 96%; /* #f5f5f5 canvas-soft-2 */
-    --secondary-foreground: 0 0% 9%;
-
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 53%; /* #888888 mute */
-
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
-
-    --destructive: 0 93% 50%; /* #ee0000 */
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 92%; /* #ebebeb hairline */
-    --input: 0 0% 92%;
-    --ring: 0 0% 9%;
-
-    --radius: 0.5rem;
-
-    /* Vercel brand colors */
-    --color-link: #0070f3;
-    --color-link-deep: #0761d1;
-    --color-link-bg-soft: #d3e5ff;
-    --color-body: #4d4d4d; /* body secondary text (spec body) */
-    --color-success: #0070f3; /* spec success semantic (link blue) */
-    --color-warning: #f5a623;
-    --color-warning-soft: #ffefcf;
-    --color-warning-deep: #ab570a;
-    --color-violet: #7928ca;
-    --color-violet-soft: #d8ccf1;
-    --color-cyan: #50e3c2;
-    --color-cyan-soft: #aaffec;
-    --color-cyan-deep: #29bc9b;
-    --color-highlight-pink: #ff0080;
-
-    /* Vercel spacing */
-    --spacing-xxs: 4px;
-    --spacing-xs: 8px;
-    --spacing-sm: 12px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-    --spacing-2xl: 40px;
-    --spacing-3xl: 48px;
-    --spacing-4xl: 64px;
-    --spacing-5xl: 96px;
-    --spacing-6xl: 128px;
-  }
-
-  .dark {
-    --background: 0 0% 7.5%;
-    --foreground: 0 0% 98%;
-
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --radius: var(--radius-md);
   }
 }
 
@@ -103,6 +17,17 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "ss02", "rlig" 1, "calt" 1;
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-fg);
+  }
+}
+
+@layer components {
+  .input {
+    @apply flex h-10 w-full rounded-sm border border-input bg-card px-3 text-sm text-foreground shadow-elevation-1 transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 }
 
@@ -115,30 +40,44 @@
   }
 
   .font-mono-tech {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+      monospace;
     font-weight: 400;
+  }
+
+  .type-display-xl {
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    font-size: var(--type-display-xl-size);
+    font-weight: var(--type-display-xl-weight);
+    line-height: var(--type-display-xl-line-height);
+    letter-spacing: var(--type-display-xl-tracking);
+  }
+
+  .type-display-lg {
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    font-size: var(--type-display-lg-size);
+    font-weight: var(--type-display-lg-weight);
+    line-height: var(--type-display-lg-line-height);
+    letter-spacing: var(--type-display-lg-tracking);
   }
 }
 
 /* Stacked shadow system (Vercel elevation levels) */
 @layer utilities {
   .shadow-vercel-sm {
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04), 0 2px 2px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-level-2);
   }
 
   .shadow-vercel-md {
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08),
-      0 8px 8px -8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-level-3);
   }
 
   .shadow-vercel-lg {
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.08),
-      0 8px 16px -4px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-level-4);
   }
 
   .shadow-vercel-card {
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 1px rgba(0, 0, 0, 0.04),
-      0 2px 2px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-level-2);
   }
 
   /* Vercel pill button — marketing CTA scale only (100px) */
@@ -153,19 +92,19 @@
   .mesh-gradient {
     background: linear-gradient(
       135deg,
-      #007cf0 0%,
-      #00dfd8 20%,
-      #7928ca 40%,
-      #ff0080 60%,
-      #ff4d4d 80%,
-      #f9cb28 100%
+      var(--color-gradient-develop-start) 0%,
+      var(--color-gradient-develop-end) 20%,
+      var(--color-gradient-preview-start) 40%,
+      var(--color-gradient-preview-end) 60%,
+      var(--color-gradient-ship-start) 80%,
+      var(--color-gradient-ship-end) 100%
     );
   }
 
   /* Polarity-flipped dark band (showcase-band-dark) */
   .band-dark {
-    background-color: #171717;
-    color: #ffffff;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
   }
 
   .content-auto-section {

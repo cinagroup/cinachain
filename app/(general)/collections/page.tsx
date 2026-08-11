@@ -1,31 +1,44 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAccount } from "wagmi"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   AlertCircle,
   CheckCircle2,
   ExternalLink,
   Loader2,
+  LockKeyhole,
   Minus,
   Plus,
   Sparkles,
   TriangleAlert,
 } from "lucide-react"
+import { useAccount } from "wagmi"
 
-import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { EXPLORER_NAME, getBlockExplorerUrl } from "@/config/deployment"
 import { hasMegaContract } from "@/lib/contracts/addresses"
-import { MEGA_COLLECTION_INFO, MEGA_RATE_TEXT, MEGA_TYPES, formatAmount } from "@/lib/exchange"
+import {
+  formatAmount,
+  MEGA_COLLECTION_INFO,
+  MEGA_RATE_TEXT,
+  MEGA_TYPES,
+} from "@/lib/exchange"
+import { useAccountType } from "@/lib/hooks/use-account-type"
 import { useCinaMegaBalances, useCinaMegaMeta } from "@/lib/hooks/use-cina-mega"
 import { useMintUcina } from "@/lib/hooks/use-mint-ucina"
-import { useAccountType } from "@/lib/hooks/use-account-type"
 import { getMegaTypeImageSources } from "@/lib/mega-media"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 
 function CollectionCard({
   type,
@@ -49,7 +62,12 @@ function CollectionCard({
   const showImage = mounted && !!cid
   return (
     <Card className="overflow-hidden shadow-vercel-card">
-      <div className="relative aspect-square w-full" style={{ background: `linear-gradient(135deg, ${info.color}22, transparent)` }}>
+      <div
+        className="relative aspect-square w-full"
+        style={{
+          background: `linear-gradient(135deg, ${info.color}22, transparent)`,
+        }}
+      >
         {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -57,12 +75,16 @@ function CollectionCard({
             alt={info.name}
             className="size-full object-cover"
             onError={(e) => {
-              const next = sources.indexOf((e.currentTarget as HTMLImageElement).src) + 1
-              if (next < sources.length) (e.currentTarget as HTMLImageElement).src = sources[next]
+              const next =
+                sources.indexOf((e.currentTarget as HTMLImageElement).src) + 1
+              if (next < sources.length)
+                (e.currentTarget as HTMLImageElement).src = sources[next]
             }}
           />
         ) : (
-          <div className="flex size-full items-center justify-center text-6xl opacity-40">{info.icon}</div>
+          <div className="flex size-full items-center justify-center text-6xl opacity-40">
+            {info.icon}
+          </div>
         )}
         <span
           className="font-mono-tech absolute right-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -76,7 +98,9 @@ function CollectionCard({
           <CardTitle className="flex items-center gap-2 text-xl">
             <span>{info.icon}</span> {info.name}
           </CardTitle>
-          <span className="font-mono-tech text-sm text-muted-foreground">×{formatAmount(balance)}</span>
+          <span className="font-mono-tech text-sm text-muted-foreground">
+            ×{formatAmount(balance)}
+          </span>
         </div>
         <p className="text-sm text-muted-foreground">{info.description}</p>
         <span
@@ -97,7 +121,16 @@ export default function CollectionsPage() {
   const { accountType } = useAccountType()
   const { balances, isLoading } = useCinaMegaBalances(address)
   const { cids, mintCapPerAddress, svgLocked, paused } = useCinaMegaMeta()
-  const { mintUcina, status, isPending, isConfirmed, error, txHash, isGasless, reset } = useMintUcina()
+  const {
+    mintUcina,
+    status,
+    isPending,
+    isConfirmed,
+    error,
+    txHash,
+    isGasless,
+    reset,
+  } = useMintUcina()
   const [amount, setAmount] = useState("100")
 
   if (!hasMegaContract) {
@@ -106,7 +139,8 @@ export default function CollectionsPage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            CinaMega contract not configured. Set NEXT_PUBLIC_CINA_MEGA_CONTRACT.
+            CinaMega contract not configured. Set
+            NEXT_PUBLIC_CINA_MEGA_CONTRACT.
           </AlertDescription>
         </Alert>
       </div>
@@ -141,16 +175,25 @@ export default function CollectionsPage() {
         CinaMega<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Three template-based mega-collections with billions of copies each, linked by a fixed
-        exchange rate.
+        Three template-based mega-collections with billions of copies each,
+        linked by a fixed exchange rate.
       </p>
 
       {/* Fixed rate card */}
       <div className="font-mono-tech mt-6 rounded-md border border-border bg-secondary p-4 text-sm">
-        <span className="font-semibold text-foreground">Fixed exchange rate</span>
+        <span className="font-semibold text-foreground">
+          Fixed exchange rate
+        </span>
         <span className="ml-3 text-muted-foreground">{MEGA_RATE_TEXT}</span>
-        <span className="ml-3 text-xs text-muted-foreground">
-          {svgLocked ? "🔒 Templates locked — immutable" : "Templates pending initialization"}
+        <span className="ml-3 inline-flex items-center gap-1 text-xs text-muted-foreground">
+          {svgLocked ? (
+            <>
+              <LockKeyhole aria-hidden="true" className="size-3" />
+              Templates locked — immutable
+            </>
+          ) : (
+            "Templates pending initialization"
+          )}
         </span>
       </div>
 
@@ -167,12 +210,12 @@ export default function CollectionsPage() {
           <AlertDescription>
             Minted!{" "}
             <a
-              href={`https://sepolia.basescan.org/tx/${txHash}`}
+              href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on Basescan <ExternalLink className="size-3" />
+              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -183,9 +226,10 @@ export default function CollectionsPage() {
         <Alert variant="warning" className="mt-6">
           <TriangleAlert className="size-4" />
           <AlertDescription>
-            Smart account notice: your embedded wallet is not deployed on-chain until its first
-            transaction. Do NOT send NFTs or funds to this address from another wallet — assets
-            sent to an undeployed account can be lost.
+            Smart account notice: your embedded wallet is not deployed on-chain
+            until its first transaction. Do NOT send NFTs or funds to this
+            address from another wallet — assets sent to an undeployed account
+            can be lost.
           </AlertDescription>
         </Alert>
       )}
@@ -218,7 +262,9 @@ export default function CollectionsPage() {
             {mintCapPerAddress !== null && (
               <> — up to {formatAmount(mintCapPerAddress)} per address</>
             )}
-            {paused && <span className="text-destructive"> · minting paused</span>}
+            {paused && (
+              <span className="text-destructive"> · minting paused</span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -228,7 +274,11 @@ export default function CollectionsPage() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setAmount((a) => (BigInt(a || 1) > 1n ? String(BigInt(a) - 1n) : "1"))}
+                onClick={() =>
+                  setAmount((a) =>
+                    BigInt(a || 1) > 1n ? String(BigInt(a) - 1n) : "1"
+                  )
+                }
                 disabled={isPending}
                 aria-label="Decrease mint amount"
               >
@@ -246,7 +296,9 @@ export default function CollectionsPage() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setAmount((a) => String((BigInt(a || 1) + 1n).toString()))}
+                onClick={() =>
+                  setAmount((a) => String((BigInt(a || 1) + 1n).toString()))
+                }
                 disabled={isPending}
                 aria-label="Increase mint amount"
               >

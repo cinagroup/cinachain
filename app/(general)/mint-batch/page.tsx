@@ -9,6 +9,7 @@ import {
   useWriteContract,
 } from "wagmi"
 
+import { EXPLORER_NAME, getBlockExplorerUrl } from "@/config/deployment"
 import { CINA_ERC1155_CONTRACT } from "@/lib/contracts/addresses"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -198,12 +199,12 @@ export default function BatchMintPage() {
               <AlertDescription>
                 Batch mint confirmed!{" "}
                 <a
-                  href={`https://sepolia.basescan.org/tx/${txHash}`}
+                  href={getBlockExplorerUrl("tx", txHash)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 underline"
                 >
-                  View on Basescan <ExternalLink className="size-3" />
+                  View on {EXPLORER_NAME} <ExternalLink className="size-3" />
                 </a>
               </AlertDescription>
             </Alert>

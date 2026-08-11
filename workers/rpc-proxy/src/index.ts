@@ -1,14 +1,17 @@
 // Cloudflare Worker - RPC Proxy
 // Uses Cloudflare's own public ETH gateway for best compatibility
 
-const UPSTREAM_RPCS = [
-  "https://cloudflare-eth.com",
-  "https://rpc.ankr.com/eth",
-]
+const UPSTREAM_RPCS = ["https://cloudflare-eth.com", "https://rpc.ankr.com/eth"]
 
 const ALLOWED_ORIGIN = "https://nft.cinachain.com"
 
-export default {
+type CloudflareRequestInit = RequestInit & {
+  cf?: {
+    cacheTtl?: number
+  }
+}
+
+const worker = {
   async fetch(request: Request): Promise<Response> {
     const headers: Record<string, string> = {
       "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
@@ -32,12 +35,13 @@ export default {
 
     for (const upstream of UPSTREAM_RPCS) {
       try {
-        const response = await fetch(upstream, {
+        const init: CloudflareRequestInit = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body,
           cf: { cacheTtl: 1 },
-        })
+        }
+        const response = await fetch(upstream, init)
 
         if (response.ok) {
           return new Response(await response.text(), {
@@ -50,9 +54,11 @@ export default {
       }
     }
 
-    return new Response(
-      JSON.stringify({ error: "All upstream RPCs failed" }),
-      { status: 502, headers }
-    )
+    return new Response(JSON.stringify({ error: "All upstream RPCs failed" }), {
+      status: 502,
+      headers,
+    })
   },
 }
+
+export default worker

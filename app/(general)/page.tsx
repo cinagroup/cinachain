@@ -18,6 +18,11 @@ import {
 } from "lucide-react"
 import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa"
 
+import {
+  DEPLOYMENT_STAGE,
+  PRIMARY_NETWORK_LABEL,
+  PRIMARY_NETWORK_NAME,
+} from "@/config/deployment"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
@@ -40,10 +45,10 @@ export default function HomePage() {
         <div className="container mx-auto max-w-[960px] px-6 pb-20 pt-32 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 shadow-vercel-sm">
             <span className="text-xs font-medium text-foreground/60">
-              Building on Base L2
+              Building on {PRIMARY_NETWORK_LABEL}
             </span>
             <span className="bg-violet/10 inline-flex h-4 items-center rounded-full px-2 text-[10px] font-semibold text-violet">
-              Live
+              {DEPLOYMENT_STAGE}
             </span>
           </div>
 
@@ -53,8 +58,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-[600px] text-lg leading-8 text-muted-foreground">
-            A full-stack Web3 ecosystem on Base — NFT platform, badge system,
-            gasless transactions, and edge-deployed infrastructure.
+            {`A full-stack Web3 ecosystem currently running on ${PRIMARY_NETWORK_LABEL} — NFT platform, badge system, gasless transactions, and edge-deployed infrastructure.`}
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -106,7 +110,7 @@ export default function HomePage() {
               description="10,000 unique collectibles with whitelist + public mint phases. Full enumerable support for dashboard integration."
               href="/explore"
               cta="View Collection"
-              status="Live"
+              status={DEPLOYMENT_STAGE}
             />
             <ProductCard
               icon={<Award className="size-6" />}
@@ -115,7 +119,7 @@ export default function HomePage() {
               description="Soulbound achievement badges, event tickets, and membership tiers. Batch minting and airdrop support."
               href="/dashboard/badges"
               cta="View Badges"
-              status="Live"
+              status={DEPLOYMENT_STAGE}
             />
             <ProductCard
               icon={<Coins className="size-6" />}
@@ -142,7 +146,7 @@ export default function HomePage() {
               description="Whitelist verification and paymaster proxy running on Cloudflare's global edge network."
               href="https://whitelist-api.cinachain.com/health"
               cta="API Status"
-              status="Live"
+              status={DEPLOYMENT_STAGE}
               external
             />
           </div>
@@ -154,15 +158,15 @@ export default function HomePage() {
         <div className="container mx-auto max-w-[1400px] px-6 py-24">
           <SectionHeader
             eyebrow="Infrastructure"
-            title="Production-grade stack."
-            description="Every layer chosen for security, scalability, and user experience."
+            title="A testnet stack built to scale."
+            description="Every layer is being validated on Base Sepolia before the mainnet launch."
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <TechCard
               icon={<Shield className="size-5" />}
-              title="Base L2"
-              description="Coinbase's Ethereum L2. 100-500x lower gas than mainnet."
+              title={PRIMARY_NETWORK_NAME}
+              description="Coinbase's Ethereum L2 configured for CinaChain contracts and transactions."
             />
             <TechCard
               icon={<Globe className="size-5" />}
@@ -189,7 +193,7 @@ export default function HomePage() {
           <SectionHeader
             eyebrow="Roadmap"
             title="Built incrementally."
-            description="Each phase shipped to production before the next begins."
+            description="Each phase is validated on testnet before the next begins."
           />
 
           <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -329,7 +333,7 @@ export default function HomePage() {
 
           <div className="mt-8 flex items-center justify-center gap-2 text-xs text-white/50">
             <Lock className="size-3" />
-            <span>Built on Base · Powered by Cloudflare</span>
+            <span>{PRIMARY_NETWORK_LABEL} · Powered by Cloudflare</span>
           </div>
         </div>
       </section>
