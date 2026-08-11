@@ -4,14 +4,35 @@ import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const defaultConfig = resolve(root, "workers/billing/wrangler.toml")
 
-export const REQUIRED_BILLING_SECRETS = ["ADMIN_KEY", "INGRESS_ENC_KEY"]
+export const BILLING_SECRETS_STORE_ID = "346e2b4b86334bc29083c064116e91cf"
+export const BILLING_SECRET_SCOPE = "workers"
+export const BILLING_SECRET_BINDINGS = [
+  {
+    binding: "ADMIN_KEY",
+    secretName: "CINACHAIN_BILLING_ADMIN_KEY_V1",
+  },
+  {
+    binding: "INGRESS_ENC_KEY",
+    secretName: "CINACHAIN_BILLING_INGRESS_ENC_KEY_V1",
+  },
+]
+export const REQUIRED_BILLING_SECRETS = BILLING_SECRET_BINDINGS.map(
+  ({ binding }) => binding
+)
+
+const ANSI_PATTERN = /\u001b\[[0-?]*[ -/]*[@-~]/g
+const SECRETS_STORE_PAGE_SIZE = 100
+const TABLE_SEPARATOR = "\u2502"
+const EMPTY_STORE_MESSAGE = "List request returned no secrets"
 
 export function validateBillingSecret(name, value) {
   if (!value) throw new Error(`${name} is not set in the process environment`)
   if (name === "ADMIN_KEY" && value.length < 32) {
     throw new Error("ADMIN_KEY must contain at least 32 characters")
+  }
+  if (name === "ADMIN_KEY" && /\s/.test(value)) {
+    throw new Error("ADMIN_KEY must not contain whitespace")
   }
   if (name === "INGRESS_ENC_KEY" && !/^[0-9a-f]{64}$/i.test(value)) {
     throw new Error(
@@ -73,10 +94,98 @@ export function wranglerInvocation(
   return { command: process.execPath, prefixArgs: [entrypoint] }
 }
 
-export function buildSecretPutArgs(name, config, wranglerEnvironment) {
-  const args = ["secret", "put", name, "--config", config]
-  if (wranglerEnvironment) args.push("--env", wranglerEnvironment)
-  return args
+export function buildSecretsStoreListArgs(page = 1) {
+  return [
+    "secrets-store",
+    "secret",
+    "list",
+    BILLING_SECRETS_STORE_ID,
+    "--remote",
+    "--page",
+    String(page),
+    "--per-page",
+    String(SECRETS_STORE_PAGE_SIZE),
+  ]
+}
+
+export function buildSecretCreateArgs(secretName) {
+  return [
+    "secrets-store",
+    "secret",
+    "create",
+    BILLING_SECRETS_STORE_ID,
+    "--name",
+    secretName,
+    "--scopes",
+    BILLING_SECRET_SCOPE,
+    "--remote",
+  ]
+}
+
+export function parseSecretsStoreList(output) {
+  const rows = []
+  const normalized = String(output ?? "").replace(ANSI_PATTERN, "")
+
+  for (const line of normalized.split(/\r?\n/)) {
+    if (!line.includes(TABLE_SEPARATOR)) continue
+    const columns = line
+      .split(TABLE_SEPARATOR)
+      .slice(1, -1)
+      .map((column) => column.trim())
+    const [name, id, _comment, scopes, status] = columns
+    if (name === "Name" || !/^[0-9a-f]{32}$/i.test(id ?? "")) continue
+
+    rows.push({
+      name,
+      id,
+      scopes: String(scopes)
+        .split(/[,\s]+/)
+        .filter(Boolean),
+      status: String(status).toLowerCase(),
+    })
+  }
+
+  return rows
+}
+
+export function listSecretsStoreMetadata({
+  spawn,
+  command,
+  prefixArgs,
+  rootDirectory,
+  environment,
+}) {
+  const secrets = []
+
+  for (let page = 1; ; page += 1) {
+    const result = spawn(
+      command,
+      [...prefixArgs, ...buildSecretsStoreListArgs(page)],
+      {
+        cwd: rootDirectory,
+        env: environment,
+        encoding: "utf8",
+      }
+    )
+
+    if (result.error) throw result.error
+    if (result.status !== 0) {
+      const diagnostic = `${result.stdout ?? ""}\n${result.stderr ?? ""}`
+      if (diagnostic.includes(EMPTY_STORE_MESSAGE)) break
+      const error = new Error(
+        "Wrangler failed while listing Billing Secrets Store metadata"
+      )
+      error.exitCode = result.status ?? 1
+      error.stderr = result.stderr
+      throw error
+    }
+
+    const pageSecrets = parseSecretsStoreList(result.stdout)
+    secrets.push(...pageSecrets)
+    if (pageSecrets.length < SECRETS_STORE_PAGE_SIZE) break
+  }
+
+  return secrets
 }
 
 export function provisionBillingSecrets({
@@ -84,55 +193,101 @@ export function provisionBillingSecrets({
   spawn = spawnSync,
   platform = process.platform,
   rootDirectory = root,
-  config = defaultConfig,
   binaryExists = existsSync,
 } = {}) {
-  const values = Object.fromEntries(
-    REQUIRED_BILLING_SECRETS.map((name) => [name, environment[name]])
-  )
-
-  for (const name of REQUIRED_BILLING_SECRETS) {
-    validateBillingSecret(name, values[name])
-  }
-
   const { command, prefixArgs } = wranglerInvocation(
     rootDirectory,
     platform,
     binaryExists
   )
   const childEnvironment = scrubBillingSecrets(environment)
-  for (const name of REQUIRED_BILLING_SECRETS) {
+  const metadata = listSecretsStoreMetadata({
+    spawn,
+    command,
+    prefixArgs,
+    rootDirectory,
+    environment: childEnvironment,
+  })
+  const secretsByName = new Map(metadata.map((secret) => [secret.name, secret]))
+  const existingBindings = BILLING_SECRET_BINDINGS.filter(({ secretName }) =>
+    secretsByName.has(secretName)
+  )
+
+  const invalidExisting = existingBindings.filter(({ secretName }) => {
+    const secret = secretsByName.get(secretName)
+    return (
+      secret.status !== "active" ||
+      !secret.scopes.includes(BILLING_SECRET_SCOPE)
+    )
+  })
+  if (invalidExisting.length > 0) {
+    throw new Error(
+      `Existing immutable Billing secret versions are not active with ${BILLING_SECRET_SCOPE} scope: ${invalidExisting
+        .map(({ binding, secretName }) => `${binding} -> ${secretName}`)
+        .join(
+          ", "
+        )}. Fix their metadata or introduce a new versioned secret name; this tool will not mutate an existing version.`
+    )
+  }
+
+  const missingBindings = BILLING_SECRET_BINDINGS.filter(
+    ({ secretName }) => !secretsByName.has(secretName)
+  )
+  const values = Object.fromEntries(
+    missingBindings.map(({ binding }) => [binding, environment[binding]])
+  )
+  for (const { binding } of missingBindings) {
+    validateBillingSecret(binding, values[binding])
+  }
+
+  for (const { binding, secretName } of missingBindings) {
     const result = spawn(
       command,
-      [
-        ...prefixArgs,
-        ...buildSecretPutArgs(name, config, environment.WRANGLER_ENV),
-      ],
+      [...prefixArgs, ...buildSecretCreateArgs(secretName)],
       {
         cwd: rootDirectory,
         env: childEnvironment,
-        input: `${values[name]}\n`,
+        input: `${values[binding]}\n`,
         stdio: ["pipe", "inherit", "inherit"],
       }
     )
 
     if (result.error) throw result.error
     if (result.status !== 0) {
-      const error = new Error(`Wrangler failed while provisioning ${name}`)
+      const error = new Error(
+        `Wrangler failed while creating ${secretName} for ${binding}`
+      )
       error.exitCode = result.status ?? 1
       throw error
     }
+  }
+
+  return {
+    created: missingBindings.map(({ secretName }) => secretName),
+    skipped: existingBindings.map(({ secretName }) => secretName),
   }
 }
 
 function main() {
   try {
-    provisionBillingSecrets()
-    console.log(
-      "Billing secret bindings were provisioned without passing values as CLI arguments or child-process environment variables."
-    )
+    const { created, skipped } = provisionBillingSecrets()
+    if (created.length > 0) {
+      console.log(
+        `Created immutable Billing Secrets Store versions with workers scope: ${created.join(
+          ", "
+        )}. Values were passed only through stdin.`
+      )
+    }
+    if (skipped.length > 0) {
+      console.log(
+        `Skipped existing active immutable secret versions: ${skipped.join(
+          ", "
+        )}. Rotate by introducing a new versioned secret name, never by overwriting V1.`
+      )
+    }
   } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error))
+    if (error?.stderr) process.stderr.write(error.stderr)
+    else console.error(error instanceof Error ? error.message : String(error))
     process.exitCode = Number(error?.exitCode ?? 1)
   }
 }

@@ -35,6 +35,55 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
 ])
 
+const textEncoder = new TextEncoder()
+
+async function secretValue(binding) {
+  if (!binding || typeof binding.get !== "function") {
+    throw new Error("Secrets Store binding unavailable")
+  }
+  const value = await binding.get()
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error("Secrets Store value unavailable")
+  }
+  return value
+}
+
+async function sha256(value) {
+  return new Uint8Array(
+    await crypto.subtle.digest("SHA-256", textEncoder.encode(value))
+  )
+}
+
+function timingSafeEqual(left, right) {
+  return crypto.subtle.timingSafeEqual(left, right)
+}
+
+async function requireAdmin(request, env) {
+  let expected
+  try {
+    expected = await secretValue(env.ADMIN_KEY)
+  } catch {
+    return json(request, { error: "Service configuration unavailable" }, 503)
+  }
+  if (
+    expected.length < 32 ||
+    /\s/.test(expected) ||
+    /^(.)\1+$/.test(expected)
+  ) {
+    return json(request, { error: "Service configuration unavailable" }, 503)
+  }
+
+  const presented = request.headers.get("X-Admin-Key") ?? ""
+  const [expectedDigest, presentedDigest] = await Promise.all([
+    sha256(expected),
+    sha256(presented),
+  ])
+  if (!timingSafeEqual(expectedDigest, presentedDigest)) {
+    return json(request, { error: "Unauthorized" }, 401)
+  }
+  return null
+}
+
 // Per-address in-flight mutex: serializes read-modify-write on the same
 // ledger key within this isolate. KV itself is eventually consistent
 // across colos, so cross-isolate races remain a documented limitation
@@ -511,9 +560,8 @@ export default {
     }
 
     if (url.pathname === "/v1/custodial/credit" && request.method === "POST") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
-        return json(request, { error: "Unauthorized" }, 401)
-      }
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const body = await request.json().catch(() => ({}))
       const { id, amountWei } = body
       const key = `cust:${id ?? ""}`
@@ -545,9 +593,8 @@ export default {
     }
 
     if (url.pathname === "/v1/custodial/debit" && request.method === "POST") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
-        return json(request, { error: "Unauthorized" }, 401)
-      }
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const body = await request.json().catch(() => ({}))
       const { id, amountWei } = body
       const key = `cust:${id ?? ""}`
@@ -658,16 +705,21 @@ export default {
           return json(request, { error: "Key validation failed" }, 400)
         }
       }
-      const secretHex = env.INGRESS_ENC_KEY
-      if (
-        !secretHex ||
-        !/^[0-9a-f]{64}$/i.test(secretHex) ||
-        secretHex === "0".repeat(64)
-      ) {
+      let secretHex
+      try {
+        secretHex = await secretValue(env.INGRESS_ENC_KEY)
+      } catch {
         return json(
           request,
-          { error: "Ingress encryption not configured" },
-          500
+          { error: "Service configuration unavailable" },
+          503
+        )
+      }
+      if (!/^[0-9a-f]{64}$/i.test(secretHex) || /^(.)\1+$/.test(secretHex)) {
+        return json(
+          request,
+          { error: "Service configuration unavailable" },
+          503
         )
       }
       const encrypted = await encryptKey(secretHex, apiKey)
@@ -730,9 +782,8 @@ export default {
       /^\/v1\/ingress\/([a-zA-Z0-9_]+)\/confirm$/
     )
     if (ingConfirmMatch && request.method === "POST") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
-        return json(request, { error: "Unauthorized" }, 401)
-      }
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const [, id] = ingConfirmMatch
       const body = await request.json().catch(() => ({}))
       const key = `ing:${id}`
@@ -773,9 +824,8 @@ export default {
 
     // Admin: list ingress records (status filter optional)
     if (url.pathname === "/v1/admin/ingress" && request.method === "GET") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
-        return json(request, { error: "Unauthorized" }, 401)
-      }
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const status = url.searchParams.get("status") ?? "minting"
       const keys = await listAllKeys(env.CINA_BILLING_KV, "ing:")
       const records = []
@@ -897,9 +947,8 @@ export default {
       url.pathname === "/v1/admin/pending-badges" &&
       request.method === "GET"
     ) {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
-        return json(request, { error: "Unauthorized" }, 401)
-      }
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const pending = []
       for (const prefix of ["ledger:", "cust:"]) {
         const keys = await listAllKeys(env.CINA_BILLING_KV, prefix)
@@ -949,9 +998,8 @@ export default {
       /^\/v1\/admin\/badges\/(0x[a-fA-F0-9]{40})\/([a-z]+)\/confirm$/
     )
     if (confirmMatch && request.method === "POST") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
-        return json(request, { error: "Unauthorized" }, 401)
-      }
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const [, address, tier] = confirmMatch
       if (tierBadgeId(tier) === null)
         return json(request, { error: "Invalid tier" }, 400)
@@ -992,8 +1040,8 @@ export default {
 
     // Admin: view pricing (default + overrides)
     if (url.pathname === "/v1/admin/pricing" && request.method === "GET") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY)
-        return json(request, { error: "Unauthorized" }, 401)
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const raw = await env.CINA_BILLING_KV.get("pricing")
       let overrides = {}
       try {
@@ -1008,8 +1056,8 @@ export default {
     // Validates against the default table BEFORE persisting, so a bad override
     // never lands in KV and never breaks the usage hot path.
     if (url.pathname === "/v1/admin/pricing" && request.method === "PUT") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY)
-        return json(request, { error: "Unauthorized" }, 401)
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const body = await request.json().catch(() => ({}))
       try {
         const merged = applyPricingOverrides(
@@ -1032,9 +1080,8 @@ export default {
 
     // Manual indexer trigger (admin key; also used by tests/E2E)
     if (url.pathname === "/v1/admin/index" && request.method === "POST") {
-      if (request.headers.get("X-Admin-Key") !== env.ADMIN_KEY) {
-        return json(request, { error: "Unauthorized" }, 401)
-      }
+      const authError = await requireAdmin(request, env)
+      if (authError) return authError
       const res = await runIndexer(env).catch((err) => ({
         error: err instanceof Error ? err.message : "indexer failed",
       }))

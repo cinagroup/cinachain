@@ -140,7 +140,7 @@ jobs:
         working-directory: workers/billing
         run: npm ci --ignore-scripts
 
-      - name: Check Cloudflare secrets
+      - name: Check Cloudflare deployment credentials
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -149,8 +149,9 @@ jobs:
             echo "::error::CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN secret is not set."
             exit 1
           fi
+          echo "The deployment token must include Account Secrets Store Edit; Read alone cannot deploy a Secrets Store Worker binding."
 
-      - name: Verify required billing secret bindings
+      - name: Verify Billing Secrets Store metadata
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -4,18 +4,43 @@ import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import {
-  REQUIRED_BILLING_SECRETS,
+  BILLING_SECRET_BINDINGS,
+  BILLING_SECRET_SCOPE,
+  BILLING_SECRETS_STORE_ID,
+  listSecretsStoreMetadata,
   scrubBillingSecrets,
   wranglerInvocation,
 } from "./provision-billing-secrets.mjs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const defaultConfig = resolve(root, "workers/billing/wrangler.toml")
 
-export function buildSecretListArgs(config, wranglerEnvironment) {
-  const args = ["secret", "list", "--config", config, "--format", "json"]
-  if (wranglerEnvironment) args.push("--env", wranglerEnvironment)
-  return args
+export function findBillingSecretsStoreIssues(metadata) {
+  const secretsByName = new Map(metadata.map((secret) => [secret.name, secret]))
+  const issues = []
+
+  for (const { binding, secretName } of BILLING_SECRET_BINDINGS) {
+    const secret = secretsByName.get(secretName)
+    if (!secret) {
+      issues.push({ binding, secretName, reason: "missing" })
+      continue
+    }
+    if (secret.status !== "active") {
+      issues.push({
+        binding,
+        secretName,
+        reason: `status is ${secret.status || "unknown"}; expected active`,
+      })
+    }
+    if (!secret.scopes.includes(BILLING_SECRET_SCOPE)) {
+      issues.push({
+        binding,
+        secretName,
+        reason: `scope ${BILLING_SECRET_SCOPE} is missing`,
+      })
+    }
+  }
+
+  return issues
 }
 
 export function verifyBillingSecretNames({
@@ -23,7 +48,6 @@ export function verifyBillingSecretNames({
   spawn = spawnSync,
   platform = process.platform,
   rootDirectory = root,
-  config = defaultConfig,
   binaryExists = existsSync,
 } = {}) {
   const { command, prefixArgs } = wranglerInvocation(
@@ -31,47 +55,34 @@ export function verifyBillingSecretNames({
     platform,
     binaryExists
   )
-  const result = spawn(
+  const metadata = listSecretsStoreMetadata({
+    spawn,
     command,
-    [
-      ...prefixArgs,
-      ...buildSecretListArgs(config, environment.WRANGLER_ENV),
-    ],
-    {
-      cwd: rootDirectory,
-      env: scrubBillingSecrets(environment),
-      encoding: "utf8",
-    }
-  )
-
-  if (result.error) throw result.error
-  if (result.status !== 0) {
-    const error = new Error("Wrangler failed while listing Billing secrets")
-    error.exitCode = result.status ?? 1
-    error.stderr = result.stderr
-    throw error
-  }
-
-  const bindings = JSON.parse(result.stdout)
-  const configured = new Set(bindings.map(({ name }) => name))
-  return REQUIRED_BILLING_SECRETS.filter((name) => !configured.has(name))
+    prefixArgs,
+    rootDirectory,
+    environment: scrubBillingSecrets(environment),
+  })
+  return findBillingSecretsStoreIssues(metadata)
 }
 
 function main() {
   try {
-    const missing = verifyBillingSecretNames()
-    if (missing.length > 0) {
+    const issues = verifyBillingSecretNames()
+    if (issues.length > 0) {
       console.error(
-        `Missing required Cloudflare secret bindings: ${missing.join(", ")}`
+        `Billing Secrets Store verification failed for ${BILLING_SECRETS_STORE_ID}:`
       )
+      for (const { binding, secretName, reason } of issues) {
+        console.error(`- ${binding} -> ${secretName}: ${reason}`)
+      }
       process.exitCode = 1
       return
     }
 
     console.log(
-      `Required Cloudflare secret bindings are configured: ${REQUIRED_BILLING_SECRETS.join(
-        ", "
-      )}.`
+      `Billing Secrets Store entries are active with ${BILLING_SECRET_SCOPE} scope: ${BILLING_SECRET_BINDINGS.map(
+        ({ binding, secretName }) => `${binding} -> ${secretName}`
+      ).join(", ")}.`
     )
   } catch (error) {
     if (error?.stderr) process.stderr.write(error.stderr)

@@ -1,11 +1,42 @@
 import { secp256k1 } from "@noble/curves/secp256k1.js"
 import { keccak_256 } from "@noble/hashes/sha3.js"
 import { utf8ToBytes } from "@noble/hashes/utils.js"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import billingWorker, { computePendingBadges, handleUsage } from "./index.js"
 import { applyPricingOverrides, DEFAULT_PRICING } from "./lib/pricing.js"
 import { buildBindingMessage } from "./lib/sig-verify.js"
+
+const TEST_ADMIN_KEY = `fixture-admin-key-${"0123456789abcdef".repeat(2)}`
+const ADMIN_BINDING = ["ADMIN", "KEY"].join("_")
+
+// Cloudflare Workers extends SubtleCrypto with timingSafeEqual. Node's Web
+// Crypto test runtime does not, so provide a test-only equivalent.
+if (typeof crypto.subtle.timingSafeEqual !== "function") {
+  Object.defineProperty(crypto.subtle, "timingSafeEqual", {
+    configurable: true,
+    value(left, right) {
+      if (left.byteLength !== right.byteLength) {
+        throw new TypeError("timingSafeEqual requires equal-length buffers")
+      }
+      const leftBytes = new Uint8Array(
+        left.buffer ?? left,
+        left.byteOffset ?? 0,
+        left.byteLength
+      )
+      const rightBytes = new Uint8Array(
+        right.buffer ?? right,
+        right.byteOffset ?? 0,
+        right.byteLength
+      )
+      let mismatch = 0
+      for (let index = 0; index < leftBytes.byteLength; index += 1) {
+        mismatch |= leftBytes[index] ^ rightBytes[index]
+      }
+      return mismatch === 0
+    },
+  })
+}
 
 // Fixed test keypair: signs the binding message to prove address ownership.
 const SIGNER_PK =
@@ -36,8 +67,8 @@ function signBindingMessage(message) {
     signed instanceof Uint8Array
       ? signed.slice(1)
       : typeof signed.toBytes === "function"
-        ? signed.toBytes("compact")
-        : signed.toCompactRawBytes()
+      ? signed.toBytes("compact")
+      : signed.toCompactRawBytes()
   const recovery = signed instanceof Uint8Array ? signed[0] : signed.recovery
   if (recovery !== 0 && recovery !== 1) {
     throw new Error("unsupported Ethereum recovery bit")
@@ -112,6 +143,97 @@ describe("billing worker", () => {
   it("exposes a scheduled handler for the indexer cron", () => {
     expect(typeof billingWorker.scheduled).toBe("function")
   })
+
+  it("does not read admin secrets for public health checks", async () => {
+    const env = makeEnv()
+    env.ADMIN_KEY.get = vi
+      .fn()
+      .mockRejectedValue(new Error("store unavailable"))
+
+    const res = await callWorker(
+      env,
+      new Request("https://billing.test/health")
+    )
+
+    expect(res.status).toBe(200)
+    expect(env.ADMIN_KEY.get).not.toHaveBeenCalled()
+  })
+
+  it("returns 503 when the admin Secrets Store binding is missing", async () => {
+    const env = makeEnv()
+    env.ADMIN_KEY = undefined
+
+    const res = await callWorker(
+      env,
+      new Request("https://billing.test/v1/admin/pending-badges", {
+        headers: { "X-Admin-Key": TEST_ADMIN_KEY },
+      })
+    )
+
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({
+      error: "Service configuration unavailable",
+    })
+  })
+
+  it("returns 503 when reading the admin secret fails", async () => {
+    const env = makeEnv()
+    env.ADMIN_KEY.get = vi
+      .fn()
+      .mockRejectedValue(new Error("store unavailable"))
+
+    const res = await callWorker(
+      env,
+      new Request("https://billing.test/v1/admin/pending-badges", {
+        headers: { "X-Admin-Key": TEST_ADMIN_KEY },
+      })
+    )
+
+    expect(res.status).toBe(503)
+    expect(env.ADMIN_KEY.get).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ["short", "fixture-short"],
+    ["repeated", "x".repeat(32)],
+    ["whitespace-containing", `${"a".repeat(32)} `],
+  ])("returns 503 for a %s admin secret", async (_label, value) => {
+    const env = makeEnv()
+    env.ADMIN_KEY = secretBinding(value)
+
+    const res = await callWorker(
+      env,
+      new Request("https://billing.test/v1/admin/pending-badges", {
+        headers: { "X-Admin-Key": TEST_ADMIN_KEY },
+      })
+    )
+
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({
+      error: "Service configuration unavailable",
+    })
+  })
+
+  it("hashes admin keys before timing-safe comparison", async () => {
+    const env = makeEnv()
+    env.ADMIN_KEY.get = vi.fn().mockResolvedValue(TEST_ADMIN_KEY)
+    const compare = vi.spyOn(crypto.subtle, "timingSafeEqual")
+
+    const res = await callWorker(
+      env,
+      new Request("https://billing.test/v1/admin/pending-badges", {
+        headers: { "X-Admin-Key": "incorrect" },
+      })
+    )
+
+    expect(res.status).toBe(401)
+    expect(env.ADMIN_KEY.get).toHaveBeenCalledTimes(1)
+    expect(compare).toHaveBeenCalledTimes(1)
+    const [expectedDigest, presentedDigest] = compare.mock.calls[0]
+    expect(expectedDigest.byteLength).toBe(32)
+    expect(presentedDigest.byteLength).toBe(32)
+    compare.mockRestore()
+  })
 })
 
 describe("M2 pending tier badges", () => {
@@ -153,7 +275,7 @@ describe("M2 pending tier badges", () => {
 function makeEnv() {
   const store = new Map()
   return {
-    ADMIN_KEY: "test-admin",
+    [ADMIN_BINDING]: secretBinding(TEST_ADMIN_KEY),
     CINA_BILLING_KV: {
       async get(k) {
         return store.has(k) ? store.get(k) : null
@@ -170,6 +292,14 @@ function makeEnv() {
       },
     },
     store,
+  }
+}
+
+function secretBinding(value) {
+  return {
+    async get() {
+      return value
+    },
   }
 }
 
@@ -216,7 +346,7 @@ describe("M2 admin endpoints", () => {
     const res = await callWorker(
       env,
       new Request("https://billing.test/v1/admin/pending-badges", {
-        headers: { "X-Admin-Key": "test-admin" },
+        headers: { "X-Admin-Key": TEST_ADMIN_KEY },
       })
     )
     const body = await res.json()
@@ -256,7 +386,7 @@ describe("M2 admin endpoints", () => {
         {
           method: "POST",
           headers: {
-            "X-Admin-Key": "test-admin",
+            "X-Admin-Key": TEST_ADMIN_KEY,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ txHash: "0xabc" }),
@@ -278,7 +408,7 @@ describe("M2 admin endpoints", () => {
         {
           method: "POST",
           headers: {
-            "X-Admin-Key": "test-admin",
+            "X-Admin-Key": TEST_ADMIN_KEY,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ txHash: "0xabc" }),
@@ -304,7 +434,7 @@ describe("M2 admin endpoints", () => {
     const res = await callWorker(
       env,
       new Request("https://billing.test/v1/admin/pending-badges", {
-        headers: { "X-Admin-Key": "test-admin" },
+        headers: { "X-Admin-Key": TEST_ADMIN_KEY },
       })
     )
     const body = await res.json()
@@ -336,7 +466,7 @@ describe("M2 admin endpoints", () => {
         {
           method: "POST",
           headers: {
-            "X-Admin-Key": "test-admin",
+            "X-Admin-Key": TEST_ADMIN_KEY,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ txHash: "0xabc", custId: "c1" }),
@@ -391,7 +521,7 @@ describe("M2 custodial accounts", () => {
       new Request("https://billing.test/v1/custodial/credit", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -491,7 +621,7 @@ describe("M2 custodial accounts", () => {
       new Request("https://billing.test/v1/custodial/credit", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ id: "missing", amountWei: "100" }),
@@ -516,7 +646,7 @@ describe("M2 custodial accounts", () => {
       new Request("https://billing.test/v1/custodial/credit", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ id: "test1", amountWei: "abc" }),
@@ -651,7 +781,7 @@ describe("M2 custodial accounts", () => {
       new Request("https://billing.test/v1/custodial/debit", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -681,7 +811,7 @@ describe("M2 custodial accounts", () => {
       new Request("https://billing.test/v1/custodial/debit", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -899,7 +1029,7 @@ describe("M3 ingress submit", () => {
   // simulates a distinct client IP to keep its own budget.
   it("valid submit returns pending record id", async () => {
     const env = makeEnv()
-    env.INGRESS_ENC_KEY = "a".repeat(64) // 32-byte hex
+    env.INGRESS_ENC_KEY = secretBinding("0123456789abcdef".repeat(4))
     const res = await callWorker(
       env,
       new Request("https://billing.test/v1/ingress", {
@@ -932,7 +1062,7 @@ describe("M3 ingress submit", () => {
 
   it("duplicate key submission -> 409", async () => {
     const env = makeEnv()
-    env.INGRESS_ENC_KEY = "a".repeat(64)
+    env.INGRESS_ENC_KEY = secretBinding("0123456789abcdef".repeat(4))
     const body1 = {
       apiKey: "ingress_test_dup_abcdefghijklmnopqrstuv",
       model: "demo",
@@ -965,9 +1095,9 @@ describe("M3 ingress submit", () => {
     expect(r2.status).toBe(409)
   })
 
-  it("invalid declaredMicro -> 400; missing enc key -> 500", async () => {
+  it("invalid declaredMicro -> 400; missing enc binding -> 503", async () => {
     const env = makeEnv()
-    env.INGRESS_ENC_KEY = "a".repeat(64)
+    env.INGRESS_ENC_KEY = secretBinding("0123456789abcdef".repeat(4))
     const bad = await callWorker(
       env,
       new Request("https://billing.test/v1/ingress", {
@@ -987,7 +1117,7 @@ describe("M3 ingress submit", () => {
     expect(bad.status).toBe(400)
     const noKey = makeEnv()
     noKey.INGRESS_ENC_KEY = undefined
-    const five = await callWorker(
+    const unavailable = await callWorker(
       noKey,
       new Request("https://billing.test/v1/ingress", {
         method: "POST",
@@ -1003,12 +1133,73 @@ describe("M3 ingress submit", () => {
         }),
       })
     )
-    expect(five.status).toBe(500)
+    expect(unavailable.status).toBe(503)
+    expect(await unavailable.json()).toEqual({
+      error: "Service configuration unavailable",
+    })
   })
 
-  it("refuses the zero placeholder INGRESS_ENC_KEY -> 500", async () => {
+  it("returns 503 when reading the ingress encryption secret fails", async () => {
     const env = makeEnv()
-    env.INGRESS_ENC_KEY = "0".repeat(64) // wrangler.toml placeholder — must not be used
+    env.INGRESS_ENC_KEY = {
+      get: vi.fn().mockRejectedValue(new Error("store unavailable")),
+    }
+    const res = await callWorker(
+      env,
+      new Request("https://billing.test/v1/ingress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "CF-Connecting-IP": "203.0.113.31",
+        },
+        body: JSON.stringify({
+          apiKey: "ingress_test_fail_abcdefghijklmnop",
+          model: "demo",
+          declaredMicro: "1000",
+          owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        }),
+      })
+    )
+
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({
+      error: "Service configuration unavailable",
+    })
+    expect(env.INGRESS_ENC_KEY.get).toHaveBeenCalledTimes(1)
+    expect([...env.store.keys()].some((key) => key.startsWith("ing:"))).toBe(
+      false
+    )
+  })
+
+  it("refuses an empty ingress encryption secret -> 503", async () => {
+    const env = makeEnv()
+    env.INGRESS_ENC_KEY = secretBinding("")
+    const res = await callWorker(
+      env,
+      new Request("https://billing.test/v1/ingress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "CF-Connecting-IP": "203.0.113.32",
+        },
+        body: JSON.stringify({
+          apiKey: "ingress_test_empty_abcdefghijklmnop",
+          model: "demo",
+          declaredMicro: "1000",
+          owner: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        }),
+      })
+    )
+
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({
+      error: "Service configuration unavailable",
+    })
+  })
+
+  it("refuses a repeated-character INGRESS_ENC_KEY -> 503", async () => {
+    const env = makeEnv()
+    env.INGRESS_ENC_KEY = secretBinding("a".repeat(64))
     const res = await callWorker(
       env,
       new Request("https://billing.test/v1/ingress", {
@@ -1025,12 +1216,15 @@ describe("M3 ingress submit", () => {
         }),
       })
     )
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({
+      error: "Service configuration unavailable",
+    })
   })
 
-  it("refuses a non-hex INGRESS_ENC_KEY -> 500", async () => {
+  it("refuses a non-hex INGRESS_ENC_KEY -> 503", async () => {
     const env = makeEnv()
-    env.INGRESS_ENC_KEY = "z".repeat(64)
+    env.INGRESS_ENC_KEY = secretBinding("z".repeat(64))
     const res = await callWorker(
       env,
       new Request("https://billing.test/v1/ingress", {
@@ -1047,7 +1241,10 @@ describe("M3 ingress submit", () => {
         }),
       })
     )
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({
+      error: "Service configuration unavailable",
+    })
   })
 
   it("GET /v1/ingress?owner= lists only that owner's records", async () => {
@@ -1230,7 +1427,7 @@ describe("M3 ingress consumption", () => {
       new Request("https://billing.test/v1/ingress/ing1/confirm", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ txHash: "0xdef" }),
@@ -1261,7 +1458,7 @@ describe("M3 ingress consumption", () => {
       new Request("https://billing.test/v1/ingress/ing1/confirm", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ txHash: "0xdef" }),
@@ -1291,7 +1488,7 @@ describe("M3 ingress consumption", () => {
       new Request("https://billing.test/v1/ingress/ing1/confirm", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ txHash: "0xdef" }),
@@ -1327,7 +1524,7 @@ describe("M3 ingress consumption", () => {
       new Request("https://billing.test/v1/ingress/ing1/confirm", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ txHash: "0xDEADBEEF" }),
@@ -1377,7 +1574,7 @@ describe("M3 ingress consumption", () => {
     const res = await callWorker(
       env,
       new Request("https://billing.test/v1/admin/ingress?status=minting", {
-        headers: { "X-Admin-Key": "test-admin" },
+        headers: { "X-Admin-Key": TEST_ADMIN_KEY },
       })
     )
     expect(res.status).toBe(200)
@@ -1447,7 +1644,7 @@ describe("M3 ingress consumption", () => {
       new Request("https://billing.test/v1/ingress/ing1/confirm", {
         method: "POST",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ txHash: "0xdef" }),
@@ -1638,7 +1835,7 @@ describe("M3 pricing admin", () => {
     const res = await callWorker(
       env,
       new Request("https://billing.test/v1/admin/pricing", {
-        headers: { "X-Admin-Key": "test-admin" },
+        headers: { "X-Admin-Key": TEST_ADMIN_KEY },
       })
     )
     expect(res.status).toBe(200)
@@ -1654,7 +1851,7 @@ describe("M3 pricing admin", () => {
       new Request("https://billing.test/v1/admin/pricing", {
         method: "PUT",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -1679,7 +1876,7 @@ describe("M3 pricing admin", () => {
       new Request("https://billing.test/v1/admin/pricing", {
         method: "PUT",
         headers: {
-          "X-Admin-Key": "test-admin",
+          "X-Admin-Key": TEST_ADMIN_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

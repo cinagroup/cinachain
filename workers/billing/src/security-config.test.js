@@ -13,6 +13,18 @@ function section(name) {
   return match?.[1] ?? ""
 }
 
+function secretStoreBindings() {
+  return [
+    ...config.matchAll(/\[\[secrets_store_secrets\]\]([\s\S]*?)(?=\n\[|$)/g),
+  ].map(([, block]) =>
+    Object.fromEntries(
+      [...block.matchAll(/^\s*([a-z_]+)\s*=\s*"([^"]+)"\s*$/gm)].map(
+        ([, key, value]) => [key, value]
+      )
+    )
+  )
+}
+
 describe("billing Worker secret configuration", () => {
   it("never stores required secrets in plaintext vars", () => {
     const vars = section("vars")
@@ -20,9 +32,19 @@ describe("billing Worker secret configuration", () => {
     expect(vars).not.toMatch(/^\s*INGRESS_ENC_KEY\s*=/m)
   })
 
-  it("declares both encrypted bindings as required", () => {
-    const secrets = section("secrets")
-    expect(secrets).toMatch(/required\s*=\s*\[[^\]]*"ADMIN_KEY"/)
-    expect(secrets).toMatch(/required\s*=\s*\[[^\]]*"INGRESS_ENC_KEY"/)
+  it("uses account-level Secrets Store bindings instead of Worker secrets", () => {
+    expect(config).not.toMatch(/^\s*\[secrets\]\s*$/m)
+    expect(secretStoreBindings()).toEqual([
+      {
+        binding: "ADMIN_KEY",
+        store_id: "346e2b4b86334bc29083c064116e91cf",
+        secret_name: "CINACHAIN_BILLING_ADMIN_KEY_V1",
+      },
+      {
+        binding: "INGRESS_ENC_KEY",
+        store_id: "346e2b4b86334bc29083c064116e91cf",
+        secret_name: "CINACHAIN_BILLING_INGRESS_ENC_KEY_V1",
+      },
+    ])
   })
 })

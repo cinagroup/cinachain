@@ -11,10 +11,17 @@ API_VERSION = "v1"
 CINA_CREDIT_ADDRESS = "0x78f5aebc75b7d197b10622cccabe8429617836d7"
 BASE_SEPOLIA_RPC = "https://sepolia.base.org"
 
-# Required encrypted Worker bindings. Provision them with `wrangler secret put`
-# or scripts/provision-billing-secrets.mjs; never store their values here.
-[secrets]
-required = ["ADMIN_KEY", "INGRESS_ENC_KEY"]
+# Account-level Secrets Store bindings. Only the store and secret names are
+# committed here; secret values remain encrypted in Cloudflare Secrets Store.
+[[secrets_store_secrets]]
+binding = "ADMIN_KEY"
+store_id = "346e2b4b86334bc29083c064116e91cf"
+secret_name = "CINACHAIN_BILLING_ADMIN_KEY_V1"
+
+[[secrets_store_secrets]]
+binding = "INGRESS_ENC_KEY"
+store_id = "346e2b4b86334bc29083c064116e91cf"
+secret_name = "CINACHAIN_BILLING_INGRESS_ENC_KEY_V1"
 
 [triggers]
 crons = ["* * * * *"]

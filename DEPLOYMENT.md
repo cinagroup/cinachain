@@ -30,8 +30,8 @@ npm run dev
 
 - `NEXT_PUBLIC_*` 会进入浏览器产物，只能包含公开信息，例如 Base Sepolia 合约地址、公共网关 URL 和 Reown 项目标识。
 - Cloudflare 账户凭据、RPC 服务凭据、管理员密钥、加密密钥和部署私钥都属于服务端机密，不得使用 `NEXT_PUBLIC_*`，不得提交到 Git，也不得写入命令行参数。
-- 根目录 `.env.production` 只允许保存公开构建配置。Worker 机密必须使用 Cloudflare encrypted secrets。
-- `.dev.vars` / `.env.local` 仅用于本机，保持未跟踪状态。
+- 根目录 `.env.production` 只允许保存公开构建配置。生产和本地 Worker 机密都使用 Cloudflare Secrets Store binding；普通字符串变量不能替代运行时所需的异步 `get()` binding。
+- `.env.local` 仅用于本机公开客户端配置并保持未跟踪状态；不要在 `.dev.vars` 中为 `ADMIN_KEY` / `INGRESS_ENC_KEY` 定义字符串。
 
 ## 3. 发布前质量门禁
 
@@ -65,10 +65,16 @@ GitHub Actions 需要以下仓库 Secrets：
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
-计费 Worker 还要求 Cloudflare 中存在以下 encrypted secret bindings：
+由于计费 Worker 会部署 Secrets Store bindings，CI API token 除现有 Worker/Pages 发布权限外，还必须拥有账户级 **Secrets Store Edit** 权限；只有 Secrets Store Read 权限可以列出元数据，但无法在部署时绑定机密。机密自身还必须包含 `workers` scope。
 
-- `ADMIN_KEY`
-- `INGRESS_ENC_KEY`
+> Cloudflare Secrets Store 当前为 open beta。Wrangler 的生产命令必须显式使用 `--remote`；beta 命令或权限检查失败时应停止发布，不得跳过门禁。
+
+计费 Worker 使用账户 Store `346e2b4b86334bc29083c064116e91cf` 中的以下不可变、版本化条目：
+
+| Worker binding    | Secrets Store secret                   | 要求                       |
+| ----------------- | -------------------------------------- | -------------------------- |
+| `ADMIN_KEY`       | `CINACHAIN_BILLING_ADMIN_KEY_V1`       | `active` + `workers` scope |
+| `INGRESS_ENC_KEY` | `CINACHAIN_BILLING_INGRESS_ENC_KEY_V1` | `active` + `workers` scope |
 
 先在安全的本地进程环境中提供新值，再从仓库根目录执行：
 
@@ -78,7 +84,24 @@ npm run secrets:billing
 npm run secrets:billing:check
 ```
 
-`secrets:billing` 通过标准输入交给 Wrangler，不会把值放进命令参数；`secrets:billing:check` 只检查绑定名称。若检查失败，禁止发布计费 Worker。轮换后还要撤销旧凭据并验证管理接口仍拒绝无效认证。
+`secrets:billing` 使用锁定的 Wrangler 4.101，只创建缺失的 V1 条目：每个值单独通过标准输入传递，两个值都从子进程环境移除，并且永远不会使用 `--value`、命令参数或日志承载值。已存在且为 `active` + `workers` 的 V1 会幂等跳过；已存在但状态或 scope 错误时脚本会失败，不会原地覆盖。
+
+Secrets Store 保存后不再允许读取明文。创建前必须将新的 `ADMIN_KEY` 保存在团队批准的密码管理器中；它至少 32 个字符且不得包含空白。轮换必须新增 V2（或更高版本）secret name、更新 Worker binding、验证并发布，再停用旧版本；不要用同名覆盖来假装完成轮换。`INGRESS_ENC_KEY` 必须是 32 个随机字节的 64 位十六进制表示，轮换前还要设计旧 KV 密文的重加密或失效方案。
+
+`secrets:billing:check` 远端核对名称、`active` 状态和 `workers` scope。任一项不满足时禁止发布计费 Worker；发布后还要验证旧管理员凭据被拒绝、新凭据成功，且日志没有泄露值。
+
+本地 `wrangler dev` 也必须创建同一 store ID 和 secret name 的本地 Secrets Store 条目。以下命令**不要**添加 `--remote` 或 `--value`；让 Wrangler 交互式读取值，并把本地状态保存在已忽略的 `workers/billing/.wrangler/`：
+
+```powershell
+Set-Location workers/billing
+$Wrangler = (Resolve-Path ".\node_modules\.bin\wrangler.cmd").Path
+& $Wrangler secrets-store secret create 346e2b4b86334bc29083c064116e91cf --name CINACHAIN_BILLING_ADMIN_KEY_V1 --scopes workers
+& $Wrangler secrets-store secret create 346e2b4b86334bc29083c064116e91cf --name CINACHAIN_BILLING_INGRESS_ENC_KEY_V1 --scopes workers
+& $Wrangler dev
+Set-Location ../..
+```
+
+生产 Secrets Store 的值不会自动进入本地环境；本地条目也不会修改远端账户。
 
 ## 5. 自动发布行为
 
@@ -87,7 +110,7 @@ npm run secrets:billing:check
 1. Pull request 运行根质量门禁和文档构建，不执行发布。
 2. 推送到 `main` 后，所有发布 job 仍需先通过质量门禁。
 3. DApp、门户和文档分别发布到自己的 Cloudflare Pages 项目。
-4. Worker job 先验证 Cloudflare 凭据和计费 secret bindings，再发布计费与媒体 Worker。
+4. Worker job 先验证 Cloudflare 凭据和计费 Secrets Store 元数据，再发布计费与媒体 Worker。
 5. 工作流使用固定的 Wrangler 4 版本，避免发布时隐式漂移。
 
 推送到 `main` 只是触发器，不应当作发布成功证据。以 GitHub Actions job 结果、Cloudflare deployment revision 和线上验收结果为准。
@@ -145,7 +168,7 @@ Set-Location ../media-gateway
 Set-Location ../..
 ```
 
-媒体 Worker 依赖 R2 bucket 和自身配置；计费 Worker 依赖 KV、定时触发器和 required secrets。执行前应分别检查对应 `wrangler.toml` 与目标 Cloudflare 账户。其他 Worker 必须作为独立变更单元审核、配置和验证，不要假设根工作流已发布它们。
+媒体 Worker 依赖 R2 bucket 和自身配置；计费 Worker 依赖 KV、定时触发器及上述账户级 Secrets Store bindings。执行前应分别检查对应 `wrangler.toml` 与目标 Cloudflare 账户。其他 Worker 必须作为独立变更单元审核、配置和验证，不要假设根工作流已发布它们。
 
 ## 7. 合约发布原则
 
@@ -192,7 +215,7 @@ Set-Location ../..
 
 **计费 Worker 被发布门禁阻止**
 
-运行 `npm run secrets:billing:check` 查看缺失的绑定名称。通过安全渠道配置并轮换 secret 后再发布，不要把值补回 `wrangler.toml`。
+运行 `npm run secrets:billing:check` 查看具体问题：条目可能缺失、仍为 `pending`，或缺少 `workers` scope。确认 CI token 拥有账户级 Secrets Store Edit 权限，通过安全渠道配置后再发布；不要把值补回 `wrangler.toml`，也不要跳过元数据门禁。
 
 **页面可以打开但内容异常**
 
@@ -202,7 +225,7 @@ Set-Location ../..
 
 - 持续观察 Pages 与 Workers 的错误率、延迟、请求量和用量告警。
 - 定期核对 KV、R2、cron 和自定义域名绑定，避免环境漂移。
-- 轮换部署凭据和 Worker secrets；发生泄露时先撤销旧值，再验证新值生效。
+- 通过新版本名称轮换部署凭据和 Secrets Store entries；发生泄露时先绑定并验证新版本，再撤销旧版本和旧凭据。
 - 每次发布保存 Git commit、Cloudflare revision、验收时间和已知限制，便于回滚与审计。
 
 ---
