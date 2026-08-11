@@ -3,5 +3,6 @@
 **/components/shared/table/**
 **/generated
 .next/**
+portal/**
 tailwind.config.js
 **/wagmi.config.ts

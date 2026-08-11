@@ -1,0 +1,149 @@
+/*
+ * CinaChain brand portal — styles entry.
+ *
+ * Mirrors the DApp's globals.css: Tailwind layers + the Vercel-inspired
+ * typography, shadow, mesh-gradient, dark-band and pill-button utilities.
+ * Design tokens (colors / spacing / radius / shadows / type scale) come from
+ * design-tokens.css, imported in main.tsx.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Self-hosted fonts (Inter + Roboto Mono, latin subset WOFF2) ─── */
+/* Same working set as the DApp: Inter 400/500/600, Roboto Mono 400.    */
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/fonts/Inter-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/fonts/Inter-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/fonts/Inter-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Roboto Mono";
+  src: url("./assets/fonts/RobotoMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    monospace;
+}
+
+@layer base {
+  :root {
+    --radius: var(--radius-md);
+  }
+
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss02", "rlig" 1, "calt" 1;
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+}
+
+/* ─── Vercel-inspired typography utilities ─── */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.05em;
+  }
+
+  .font-mono-tech {
+    font-family: var(--font-mono);
+    font-weight: 400;
+  }
+}
+
+/* ─── Stacked shadow system (Vercel elevation levels) ─── */
+@layer utilities {
+  .shadow-vercel-sm {
+    box-shadow: var(--shadow-level-2);
+  }
+  .shadow-vercel-md {
+    box-shadow: var(--shadow-level-3);
+  }
+  .shadow-vercel-lg {
+    box-shadow: var(--shadow-level-4);
+  }
+  .shadow-vercel-card {
+    box-shadow: var(--shadow-level-2);
+  }
+
+  /* Vercel pill button — marketing CTA scale only (100px) */
+  .btn-pill {
+    border-radius: 100px;
+    font-weight: 500;
+  }
+
+  /* Vercel mesh gradient — hero scale only. The three brand pairs
+     (develop blue→teal, preview violet→pink, ship coral→amber) as one
+     object; never miniaturised, never cropped to a single stop. */
+  .mesh-gradient {
+    background: linear-gradient(
+      135deg,
+      var(--color-gradient-develop-start) 0%,
+      var(--color-gradient-develop-end) 20%,
+      var(--color-gradient-preview-start) 40%,
+      var(--color-gradient-preview-end) 60%,
+      var(--color-gradient-ship-start) 80%,
+      var(--color-gradient-ship-end) 100%
+    );
+  }
+
+  /* Polarity-flipped dark band (showcase-band-dark) */
+  .band-dark {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  .content-auto-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 700px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

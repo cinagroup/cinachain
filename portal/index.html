@@ -1,358 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>CinaChain — Base Sepolia Testnet Beta</title>
-  <meta name="description" content="CinaChain — NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base Sepolia Testnet." />
-  <link rel="canonical" href="https://cinachain.com/" />
-  <meta name="theme-color" content="#fafafa" />
+    <title>CinaChain — Base Sepolia Testnet Beta</title>
+    <meta
+      name="description"
+      content="CinaChain — NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base Sepolia Testnet."
+    />
+    <link rel="canonical" href="https://cinachain.com/" />
+    <meta
+      name="theme-color"
+      content="#fafafa"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#131313"
+      media="(prefers-color-scheme: dark)"
+    />
 
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="stylesheet" href="/design-tokens.css" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="CinaChain" />
-  <meta property="og:title" content="CinaChain — Base Sepolia Testnet Beta" />
-  <meta property="og:description" content="NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base Sepolia Testnet." />
-  <meta property="og:url" content="https://cinachain.com/" />
-  <meta property="og:image" content="https://cinachain.com/og-image.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="CinaChain on Base Sepolia Testnet" />
-  <meta property="og:locale" content="en_US" />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CinaChain" />
+    <meta property="og:title" content="CinaChain — Base Sepolia Testnet Beta" />
+    <meta
+      property="og:description"
+      content="NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base Sepolia Testnet."
+    />
+    <meta property="og:url" content="https://cinachain.com/" />
+    <meta property="og:image" content="https://cinachain.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CinaChain on Base Sepolia Testnet" />
+    <meta property="og:locale" content="en_US" />
 
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="CinaChain — Base Sepolia Testnet Beta" />
-  <meta name="twitter:description" content="NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base Sepolia Testnet." />
-  <meta name="twitter:image" content="https://cinachain.com/og-image.png" />
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="CinaChain — Base Sepolia Testnet Beta"
+    />
+    <meta
+      name="twitter:description"
+      content="NFT platform, badge system, mega-collections, and edge-deployed infrastructure on Base Sepolia Testnet."
+    />
+    <meta name="twitter:image" content="https://cinachain.com/og-image.png" />
 
-  <!-- Structured data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
+    <!-- Structured data -->
+    <script type="application/ld+json">
       {
-        "@type": "Organization",
-        "name": "CinaChain",
-        "url": "https://cinachain.com",
-        "logo": "https://cinachain.com/favicon.ico",
-        "sameAs": [
-          "https://github.com/cinagroup",
-          "https://x.com/cinachain",
-          "https://discord.gg/cinachain"
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "name": "CinaChain",
+            "url": "https://cinachain.com",
+            "logo": "https://cinachain.com/favicon.ico",
+            "sameAs": [
+              "https://github.com/cinagroup",
+              "https://discord.gg/cinachain"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "name": "CinaChain",
+            "url": "https://cinachain.com/"
+          }
         ]
-      },
-      {
-        "@type": "WebSite",
-        "name": "CinaChain",
-        "url": "https://cinachain.com/"
       }
-    ]
-  }
-  </script>
+    </script>
 
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      min-height: 100vh;
-      background: var(--color-canvas-soft);
-      color: var(--color-ink);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-feature-settings: "ss01", "ss02";
-      -webkit-font-smoothing: antialiased;
-    }
-    :focus-visible {
-      border-radius: var(--radius-xs);
-      outline: 2px solid var(--color-ink);
-      outline-offset: 3px;
-    }
-    .skip-link {
-      position: fixed;
-      left: var(--spacing-md);
-      top: -80px;
-      z-index: 100;
-      border-radius: var(--radius-sm);
-      background: var(--color-primary);
-      color: var(--color-on-primary);
-      font-size: 14px;
-      font-weight: 500;
-      padding: 10px 16px;
-      text-decoration: none;
-    }
-    .skip-link:focus { top: var(--spacing-md); }
-    .container {
-      width: min(100%, var(--layout-page-width));
-      margin-inline: auto;
-      padding-inline: var(--layout-desktop-gutter);
-    }
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      border-bottom: 1px solid var(--color-hairline);
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(16px);
-    }
-    nav { display: flex; min-height: 64px; align-items: center; justify-content: space-between; gap: 20px; }
-    .logo {
-      display: inline-flex;
-      min-height: 44px;
-      align-items: center;
-      gap: 8px;
-      color: var(--color-ink);
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: -0.6px;
-      text-decoration: none;
-    }
-    .logo-mark { display: block; width: 28px; height: 28px; border-radius: 999px; }
-    .logo span { color: var(--color-cyan-deep); }
-    .nav-links { display: flex; align-items: center; gap: 4px; }
-    nav a.link {
-      display: inline-flex;
-      min-height: 44px;
-      align-items: center;
-      border-radius: 999px;
-      color: var(--color-body);
-      font-size: 14px;
-      font-weight: 500;
-      padding-inline: 12px;
-      text-decoration: none;
-      transition: background-color 150ms ease, color 150ms ease;
-    }
-    nav a.link:hover { background: var(--color-canvas-soft-2); color: var(--color-ink); }
-    main { min-height: calc(100vh - 64px); }
-    .hero {
-      position: relative;
-      overflow: hidden;
-      padding: 128px 24px 112px;
-      text-align: center;
-    }
-    .hero::before {
-      position: absolute;
-      inset: -240px -10% auto;
-      height: 640px;
-      background: linear-gradient(135deg, var(--color-gradient-develop-start) 0%, var(--color-gradient-develop-end) 20%, var(--color-gradient-preview-start) 40%, var(--color-gradient-preview-end) 60%, var(--color-gradient-ship-start) 80%, var(--color-gradient-ship-end) 100%);
-      content: "";
-      filter: blur(96px);
-      opacity: 0.2;
-      pointer-events: none;
-    }
-    .hero > * { position: relative; }
-    .hero .eyebrow {
-      display: inline-flex;
-      min-height: 32px;
-      align-items: center;
-      border: 1px solid var(--color-hairline);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.72);
-      color: var(--color-body);
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 12px;
-      letter-spacing: 0;
-      margin-bottom: 24px;
-      padding-inline: 12px;
-      text-transform: none;
-      box-shadow: var(--shadow-level-1);
-    }
-    .hero h1 {
-      color: var(--color-ink);
-      font-size: 48px;
-      font-weight: 600;
-      letter-spacing: -2.4px;
-      line-height: 48px;
-    }
-    .hero h1 span { color: var(--color-cyan-deep); }
-    .hero p {
-      max-width: 620px;
-      margin: 24px auto 0;
-      color: var(--color-body);
-      font-size: 18px;
-      line-height: 28px;
-    }
-    .cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 36px; }
-    .btn {
-      display: inline-flex;
-      min-height: 48px;
-      align-items: center;
-      justify-content: center;
-      border-radius: 100px;
-      font-size: 16px;
-      font-weight: 500;
-      line-height: 24px;
-      padding-inline: 24px;
-      text-decoration: none;
-      transition: box-shadow 150ms ease, transform 150ms ease;
-    }
-    .btn:hover { transform: translateY(-1px); }
-    .btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
-    .btn-primary:hover { box-shadow: var(--shadow-level-3); }
-    .btn-ghost {
-      border: 1px solid var(--color-hairline);
-      background: var(--color-canvas);
-      color: var(--color-ink);
-      box-shadow: var(--shadow-level-1);
-    }
-    .btn-ghost:hover { border-color: var(--color-hairline-strong); }
-    .products {
-      border-top: 1px solid var(--color-hairline);
-      background: var(--color-canvas);
-      padding-block: 96px;
-      content-visibility: auto;
-      contain-intrinsic-size: auto 720px;
-    }
-    .products h2 {
-      margin-bottom: 40px;
-      color: var(--color-ink);
-      font-size: 32px;
-      font-weight: 600;
-      letter-spacing: -1.28px;
-      line-height: 40px;
-      text-align: center;
-    }
-    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-    .card {
-      min-height: 192px;
-      border: 1px solid var(--color-hairline);
-      border-radius: var(--radius-md);
-      background: var(--color-canvas);
-      color: inherit;
-      padding: 24px;
-      text-decoration: none;
-      box-shadow: var(--shadow-level-2);
-      transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
-    }
-    .card:hover { border-color: var(--color-hairline-strong); box-shadow: var(--shadow-level-3); transform: translateY(-2px); }
-    .card .tag {
-      display: block;
-      margin-bottom: 12px;
-      color: var(--color-cyan-deep);
-      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-      font-size: 12px;
-      letter-spacing: 0;
-      line-height: 16px;
-      text-transform: none;
-    }
-    .card h3 { margin-bottom: 8px; color: var(--color-ink); font-size: 20px; font-weight: 600; letter-spacing: -0.6px; line-height: 28px; }
-    .card p { color: var(--color-body); font-size: 14px; line-height: 20px; }
-    footer {
-      border-top: 1px solid var(--color-hairline);
-      background: var(--color-canvas-soft);
-      padding-block: 48px;
-      text-align: center;
-    }
-    footer p { color: var(--color-mute); font-size: 13px; line-height: 20px; }
-    footer a { color: var(--color-body); margin-inline: 10px; text-decoration: none; }
-    footer a:hover { color: var(--color-ink); text-decoration: underline; text-underline-offset: 3px; }
-    @media (max-width: 959px) {
-      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 599px) {
-      .container { padding-inline: var(--layout-mobile-gutter); }
-      nav { gap: 8px; }
-      .logo { font-size: 18px; }
-      .nav-links { gap: 0; }
-      nav a.link { padding-inline: 8px; font-size: 13px; }
-      .nav-links .link:last-child { display: none; }
-      .hero { padding: 80px 0 72px; }
-      .hero h1 { font-size: 40px; line-height: 44px; letter-spacing: -2px; }
-      .hero p { font-size: 16px; line-height: 24px; }
-      .cta { align-items: stretch; flex-direction: column; }
-      .grid { grid-template-columns: 1fr; }
-      .products { padding-block: 64px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      .btn, .card, nav a.link { transition: none; }
-      .btn:hover, .card:hover { transform: none; }
-    }
-  </style>
-</head>
-<body>
-  <a class="skip-link" href="#main">Skip to content</a>
-
-  <header>
-    <div class="container">
-      <nav aria-label="Primary">
-        <a class="logo" href="/" aria-label="CinaChain home">
-          <img class="logo-mark" src="/favicon.ico" alt="" aria-hidden="true" width="28" height="28" />
-          Cina<span>Chain</span>
-        </a>
-        <div class="nav-links">
-          <a class="link" href="https://nft.cinachain.com">DApp</a>
-          <a class="link" href="https://docs.cinachain.com">Docs</a>
-          <a class="link" href="https://github.com/cinagroup">GitHub</a>
-        </div>
-      </nav>
-    </div>
-  </header>
-
-  <main id="main">
-    <div class="container">
-      <section class="hero">
-        <span class="eyebrow">Base Sepolia · Beta</span>
-        <h1>Cina<span>Chain</span>.</h1>
-        <p>A full-stack Web3 ecosystem on Base Sepolia Testnet — NFT platform, badge system, mega-collections, and edge-deployed infrastructure.</p>
-        <div class="cta">
-          <a class="btn btn-primary" href="https://nft.cinachain.com">Enter DApp</a>
-          <a class="btn btn-ghost" href="https://docs.cinachain.com">Read the Docs</a>
-        </div>
-      </section>
-    </div>
-
-    <section class="products" aria-labelledby="products-heading">
-      <div class="container">
-        <h2 id="products-heading">Products</h2>
-        <div class="grid">
-          <a class="card" href="https://nft.cinachain.com/explore">
-            <span class="tag">ERC-721 · Beta</span>
-            <h3>CinaChain NFT</h3>
-            <p>10,000 unique collectibles with whitelist + public mint phases on Base.</p>
-          </a>
-          <a class="card" href="https://nft.cinachain.com/dashboard/badges">
-            <span class="tag">ERC-1155 · Beta</span>
-            <h3>CinaBadge</h3>
-            <p>Soulbound achievements, event tickets, and membership tiers.</p>
-          </a>
-          <a class="card" href="https://nft.cinachain.com/collections">
-            <span class="tag">ERC-1155 · Mega</span>
-            <h3>CinaMega</h3>
-            <p>UCINA · MCINA · CINA — billions of copies, fixed 1:1000:1,000,000 exchange.</p>
-          </a>
-          <a class="card" href="https://nft.cinachain.com/exchange">
-            <span class="tag">Exchange</span>
-            <h3>Fixed-Rate Exchange</h3>
-            <p>Bidirectional conversion with atomic burn-and-mint, floor + dust-safe.</p>
-          </a>
-          <a class="card" href="https://docs.cinachain.com">
-            <span class="tag">Documentation</span>
-            <h3>Docs &amp; Guides</h3>
-            <p>Architecture, deployment, domain plan, and integration guides.</p>
-          </a>
-          <a class="card" href="https://billing-api.cinachain.com/health">
-            <span class="tag">Infrastructure</span>
-            <h3>Edge API</h3>
-            <p>Whitelist verification, billing metering, and media gateway on Cloudflare's edge.</p>
-          </a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="container">
-      <p>© 2026 cinagroup · Built on <a href="https://base.org">Base</a> · Powered by <a href="https://cloudflare.com">Cloudflare</a></p>
-      <p style="margin-top: 8px;">
-        <a href="https://github.com/cinagroup">GitHub</a>
-        <a href="https://x.com/cinachain">X / Twitter</a>
-        <a href="https://discord.gg/cinachain">Discord</a>
-      </p>
-    </div>
-  </footer>
-</body>
+    <!--
+      Theme (no FOUC). Runs before first paint: reads the stored preference
+      ("light" | "dark" | "system") and applies the resolved theme to <html
+      data-theme>, which the design tokens and Tailwind dark variant key off
+      of. Defaults to the OS preference. The in-app ModeToggle updates the
+      same attribute and persists the choice to localStorage.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem("cinachain-theme")
+          var pref =
+            stored === "light" || stored === "dark" || stored === "system"
+              ? stored
+              : "system"
+          var dark =
+            pref === "dark" ||
+            (pref === "system" &&
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches)
+          document.documentElement.setAttribute(
+            "data-theme",
+            dark ? "dark" : "light"
+          )
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light")
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

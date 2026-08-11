@@ -142,8 +142,14 @@ npm run build
 
 ### 品牌门户
 
+品牌门户是独立的 Vite + React 应用（`portal/`），需先构建再发布：
+
 ```powershell
-& $Wrangler pages deploy portal --project-name=cinachain-portal --branch=main --commit-hash=$Commit
+Set-Location portal
+npm ci
+npm run build
+& $Wrangler pages deploy dist --project-name=cinachain-portal --branch=main --commit-hash=$Commit
+Set-Location ..
 ```
 
 ### 文档站

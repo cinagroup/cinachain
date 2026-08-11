@@ -40,6 +40,7 @@
     "generated",
     "workers",
     "docs-site",
+    "portal",
     "**/wagmi.config.ts",
     "wagmi.config.ts"
   ]
