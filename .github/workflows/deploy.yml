@@ -117,7 +117,7 @@ jobs:
             echo "Pages project missing — creating cinachain-dapp-v2"
             ./workers/billing/node_modules/.bin/wrangler pages project create cinachain-dapp-v2 --production-branch=main
           fi
-          ./workers/billing/node_modules/.bin/wrangler pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true
+          ./workers/billing/node_modules/.bin/wrangler pages deploy out --project-name=cinachain-dapp-v2 --branch=main --commit-hash="$GITHUB_SHA"
 
   workers:
     needs: quality
@@ -203,7 +203,7 @@ jobs:
           if ! grep -q "cinachain-portal" <<< "$projects"; then
             ./workers/billing/node_modules/.bin/wrangler pages project create cinachain-portal --production-branch=main
           fi
-          ./workers/billing/node_modules/.bin/wrangler pages deploy portal --project-name=cinachain-portal --commit-dirty=true
+          ./workers/billing/node_modules/.bin/wrangler pages deploy portal --project-name=cinachain-portal --branch=main --commit-hash="$GITHUB_SHA"
 
   docs:
     needs: [quality, docs-build]
@@ -240,4 +240,4 @@ jobs:
           if ! grep -q "cinachain-docs" <<< "$projects"; then
             ../workers/billing/node_modules/.bin/wrangler pages project create cinachain-docs --production-branch=main
           fi
-          ../workers/billing/node_modules/.bin/wrangler pages deploy build --project-name=cinachain-docs --commit-dirty=true
+          ../workers/billing/node_modules/.bin/wrangler pages deploy build --project-name=cinachain-docs --branch=main --commit-hash="$GITHUB_SHA"

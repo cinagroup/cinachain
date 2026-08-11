@@ -100,19 +100,20 @@ npm run secrets:billing:check
 
 ```powershell
 $Wrangler = (Resolve-Path ".\workers\billing\node_modules\.bin\wrangler.cmd").Path
+$Commit = (git rev-parse HEAD).Trim()
 ```
 
 ### NFT DApp
 
 ```powershell
 npm run build
-& $Wrangler pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true
+& $Wrangler pages deploy out --project-name=cinachain-dapp-v2 --branch=main --commit-hash=$Commit
 ```
 
 ### 品牌门户
 
 ```powershell
-& $Wrangler pages deploy portal --project-name=cinachain-portal --commit-dirty=true
+& $Wrangler pages deploy portal --project-name=cinachain-portal --branch=main --commit-hash=$Commit
 ```
 
 ### 文档站
@@ -121,7 +122,7 @@ npm run build
 Set-Location docs-site
 npm ci --legacy-peer-deps
 npm run build
-& $Wrangler pages deploy build --project-name=cinachain-docs --commit-dirty=true
+& $Wrangler pages deploy build --project-name=cinachain-docs --branch=main --commit-hash=$Commit
 Set-Location ..
 ```
 

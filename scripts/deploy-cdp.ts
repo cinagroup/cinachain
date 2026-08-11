@@ -218,7 +218,7 @@ async function main() {
 
   console.log("\n🔄 Rebuild:")
   console.log(
-    "npm run build && npx wrangler pages deploy out --project-name=cinachain-dapp-v2 --commit-dirty=true"
+    "Follow DEPLOYMENT.md section 6 to publish the locked build to cinachain-dapp-v2."
   )
 }
 
