@@ -115,7 +115,7 @@ export function SiteFooter() {
               { label: "Docs", href: links.docs, external: true },
               { label: "Mint", href: dapp.mint, external: true },
               { label: "Dashboard", href: dapp.dashboard, external: true },
-              { label: "API Status", href: edgeApi.whitelist, external: true },
+              { label: "API status", href: edgeApi.whitelist, external: true },
             ]}
           />
 

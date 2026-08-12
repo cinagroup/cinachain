@@ -19,7 +19,7 @@ function HeroStat({ label, value }: { label: string; value: string }) {
 export function HeroStats() {
   return (
     <dl className="mx-auto mt-12 flex max-w-screen-sm items-center justify-center divide-x divide-border rounded-lg border border-border bg-card px-2 py-4 shadow-vercel-sm">
-      <HeroStat label="Max Supply" value="10,000" />
+      <HeroStat label="Max supply" value="10,000" />
       <HeroStat label="Network" value="Base Sepolia" />
       <HeroStat label="Stage" value="Beta" />
     </dl>
