@@ -32,7 +32,7 @@ export default function ExplorePage() {
 
       {/* Heading */}
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        CinaChain NFT Gallery<span className="text-foreground">.</span>
+        CinaChain NFT gallery<span className="text-foreground">.</span>
       </h1>
 
       <p className="mt-3 max-w-[560px] text-base leading-7 text-muted-foreground">
@@ -44,7 +44,7 @@ export default function ExplorePage() {
       {stats && (
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <div className="rounded-md border border-border bg-card px-4 py-2 shadow-vercel-sm">
-            <span className="text-xs text-muted-foreground">Total Minted</span>
+            <span className="text-xs text-muted-foreground">Total minted</span>
             <p className="font-display text-lg text-foreground">
               {stats.mintedCount.toLocaleString()}
             </p>

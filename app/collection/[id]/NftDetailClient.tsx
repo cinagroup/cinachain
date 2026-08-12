@@ -236,7 +236,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
 
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle className="text-base">Contract Details</CardTitle>
+              <CardTitle className="text-base">Contract details</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="space-y-3 text-sm">
@@ -247,7 +247,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Contract Address</dt>
+                  <dt className="text-muted-foreground">Contract address</dt>
                   <dd>
                     <Link
                       href={getBlockExplorerUrl("address", CINA_NFT_CONTRACT)}
@@ -261,7 +261,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Token Standard</dt>
+                  <dt className="text-muted-foreground">Token standard</dt>
                   <dd className="font-medium text-foreground">ERC-721</dd>
                 </div>
                 <div className="flex justify-between">

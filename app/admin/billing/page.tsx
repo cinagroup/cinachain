@@ -307,7 +307,7 @@ export default function BillingManagementPage() {
         Administration
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Billing Management<span className="text-foreground">.</span>
+        Billing management<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Manage the CinaCredit exchange rate, issue credit, inspect the ledger,
@@ -381,13 +381,13 @@ export default function BillingManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ArrowLeftRight className="size-5" />
-              Exchange Rate
+              Exchange rate
             </CardTitle>
             <CardDescription>Set how many credit 1 ETH mints</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between rounded-md border border-border bg-secondary p-4">
-              <span className="text-sm font-medium">Current Rate</span>
+              <span className="text-sm font-medium">Current rate</span>
               <span className="font-mono-tech text-sm text-foreground">
                 1 ETH ={" "}
                 {creditLoading
@@ -403,7 +403,7 @@ export default function BillingManagementPage() {
               </span>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="new-rate">New Rate (credit per ETH)</Label>
+              <Label htmlFor="new-rate">New rate (credit per ETH)</Label>
               <Input
                 id="new-rate"
                 type="number"
@@ -437,7 +437,7 @@ export default function BillingManagementPage() {
               variant="outline"
               className="w-full"
             >
-              Update Rate
+              Update rate
             </Button>
           </CardContent>
         </Card>
@@ -447,7 +447,7 @@ export default function BillingManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Coins className="size-5" />
-              Issue Credit
+              Issue credit
             </CardTitle>
             <CardDescription>
               Mint credit directly to a recipient address
@@ -455,7 +455,7 @@ export default function BillingManagementPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="recipient">Recipient Address</Label>
+              <Label htmlFor="recipient">Recipient address</Label>
               <Input
                 id="recipient"
                 type="text"
@@ -515,7 +515,7 @@ export default function BillingManagementPage() {
               variant="outline"
               className="w-full"
             >
-              Issue Credit
+              Issue credit
             </Button>
           </CardContent>
         </Card>
@@ -575,7 +575,7 @@ export default function BillingManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="size-5" />
-              Emergency Controls
+              Emergency controls
             </CardTitle>
             <CardDescription>
               Pause, resume, or enable redemption
@@ -583,7 +583,7 @@ export default function BillingManagementPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between rounded-md border border-border bg-secondary p-4">
-              <span className="text-sm font-medium">Top-ups Status</span>
+              <span className="text-sm font-medium">Top-ups status</span>
               <span
                 className={
                   isPaused
@@ -609,7 +609,7 @@ export default function BillingManagementPage() {
               ) : (
                 <Pause className="mr-2 size-4" />
               )}
-              Pause Top-Ups
+              Pause top-ups
             </Button>
             <Button
               onClick={() => {
@@ -626,7 +626,7 @@ export default function BillingManagementPage() {
               ) : (
                 <Play className="mr-2 size-4" />
               )}
-              Resume Top-Ups
+              Resume top-ups
             </Button>
             <Button
               onClick={() => {
@@ -643,7 +643,7 @@ export default function BillingManagementPage() {
               ) : (
                 <BadgeCheck className="mr-2 size-4" />
               )}
-              Enable Redemption
+              Enable redemption
             </Button>
           </CardContent>
         </Card>
@@ -654,7 +654,7 @@ export default function BillingManagementPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BadgeCheck className="size-5" />
-            Tier Badge Minting
+            Tier badge minting
           </CardTitle>
           <CardDescription>
             Addresses that crossed a tier threshold but have no on-chain badge
@@ -726,7 +726,7 @@ export default function BillingManagementPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Coins className="size-5" />
-            Custodial Accounts
+            Custodial accounts
           </CardTitle>
           <CardDescription>
             DB bookkeeping on top of the hot-wallet pool — credit on deposit,

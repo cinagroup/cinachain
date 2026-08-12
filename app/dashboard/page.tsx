@@ -67,7 +67,7 @@ function TierProgressCard({ address }: { address?: Address }) {
     <Card className="shadow-vercel-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          Membership Tier
+          Membership tier
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -137,7 +137,7 @@ export default function PageDashboard() {
         ? { text: "Eligible", sub: "Whitelist mint active" }
         : { text: "Public", sub: "Public mint active" }
       : whitelistData?.phase === "whitelist"
-        ? { text: "Not Listed", sub: "Check back later" }
+        ? { text: "Not listed", sub: "Check back later" }
         : { text: "Public", sub: "Public mint active" }
 
   return (
@@ -158,12 +158,12 @@ export default function PageDashboard() {
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              label="ETH Balance"
+              label="ETH balance"
               value={`${balanceStr} ETH`}
               isLoading={balanceLoading}
             />
             <StatCard
-              label="NFTs Owned"
+              label="NFTs owned"
               value={nftBalance?.toString() || "0"}
               sublabel="CinaChain NFTs"
               isLoading={nftLoading}
@@ -175,7 +175,7 @@ export default function PageDashboard() {
               isLoading={whitelistLoading}
             />
             <StatCard
-              label="Collection Progress"
+              label="Collection progress"
               value={
                 contractStats
                   ? `${contractStats.mintedCount.toLocaleString()} / ${contractStats.maxCount.toLocaleString()}`
@@ -218,16 +218,16 @@ export default function PageDashboard() {
 
           {/* Quick Actions */}
           <div className="mt-8">
-            <h2 className="font-display mb-4 text-lg text-foreground">Quick Actions</h2>
+            <h2 className="font-display mb-4 text-lg text-foreground">Quick actions</h2>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="flex-1">
                 <Link href="/mint">Mint NFT</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="flex-1">
-                <Link href="/explore">Explore Collection</Link>
+                <Link href="/explore">Explore collection</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="flex-1">
-                <Link href="/dashboard/nfts">View My NFTs</Link>
+                <Link href="/dashboard/nfts">View my NFTs</Link>
               </Button>
             </div>
           </div>

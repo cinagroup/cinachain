@@ -156,7 +156,7 @@ export default function ContractManagementPage() {
         Administration
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Contract Management<span className="text-foreground">.</span>
+        Contract management<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Manage your NFT contract settings and operations.
@@ -233,7 +233,7 @@ export default function ContractManagementPage() {
               ) : (
                 <Pause className="size-5" />
               )}
-              Minting Status
+              Minting status
             </CardTitle>
             <CardDescription>
               Pause or resume the minting process
@@ -270,7 +270,7 @@ export default function ContractManagementPage() {
               ) : (
                 <Pause className="mr-2 size-4" />
               )}
-              {isPaused ? "Resume Minting" : "Pause Minting"}
+              {isPaused ? "Resume minting" : "Pause minting"}
             </Button>
           </CardContent>
         </Card>
@@ -280,7 +280,7 @@ export default function ContractManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="size-5" />
-              Withdraw Funds
+              Withdraw funds
             </CardTitle>
             <CardDescription>
               Withdraw collected ETH from the contract
@@ -288,7 +288,7 @@ export default function ContractManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="mb-4 flex items-center justify-between rounded-md border border-border bg-secondary p-4">
-              <span className="text-sm font-medium">Contract Balance</span>
+              <span className="text-sm font-medium">Contract balance</span>
               <span className="font-mono-tech text-sm text-foreground">
                 {contractBalance
                   ? `${trimEth(
@@ -327,8 +327,8 @@ export default function ContractManagementPage() {
                 <DollarSign className="mr-2 size-4" />
               )}
               {contractBalance && contractBalance.value === 0n
-                ? "Nothing to Withdraw"
-                : "Withdraw All Funds"}
+                ? "Nothing to withdraw"
+                : "Withdraw all funds"}
             </Button>
           </CardContent>
         </Card>
@@ -338,13 +338,13 @@ export default function ContractManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="size-5" />
-              Set Mint Price
+              Set mint price
             </CardTitle>
             <CardDescription>Update the price per NFT in ETH</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="price">New Price (ETH)</Label>
+              <Label htmlFor="price">New price (ETH)</Label>
               <Input
                 id="price"
                 type="number"
@@ -378,17 +378,17 @@ export default function ContractManagementPage() {
               variant="outline"
               className="w-full"
             >
-              Update Price
+              Update price
             </Button>
           </CardContent>
         </Card>
 
-        {/* Set Merkle Root */}
+        {/* Set Merkle root */}
         <Card className="shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TreePine className="size-5" />
-              Set Merkle Root
+              Set Merkle root
             </CardTitle>
             <CardDescription>
               Enable whitelist minting with the root from Whitelist Management
@@ -396,7 +396,7 @@ export default function ContractManagementPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="merkle-root">Merkle Root (0x...)</Label>
+              <Label htmlFor="merkle-root">Merkle root (0x...)</Label>
               <Input
                 id="merkle-root"
                 type="text"
@@ -423,7 +423,7 @@ export default function ContractManagementPage() {
               variant="outline"
               className="w-full"
             >
-              Set Merkle Root
+              Set Merkle root
             </Button>
           </CardContent>
         </Card>
@@ -433,7 +433,7 @@ export default function ContractManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="size-5" />
-              Set Base URI
+              Set base URI
             </CardTitle>
             <CardDescription>
               Update the IPFS base URI for metadata
@@ -441,7 +441,7 @@ export default function ContractManagementPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="baseuri">New Base URI</Label>
+              <Label htmlFor="baseuri">New base URI</Label>
               <Input
                 id="baseuri"
                 type="text"
@@ -459,7 +459,7 @@ export default function ContractManagementPage() {
               variant="outline"
               className="w-full"
             >
-              Update Base URI
+              Update base URI
             </Button>
           </CardContent>
         </Card>
@@ -468,12 +468,12 @@ export default function ContractManagementPage() {
       {/* Contract info */}
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
-          <CardTitle>Contract Information</CardTitle>
+          <CardTitle>Contract information</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between border-b border-border py-2">
-              <dt className="text-muted-foreground">Contract Address</dt>
+              <dt className="text-muted-foreground">Contract address</dt>
               <dd className="font-mono-tech text-xs">{CINA_NFT_CONTRACT}</dd>
             </div>
             <div className="flex justify-between border-b border-border py-2">
@@ -481,11 +481,11 @@ export default function ContractManagementPage() {
               <dd className="font-medium">{PRIMARY_NETWORK_NAME}</dd>
             </div>
             <div className="flex justify-between border-b border-border py-2">
-              <dt className="text-muted-foreground">Token Standard</dt>
+              <dt className="text-muted-foreground">Token standard</dt>
               <dd className="font-medium">ERC-721</dd>
             </div>
             <div className="flex justify-between py-2">
-              <dt className="text-muted-foreground">Contract Status</dt>
+              <dt className="text-muted-foreground">Contract status</dt>
               <dd
                 className={
                   isPaused

@@ -59,7 +59,7 @@ export default function MyNftsPage() {
         {/* Summary */}
         <Card className="mb-6 shadow-vercel-card">
           <CardHeader>
-            <CardTitle>Collection Summary</CardTitle>
+            <CardTitle>Collection summary</CardTitle>
             <CardDescription>Total NFTs owned</CardDescription>
           </CardHeader>
           <CardContent>
@@ -129,7 +129,7 @@ export default function MyNftsPage() {
                   {isLoading ? (
                     <Loader2 className="mr-2 size-4 animate-spin" />
                   ) : null}
-                  Load More ({count - offset - tokenIds.length} more)
+                  Load more ({count - offset - tokenIds.length} more)
                 </Button>
               )}
               {!hasMore && (
@@ -150,7 +150,7 @@ export default function MyNftsPage() {
               You don&apos;t own any CinaChain NFTs yet.
             </p>
             <Button asChild className="mt-4">
-              <Link href="/mint">Mint Your First NFT</Link>
+              <Link href="/mint">Mint your first NFT</Link>
             </Button>
           </div>
         )}
@@ -158,7 +158,7 @@ export default function MyNftsPage() {
 
       <IsWalletDisconnected>
         <div className="py-12 text-center">
-          <h2 className="font-display mb-2 text-xl">Connect Your Wallet</h2>
+          <h2 className="font-display mb-2 text-xl">Connect your wallet</h2>
           <p className="text-muted-foreground">
             Connect your wallet to view your NFT collection.
           </p>

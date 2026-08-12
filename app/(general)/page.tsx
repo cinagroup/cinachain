@@ -67,7 +67,7 @@ export default function HomePage() {
               className={cn(buttonVariants({ size: "lg" }), "btn-pill")}
             >
               <Sparkles className="mr-2 size-4" />
-              Explore NFT DApp
+              Explore NFTs
             </Link>
             <Link
               href="/mint"
@@ -109,7 +109,7 @@ export default function HomePage() {
               tag="ERC-721"
               description="10,000 unique collectibles with whitelist + public mint phases. Full enumerable support for dashboard integration."
               href="/explore"
-              cta="View Collection"
+              cta="View collection"
               status={DEPLOYMENT_STAGE}
             />
             <ProductCard
@@ -118,7 +118,7 @@ export default function HomePage() {
               tag="ERC-1155"
               description="Soulbound achievement badges, event tickets, and membership tiers. Batch minting and airdrop support."
               href="/dashboard/badges"
-              cta="View Badges"
+              cta="View badges"
               status={DEPLOYMENT_STAGE}
             />
             <ProductCard
@@ -127,16 +127,16 @@ export default function HomePage() {
               tag="ERC-1155"
               description="Three template-based mega-collections — UCINA, MCINA, CINA — with billions of copies each and a fixed 1:1000:1,000,000 exchange."
               href="/collections"
-              cta="View Collections"
+              cta="View collections"
               status="Beta"
             />
             <ProductCard
               icon={<Zap className="size-6" />}
-              name="Gasless Minting"
+              name="Gasless minting"
               tag="CDP Paymaster"
               description="Coinbase Smart Wallet integration with passkey-based onboarding. Users mint without holding ETH."
               href="/mint"
-              cta="Try Gasless"
+              cta="Try gasless"
               status="Beta"
             />
             <ProductCard
@@ -145,7 +145,7 @@ export default function HomePage() {
               tag="Cloudflare Workers"
               description="Whitelist verification and paymaster proxy running on Cloudflare's global edge network."
               href="https://whitelist-api.cinachain.com/health"
-              cta="API Status"
+              cta="API status"
               status={DEPLOYMENT_STAGE}
               external
             />
@@ -175,7 +175,7 @@ export default function HomePage() {
             />
             <TechCard
               icon={<Wallet className="size-5" />}
-              title="Smart Wallet"
+              title="Smart wallet"
               description="Passkey-based wallets. No seed phrases. Gasless transactions."
             />
             <TechCard
@@ -209,7 +209,7 @@ export default function HomePage() {
             />
             <RoadmapCard
               phase="02"
-              title="NFT Platform"
+              title="NFT platform"
               status="done"
               items={[
                 "ERC-721 contract deployed",
@@ -219,7 +219,7 @@ export default function HomePage() {
             />
             <RoadmapCard
               phase="03"
-              title="Admin & Badges"
+              title="Admin & badges"
               status="done"
               items={[
                 "Admin control panel",
@@ -229,10 +229,10 @@ export default function HomePage() {
             />
             <RoadmapCard
               phase="04"
-              title="Scale & Expand"
+              title="Scale & expand"
               status="active"
               items={[
-                "USDC Paymaster integration",
+                "USDC paymaster integration",
                 "Mainnet deployment",
                 "Marketplace integration",
               ]}
@@ -254,16 +254,16 @@ export default function HomePage() {
             <TeamCard
               icon={<Users className="size-8" />}
               name="cinagroup"
-              role="Core Team"
+              role="Core team"
             />
             <TeamCard
               icon={<BrandMark size={40} />}
               name="CinaChain"
-              role="Brand & Community"
+              role="Brand & community"
             />
             <TeamCard
               icon={<FaGithub className="size-8" />}
-              name="Open Source"
+              name="Open source"
               role="Powered by the community"
             />
           </div>
@@ -287,7 +287,7 @@ export default function HomePage() {
                 "btn-pill bg-white text-[#171717]"
               )}
             >
-              Mint Your First NFT
+              Mint your first NFT
               <ArrowRight className="ml-2 size-4" />
             </Link>
             <Link
@@ -442,7 +442,7 @@ function TechCard({
       <div className="mb-3 flex size-9 items-center justify-center rounded-md bg-secondary text-foreground">
         {icon}
       </div>
-      <h3 className="text-sm font-medium text-foreground">{title}</h3>
+      <h3 className="text-sm font-medium tracking-tight text-foreground">{title}</h3>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">
         {description}
       </p>
@@ -475,7 +475,7 @@ function RoadmapCard({
         ) : (
           <span className="flex items-center gap-1 text-xs font-medium text-violet">
             <Sparkles className="size-3.5" />
-            In Progress
+            In progress
           </span>
         )}
       </div>

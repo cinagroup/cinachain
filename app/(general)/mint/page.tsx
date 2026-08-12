@@ -194,7 +194,7 @@ export default function MintPage() {
 
           <Card className="max-w-md shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Connect Wallet</CardTitle>
+              <CardTitle>Connect wallet</CardTitle>
               <CardDescription>Connect your wallet to mint</CardDescription>
             </CardHeader>
             <CardContent>
@@ -281,7 +281,7 @@ export default function MintPage() {
           <Card className="shadow-vercel-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Mint Details
+                Mint details
                 {isGasless && (
                   <span className="bg-cyan/20 rounded-full px-2 py-0.5 text-[10px] font-semibold text-cyan-deep">
                     ⚡ Gasless
@@ -437,7 +437,7 @@ export default function MintPage() {
                     }
                   >
                     {limitReached ? (
-                      "Mint Limit Reached"
+                      "Mint limit reached"
                     ) : isPending && status === "awaiting-wallet" ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />

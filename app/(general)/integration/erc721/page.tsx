@@ -36,13 +36,13 @@ export default function ERC721Page() {
         <LightDarkImage
           LightImage={cinaIntegrations.erc721.imgDark}
           DarkImage={cinaIntegrations.erc721.imgLight}
-          alt="ERC721 Logo"
+          alt="ERC-721 Logo"
           width={100}
           height={100}
         />
-        <PageHeaderHeading>ERC721</PageHeaderHeading>
+        <PageHeaderHeading>ERC-721</PageHeaderHeading>
         <PageHeaderDescription>
-          ERC721 is a standard for non-fungible tokens on EVM chains
+          ERC-721 is a standard for non-fungible tokens on EVM chains
         </PageHeaderDescription>
         <PageHeaderCTA>
           <Link

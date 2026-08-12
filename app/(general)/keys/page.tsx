@@ -97,7 +97,7 @@ export default function KeysPage() {
         Billing
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Key Ingress<span className="text-muted-foreground">.</span>
+        Key ingress<span className="text-muted-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Share an API key with the platform pool and earn CinaCredit once it is
@@ -121,7 +121,7 @@ export default function KeysPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <KeyRound className="size-5" />
-            Submit API Key
+            Submit API key
           </CardTitle>
           <CardDescription>
             Your key is encrypted at rest and never exposed; you earn credits
@@ -130,7 +130,7 @@ export default function KeysPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="apiKey">API Key</Label>
+            <Label htmlFor="apiKey">API key</Label>
             <Input
               id="apiKey"
               type="password"
@@ -169,14 +169,14 @@ export default function KeysPage() {
           </div>
           <Button onClick={handleSubmit} disabled={submitting || !address} className="w-full" size="lg">
             {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}
-            Submit Key
+            Submit key
           </Button>
         </CardContent>
       </Card>
 
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
-          <CardTitle>Your Ingress Records</CardTitle>
+          <CardTitle>Your ingress records</CardTitle>
           <CardDescription>Pending / minting / minted status</CardDescription>
         </CardHeader>
         <CardContent>

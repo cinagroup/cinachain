@@ -62,7 +62,7 @@ export function PWAInstallPrompt() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Smartphone className="size-5" />
-          Install App
+          Install app
         </CardTitle>
         <CardDescription>
           Install CinaChain for offline access and faster loading

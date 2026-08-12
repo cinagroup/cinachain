@@ -113,7 +113,7 @@ export default function AdminBadgesPage() {
         Administration
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Badge Management<span className="text-foreground">.</span>
+        Badge management<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Award badges and achievements to community members.
@@ -155,13 +155,13 @@ export default function AdminBadgesPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="size-5" />
-            Mint Badge
+            Mint badge
           </CardTitle>
           <CardDescription>Award a badge to a specific address</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="recipient">Recipient Address</Label>
+            <Label htmlFor="recipient">Recipient address</Label>
             <Input
               id="recipient"
               type="text"
@@ -174,7 +174,7 @@ export default function AdminBadgesPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="badgeId">Badge Type</Label>
+              <Label htmlFor="badgeId">Badge type</Label>
               <select
                 id="badgeId"
                 className="flex h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-vercel-sm"
@@ -217,7 +217,7 @@ export default function AdminBadgesPage() {
             ) : (
               <>
                 <Award className="mr-2 size-4" />
-                Mint Badge
+                Mint badge
               </>
             )}
           </Button>
@@ -227,7 +227,7 @@ export default function AdminBadgesPage() {
       {/* Badge reference */}
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
-          <CardTitle>Badge Types</CardTitle>
+          <CardTitle>Badge types</CardTitle>
           <CardDescription>
             Standard badge types available for minting
           </CardDescription>

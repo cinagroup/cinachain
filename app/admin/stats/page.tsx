@@ -38,7 +38,7 @@ export default function StatsPage() {
           Administration
         </span>
         <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-          Minting Statistics<span className="text-foreground">.</span>
+          Minting statistics<span className="text-foreground">.</span>
         </h1>
         <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
           Detailed analytics and revenue tracking for your NFT collection.
@@ -49,7 +49,7 @@ export default function StatsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Minted
+                Total minted
               </CardTitle>
               <Package className="size-4 text-muted-foreground" />
             </CardHeader>
@@ -66,7 +66,7 @@ export default function StatsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Mint Price
+                Mint price
               </CardTitle>
               <DollarSign className="size-4 text-muted-foreground" />
             </CardHeader>
@@ -81,7 +81,7 @@ export default function StatsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Est. Revenue
+                Est. revenue
               </CardTitle>
               <TrendingUp className="size-4 text-muted-foreground" />
             </CardHeader>
@@ -116,7 +116,7 @@ export default function StatsPage() {
         {/* Progress Bar */}
         <Card className="mt-8 shadow-vercel-card">
           <CardHeader>
-            <CardTitle>Minting Progress</CardTitle>
+            <CardTitle>Minting progress</CardTitle>
             <CardDescription>
               Visual representation of collection completion
             </CardDescription>

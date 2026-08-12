@@ -178,7 +178,7 @@ export default function WhitelistManagementPage() {
           Administration
         </span>
         <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-          Whitelist Management<span className="text-foreground">.</span>
+          Whitelist management<span className="text-foreground">.</span>
         </h1>
         <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
           Upload and manage whitelist addresses for the minting process.
@@ -188,7 +188,7 @@ export default function WhitelistManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="size-5" />
-              Upload Whitelist CSV
+              Upload whitelist CSV
             </CardTitle>
             <CardDescription>
               Upload a CSV file with addresses and mint limits
@@ -246,7 +246,7 @@ export default function WhitelistManagementPage() {
               <div className="mb-4 space-y-2">
                 <Label htmlFor="admin-token" className="flex items-center gap-2 text-sm font-medium">
                   <KeyRound className="size-4 text-muted-foreground" />
-                  Admin Token
+                  Admin token
                 </Label>
                 <Input
                   id="admin-token"
@@ -313,7 +313,7 @@ export default function WhitelistManagementPage() {
                     <tr>
                       <th className="p-2 text-left font-medium">#</th>
                       <th className="p-2 text-left font-medium">Address</th>
-                      <th className="p-2 text-left font-medium">Mint Limit</th>
+                      <th className="p-2 text-left font-medium">Mint limit</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -345,7 +345,7 @@ export default function WhitelistManagementPage() {
                       Deploying...
                     </>
                   ) : (
-                    `Deploy Whitelist (${entries.length} addresses)`
+                    `Deploy whitelist (${entries.length} addresses)`
                   )}
                 </Button>
                 <Button
@@ -365,18 +365,18 @@ export default function WhitelistManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>How It Works</CardTitle>
+            <CardTitle>How it works</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
-              <h3 className="mb-1 font-semibold">1. CSV Format</h3>
+              <h3 className="mb-1 font-semibold">1. CSV format</h3>
               <p className="text-muted-foreground">
                 Prepare a CSV file with Ethereum addresses and their mint limits.
                 One address per line, separated by comma.
               </p>
             </div>
             <div>
-              <h3 className="mb-1 font-semibold">2. Merkle Tree Generation</h3>
+              <h3 className="mb-1 font-semibold">2. Merkle tree generation</h3>
               <p className="text-muted-foreground">
                 On deploy, the worker builds a Merkle tree (leaf = keccak256 of the
                 address, matching the contract) and computes the Merkle Root.
@@ -384,14 +384,14 @@ export default function WhitelistManagementPage() {
               </p>
             </div>
             <div>
-              <h3 className="mb-1 font-semibold">3. Contract Update</h3>
+              <h3 className="mb-1 font-semibold">3. Contract update</h3>
               <p className="text-muted-foreground">
                 Copy the generated Merkle Root into Contract Management → Set Merkle Root
                 (owner wallet). Whitelist minting is only enabled once the root is set on-chain.
               </p>
             </div>
             <div>
-              <h3 className="mb-1 font-semibold">4. KV Storage</h3>
+              <h3 className="mb-1 font-semibold">4. KV storage</h3>
               <p className="text-muted-foreground">
                 Address data, limits, and proofs are stored in Cloudflare Workers KV
                 and served to the mint page.

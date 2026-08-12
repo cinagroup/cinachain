@@ -94,7 +94,7 @@ export default function AccountPage() {
                 </div>
 
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">ENS Name</p>
+                  <p className="mb-1 text-xs text-muted-foreground">ENS name</p>
                   <div className="flex items-center gap-2">
                     {ensLoading ? (
                       <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -155,7 +155,7 @@ export default function AccountPage() {
               <CardContent className="space-y-4">
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">
-                    SIWE Status
+                    SIWE status
                   </p>
                   <div className="flex items-center gap-2">
                     <div
@@ -164,7 +164,7 @@ export default function AccountPage() {
                       }`}
                     />
                     <span className="text-sm font-medium">
-                      {isAuthenticated ? "Signed In" : "Not Signed In"}
+                      {isAuthenticated ? "Signed in" : "Not signed in"}
                     </span>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export default function AccountPage() {
                       size="sm"
                       className="w-full"
                     >
-                      Sign Out
+                      Sign out
                     </Button>
                   ) : (
                     <Button
@@ -211,7 +211,7 @@ export default function AccountPage() {
                       {siweLoading ? (
                         <Loader2 className="mr-2 size-4 animate-spin" />
                       ) : null}
-                      Sign In with Ethereum
+                      Sign in with Ethereum
                     </Button>
                   )}
                 </div>
@@ -222,7 +222,7 @@ export default function AccountPage() {
           {/* Quick Links */}
           <Card className="mt-6 shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Quick Links</CardTitle>
+              <CardTitle>Quick links</CardTitle>
               <CardDescription>
                 Useful resources for your wallet
               </CardDescription>
@@ -248,7 +248,7 @@ export default function AccountPage() {
                 <Button asChild variant="outline" className="justify-start">
                   <Link href="/mint">
                     <Shield className="mr-2 size-4" />
-                    Mint Page
+                    Mint page
                   </Link>
                 </Button>
               </div>

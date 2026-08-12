@@ -28,7 +28,7 @@ export function DashboardSidebar() {
 
       {/* User section */}
       <div>
-        <h3 className="font-display text-sm uppercase tracking-tight text-muted-foreground">
+        <h3 className="font-mono-tech text-sm uppercase tracking-tight text-muted-foreground">
           User
         </h3>
         <SidebarNav items={menuDashboard} />
@@ -37,7 +37,7 @@ export function DashboardSidebar() {
       {/* Admin section — only for admins */}
       {isAdmin && (
         <div>
-          <h3 className="font-display text-sm uppercase tracking-tight text-muted-foreground">
+          <h3 className="font-mono-tech text-sm uppercase tracking-tight text-muted-foreground">
             Admin
           </h3>
           <SidebarNav items={menuAdmin} />

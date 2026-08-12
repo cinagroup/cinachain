@@ -27,7 +27,7 @@ export default function SIWEPage() {
         <LightDarkImage
           LightImage={cinaIntegrations.siwe.imgDark}
           DarkImage={cinaIntegrations.siwe.imgLight}
-          alt="Sign In with Ethereum Logo"
+          alt="Sign in with Ethereum logo"
           width={100}
           height={100}
         />

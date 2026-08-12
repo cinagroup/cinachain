@@ -62,13 +62,13 @@ const demos = [
     ),
   },
   {
-    title: "ERC20",
-    description: "ERC20 is a standard for fungible tokens on EVM chains",
+    title: "ERC-20",
+    description: "ERC-20 is a standard for fungible tokens on EVM chains",
     href: "/integration/erc20",
     demo: (
       <div className="flex items-center justify-center space-x-20">
         <img
-          alt="ERC20 icon"
+          alt="ERC-20 icon"
           height={100}
           src="/integrations/erc20.png"
           width={100}
@@ -77,13 +77,13 @@ const demos = [
     ),
   },
   {
-    title: "ERC721 NFT",
-    description: "ERC721 is a standard for non-fungible tokens on EVM chains",
+    title: "ERC-721 NFT",
+    description: "ERC-721 is a standard for non-fungible tokens on EVM chains",
     href: "/integration/erc721",
     demo: (
       <div className="flex items-center justify-center space-x-20">
         <img
-          alt="ERC721 icon"
+          alt="ERC-721 icon"
           height={100}
           src="/integrations/erc721-icon.png"
           width={100}

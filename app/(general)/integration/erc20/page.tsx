@@ -39,13 +39,13 @@ export default function Erc20Page() {
         <LightDarkImage
           LightImage={cinaIntegrations.erc20.imgDark}
           DarkImage={cinaIntegrations.erc20.imgLight}
-          alt="ERC20 Logo"
+          alt="ERC-20 Logo"
           width={100}
           height={100}
         />
-        <PageHeaderHeading>ERC20</PageHeaderHeading>
+        <PageHeaderHeading>ERC-20</PageHeaderHeading>
         <PageHeaderDescription>
-          ERC20 is a standard for fungible tokens on EVM chains
+          ERC-20 is a standard for fungible tokens on EVM chains
         </PageHeaderDescription>
         <PageHeaderCTA>
           <Link
@@ -69,7 +69,7 @@ export default function Erc20Page() {
                 <Card>
                   <CardContent className="flex flex-col">
                     <span className="mb-4 text-lg">
-                      Inspect the selected ERC20 token on {PRIMARY_NETWORK_NAME}
+                      Inspect the selected ERC-20 token on {PRIMARY_NETWORK_NAME}
                       .
                     </span>
                     <Link

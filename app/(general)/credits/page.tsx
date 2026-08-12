@@ -230,7 +230,7 @@ export default function CreditsPage() {
 
           <Card className="max-w-md shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Connect Wallet</CardTitle>
+              <CardTitle>Connect wallet</CardTitle>
               <CardDescription>
                 Connect your wallet to view your credit balance and top up
               </CardDescription>
@@ -276,7 +276,7 @@ export default function CreditsPage() {
           {/* Balance card */}
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Your Balance</CardTitle>
+              <CardTitle>Your balance</CardTitle>
               <CardDescription>
                 Available CinaCredit for billing
               </CardDescription>
@@ -314,7 +314,7 @@ export default function CreditsPage() {
           {/* Top Up card */}
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Top Up</CardTitle>
+              <CardTitle>Top up</CardTitle>
               <CardDescription>Mint new credit with ETH</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -355,7 +355,7 @@ export default function CreditsPage() {
                   htmlFor="eth-amount"
                   className="text-sm font-medium text-foreground"
                 >
-                  ETH Amount
+                  ETH amount
                 </Label>
                 <Input
                   id="eth-amount"
@@ -419,7 +419,7 @@ export default function CreditsPage() {
                     Confirming...
                   </>
                 ) : (
-                  "Top Up"
+                  "Top up"
                 )}
               </Button>
             </CardContent>

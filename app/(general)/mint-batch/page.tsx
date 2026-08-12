@@ -82,7 +82,7 @@ export default function BatchMintPage() {
       !CINA_ERC1155_CONTRACT ||
       CINA_ERC1155_CONTRACT === "0x0000000000000000000000000000000000000000"
     ) {
-      setError("ERC1155 contract address not configured")
+      setError("ERC-1155 contract address not configured")
       return
     }
 
@@ -139,13 +139,13 @@ export default function BatchMintPage() {
               Batch Mint
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-              Batch Mint ERC1155<span className="text-foreground">.</span>
+              Batch mint ERC-1155<span className="text-foreground">.</span>
             </h1>
           </div>
 
           <Card className="max-w-md shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Connect Wallet</CardTitle>
+              <CardTitle>Connect wallet</CardTitle>
               <CardDescription>
                 Connect your wallet to batch mint
               </CardDescription>
@@ -168,7 +168,7 @@ export default function BatchMintPage() {
             Batch Mint
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            Batch Mint ERC1155<span className="text-foreground">.</span>
+            Batch mint ERC-1155<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
             Mint multiple badge types to your address in a single transaction.
@@ -231,7 +231,7 @@ export default function BatchMintPage() {
           {/* Mint Items */}
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Mint Items</CardTitle>
+              <CardTitle>Mint items</CardTitle>
               <CardDescription>
                 Add multiple token IDs and amounts to mint in one transaction
               </CardDescription>
@@ -278,19 +278,19 @@ export default function BatchMintPage() {
 
               <Button variant="outline" onClick={addItem} className="w-full">
                 <Plus className="mr-2 size-4" />
-                Add Item
+                Add item
               </Button>
 
               {/* Summary */}
               <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Items</span>
+                  <span className="text-muted-foreground">Total items</span>
                   <span className="font-medium text-foreground">
                     {items.length}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Amount</span>
+                  <span className="text-muted-foreground">Total amount</span>
                   <span className="font-medium text-foreground">
                     {items.reduce(
                       (sum, item) => sum + (parseInt(item.amount) || 0),
@@ -313,7 +313,7 @@ export default function BatchMintPage() {
                     Minting...
                   </>
                 ) : (
-                  `Batch Mint ${items.length} Item${
+                  `Batch mint ${items.length} Item${
                     items.length > 1 ? "s" : ""
                   }`
                 )}

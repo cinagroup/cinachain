@@ -13,7 +13,7 @@ export function SignInButton() {
   if (!isConnected) {
     return (
       <Button onClick={() => modal?.open({ view: "Connect" })} size="sm">
-        Connect Wallet
+        Connect wallet
       </Button>
     )
   }
@@ -26,7 +26,7 @@ export function SignInButton() {
           {session?.address.slice(-4)}
         </span>
         <Button onClick={signOut} variant="outline" size="sm">
-          Sign Out
+          Sign out
         </Button>
       </div>
     )
@@ -34,7 +34,7 @@ export function SignInButton() {
 
   return (
     <Button onClick={signIn} disabled={isLoading} size="sm">
-      {isLoading ? "Signing..." : "Sign In"}
+      {isLoading ? "Signing..." : "Sign in"}
     </Button>
   )
 }

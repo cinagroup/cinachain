@@ -21,19 +21,19 @@ export default function AdminOverviewPage() {
 
   const stats = [
     {
-      title: "Total Minted",
+      title: "Total minted",
       value: isLoading ? "..." : mintedCount.toLocaleString(),
       description: "NFTs minted so far",
       icon: Package,
     },
     {
-      title: "Max Supply",
+      title: "Max supply",
       value: maxCount.toLocaleString(),
       description: "Total collection size",
       icon: TrendingUp,
     },
     {
-      title: "Mint Price",
+      title: "Mint price",
       value: priceEth,
       description: "Price per NFT",
       icon: DollarSign,
@@ -69,7 +69,7 @@ export default function AdminOverviewPage() {
             Administration
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            Admin Dashboard<span className="text-foreground">.</span>
+            Admin dashboard<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
             Overview of your NFT collection and minting statistics.
@@ -113,7 +113,7 @@ export default function AdminOverviewPage() {
         {/* Quick Actions */}
         <Card className="mt-8 shadow-vercel-card">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>Quick actions</CardTitle>
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
           <CardContent>
@@ -121,31 +121,31 @@ export default function AdminOverviewPage() {
               <QuickAction
                 href="/admin/badges"
                 icon={<Award className="size-5" />}
-                title="Mint Badges"
+                title="Mint badges"
                 description="Award achievement badges to community members"
               />
               <QuickAction
                 href="/admin/whitelist"
                 icon={<FileText className="size-5" />}
-                title="Manage Whitelist"
+                title="Manage whitelist"
                 description="Upload CSV files and manage whitelist addresses"
               />
               <QuickAction
                 href="/admin/stats"
                 icon={<BarChart3 className="size-5" />}
-                title="View Statistics"
+                title="View statistics"
                 description="Detailed minting analytics and revenue tracking"
               />
               <QuickAction
                 href="/admin/contract"
                 icon={<Settings className="size-5" />}
-                title="Contract Settings"
+                title="Contract settings"
                 description="Pause, update prices, withdraw funds"
               />
               <QuickAction
                 href="/admin/billing"
                 icon={<Coins className="size-5" />}
-                title="Billing Settings"
+                title="Billing settings"
                 description="Exchange rate, credit issuance, ledger"
               />
             </div>
