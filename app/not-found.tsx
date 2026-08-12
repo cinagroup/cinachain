@@ -27,7 +27,7 @@ export default function NotFound() {
           )}
         >
           <Home className="mr-2 size-4" />
-          Back Home
+          Back home
         </Link>
         <Link
           href="/explore"
@@ -37,7 +37,7 @@ export default function NotFound() {
           )}
         >
           <Compass className="mr-2 size-4" />
-          Explore Collection
+          Explore collection
         </Link>
         <Link
           href="/mint"

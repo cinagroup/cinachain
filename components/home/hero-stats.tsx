@@ -18,11 +18,11 @@ export function HeroStats() {
       className="mx-auto mt-12 flex max-w-screen-sm items-center justify-center divide-x divide-border rounded-lg border border-border bg-card px-2 py-4 shadow-vercel-sm"
     >
       <HeroStat
-        label="NFTs Minted"
+        label="NFTs minted"
         value={stats?.mintedCount.toLocaleString() ?? unavailableValue}
       />
       <HeroStat
-        label="Max Supply"
+        label="Max supply"
         value={stats?.maxCount.toLocaleString() ?? unavailableValue}
       />
       <HeroStat label="Network" value={PRIMARY_NETWORK_NAME} />

@@ -20,7 +20,7 @@ export default function OfflinePage() {
             href="/"
             className="btn-pill inline-flex items-center justify-center bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
           >
-            Back Home
+            Back home
           </Link>
           <Link
             href="/explore"

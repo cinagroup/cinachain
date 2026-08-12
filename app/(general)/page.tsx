@@ -383,7 +383,7 @@ function ProductCard({
   description: string
   href: string
   cta: string
-  status: "Live" | "Beta" | "Coming Soon"
+  status: "Live" | "Beta" | "Coming soon"
   external?: boolean
 }) {
   return (
@@ -407,7 +407,7 @@ function ProductCard({
               // spec palette); success semantics use the success token.
               status === "Live" && "bg-cyan/20 text-cyan-deep",
               status === "Beta" && "bg-violet/10 text-violet",
-              status === "Coming Soon" && "bg-secondary text-muted-foreground"
+              status === "Coming soon" && "bg-secondary text-muted-foreground"
             )}
           >
             {status}
