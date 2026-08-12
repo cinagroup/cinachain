@@ -33,3 +33,16 @@
 
 /sitemap.xml
   Cache-Control: public, max-age=3600
+
+# PWA brand assets — icons cache like og-image; manifest like robots/sitemap.
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400
+
+/icon-192.png
+  Cache-Control: public, max-age=86400
+
+/icon-512.png
+  Cache-Control: public, max-age=86400
+
+/site.webmanifest
+  Cache-Control: public, max-age=3600
