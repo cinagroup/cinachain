@@ -100,7 +100,10 @@ jobs:
 
       - name: Build static export
         # .env.production (committed, public values only) provides the
-        # NEXT_PUBLIC_* vars — mirrors the local build exactly.
+        # NEXT_PUBLIC_* vars — mirrors the local build exactly. The Alchemy
+        # key (if provisioned) is injected from GitHub Secrets at build time.
+        env:
+          NEXT_PUBLIC_ALCHEMY_API_KEY: ${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
         run: npm run build
 
       - name: Strip null bytes (Windows-safe webpack output)
