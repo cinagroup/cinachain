@@ -21,16 +21,12 @@ export const dapp = {
   home: links.dapp,
   explore: `${links.dapp}/explore`,
   mint: `${links.dapp}/mint`,
-  mintBatch: `${links.dapp}/mint-batch`,
   dashboard: `${links.dapp}/dashboard`,
   collections: `${links.dapp}/collections`,
   badges: `${links.dapp}/dashboard/badges`,
   exchange: `${links.dapp}/exchange`,
-  keys: `${links.dapp}/keys`,
-  integration: `${links.dapp}/integration`,
 } as const
 
 export const edgeApi = {
   whitelist: "https://whitelist-api.cinachain.com/health",
-  billing: "https://billing-api.cinachain.com/health",
 }

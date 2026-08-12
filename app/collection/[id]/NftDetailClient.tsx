@@ -147,15 +147,6 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                 {EXPLORER_NAME} <ExternalLink className="ml-1 size-3" />
               </Link>
             </Button>
-            <Button asChild variant="outline" className="flex-1">
-              <Link
-                href={`https://testnets.opensea.io/assets/base-sepolia/${CINA_NFT_CONTRACT}/${tokenId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                OpenSea <ExternalLink className="ml-1 size-3" />
-              </Link>
-            </Button>
           </div>
         </div>
 
