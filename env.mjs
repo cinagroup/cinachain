@@ -34,11 +34,12 @@ export const env = createEnv({
     NEXT_PUBLIC_CF_CDN_GATEWAY: z.string().url().optional(),
     NEXT_PUBLIC_CF_META_GATEWAY: z.string().url().optional(),
     NEXT_PUBLIC_CF_RPC_ENDPOINT: z.string().url().optional(),
-    // Alchemy API key — when set, Alchemy is used as the primary RPC
-    // (dedicated rate limit + SLA) ahead of the public endpoints. Get one
-    // at https://www.alchemy.com/. Safe to expose client-side; restrict via
-    // a referrer allowlist in the Alchemy dashboard.
-    NEXT_PUBLIC_ALCHEMY_API_KEY: z.string().optional(),
+    // Base Sepolia RPC endpoint — the self-hosted rpc-proxy Worker
+    // (https://base-rpc.cinachain.com). The Worker proxies Alchemy server-side,
+    // so the Alchemy key never reaches the browser bundle. When unset, the DApp
+    // falls back to the public Base Sepolia endpoints directly (local dev
+    // without the Worker). See RPC.md and workers/rpc-proxy.
+    NEXT_PUBLIC_BASE_RPC: z.string().url().optional(),
     // Contract addresses are PUBLIC by definition (on-chain).
     NEXT_PUBLIC_CINA_NFT_CONTRACT: z
       .string()
@@ -79,7 +80,7 @@ export const env = createEnv({
     NEXT_PUBLIC_CF_CDN_GATEWAY: process.env.NEXT_PUBLIC_CF_CDN_GATEWAY,
     NEXT_PUBLIC_CF_META_GATEWAY: process.env.NEXT_PUBLIC_CF_META_GATEWAY,
     NEXT_PUBLIC_CF_RPC_ENDPOINT: process.env.NEXT_PUBLIC_CF_RPC_ENDPOINT,
-    NEXT_PUBLIC_ALCHEMY_API_KEY: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
+    NEXT_PUBLIC_BASE_RPC: process.env.NEXT_PUBLIC_BASE_RPC,
     NEXT_PUBLIC_CINA_NFT_CONTRACT: process.env.NEXT_PUBLIC_CINA_NFT_CONTRACT,
     NEXT_PUBLIC_CINA_ERC1155_CONTRACT: process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT,
     NEXT_PUBLIC_CINA_CREDIT_CONTRACT: process.env.NEXT_PUBLIC_CINA_CREDIT_CONTRACT,

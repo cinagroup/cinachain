@@ -2,8 +2,10 @@
 // Networks — wagmi chain & transport configuration
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // IMPORTANT: This module is imported by client components. Never read
-// server-only env vars here. RPC auth (if needed) must be proxied through
-// a Cloudflare Worker that injects the token server-side.
+// server-only env vars here. The Alchemy key is injected server-side by the
+// rpc-proxy Worker; the browser reaches that Worker via NEXT_PUBLIC_BASE_RPC
+// (https://base-rpc.cinachain.com), so the key never enters the frontend
+// bundle and browser CORS / referrer-allowlist issues cannot occur.
 import { fallback, http } from "wagmi"
 
 import { env } from "../env.mjs"
@@ -17,24 +19,22 @@ export * from "./deployment"
 // When deploying to Base Mainnet, swap to [base] and update contract addresses.
 export const chains: [typeof PRIMARY_CHAIN] = [PRIMARY_CHAIN]
 
-// Alchemy is the primary RPC when an API key is configured: dedicated rate
-// limit, SLA, and Base L2-optimised endpoints. Falls through to the two
-// public endpoints so the app still works without a key (local dev, CI, or
-// before Alchemy is provisioned).
-const alchemyRpc = env.NEXT_PUBLIC_ALCHEMY_API_KEY
-  ? http(
-      `https://base-sepolia.g.alchemy.com/v2/${env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
-      { batch: false, timeout: 30_000 }
-    )
+// Primary RPC: the self-hosted rpc-proxy Worker (base-rpc.cinachain.com). The
+// Worker proxies Alchemy server-side with the public endpoints as fallback, so
+// a single browser request benefits from Alchemy's dedicated quota without the
+// key ever leaving the Worker. Falls through to the public endpoints directly
+// when NEXT_PUBLIC_BASE_RPC is unset (local dev without the Worker, CI, or a
+// deploy in flight) so the app always loads.
+const workerRpc = env.NEXT_PUBLIC_BASE_RPC
+  ? http(env.NEXT_PUBLIC_BASE_RPC, { batch: false, timeout: 30_000 })
   : null
 
-// Public RPC endpoints with reliability-tested fallbacks. rank:false disables
-// viem's auto-ranking (which reorders transports by measured latency and could
-// deprioritise the paid Alchemy endpoint) — we want strict priority order:
-// Alchemy first, public endpoints only as failure fallback.
+// rank:false disables viem's auto-ranking (which reorders transports by
+// measured latency and could demote the Worker behind the public endpoints) —
+// we want strict priority order: Worker first, public endpoints only on failure.
 const BASE_SEPOLIA_RPC = fallback(
   [
-    ...(alchemyRpc ? [alchemyRpc] : []),
+    ...(workerRpc ? [workerRpc] : []),
     http("https://sepolia.base.org", { batch: false, timeout: 30_000 }),
     http("https://base-sepolia.publicnode.com", {
       batch: false,
