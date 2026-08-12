@@ -100,10 +100,10 @@ jobs:
 
       - name: Build static export
         # .env.production (committed, public values only) provides the
-        # NEXT_PUBLIC_* vars — mirrors the local build exactly. The Alchemy
-        # key (if provisioned) is injected from GitHub Secrets at build time.
-        env:
-          NEXT_PUBLIC_ALCHEMY_API_KEY: ${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}
+        # NEXT_PUBLIC_* vars — mirrors the local build exactly. The Alchemy key
+        # is no longer a build-time var; it is injected into the rpc-proxy
+        # Worker (see the workers job below) and the DApp reaches it via
+        # NEXT_PUBLIC_BASE_RPC, so the key never enters the frontend bundle.
         run: npm run build
 
       - name: Strip null bytes (Windows-safe webpack output)
@@ -175,6 +175,22 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: ../billing/node_modules/.bin/wrangler deploy
+
+      # RPC proxy worker (DApp → base-rpc.cinachain.com → Alchemy server-side).
+      # Eliminates browser CORS / referrer-allowlist failures and keeps the
+      # Alchemy key out of the frontend bundle. The key is reused from the same
+      # GitHub secret; it is now a Worker secret rather than a NEXT_PUBLIC_ var.
+      - name: Deploy rpc-proxy worker
+        working-directory: workers/rpc-proxy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          ../billing/node_modules/.bin/wrangler deploy
+          # Inject the Alchemy key as a Worker secret (never in wrangler.toml,
+          # never in the frontend bundle). Piped via stdin so the value does
+          # not appear in process args or logs.
+          printf '%s\n' "${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}" | ../billing/node_modules/.bin/wrangler secret put ALCHEMY_API_KEY
 
   portal:
     needs: quality
