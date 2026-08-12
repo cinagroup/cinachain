@@ -7,8 +7,13 @@ preview_urls = false
 # Serve on the DApp's RPC subdomain. The cinachain.com zone lives in the same
 # Cloudflare account as the other Workers (cinachain-billing, media-gateway),
 # so wrangler can create the custom domain + DNS record on deploy.
+#
+# NOTE: the obvious name `base-rpc.cinachain.com` is already occupied by a
+# legacy Cloudflare Web3 Ethereum Gateway (proxies mainnet ETH), so wrangler
+# cannot bind it. Use `rpc-proxy.cinachain.com` instead — no prior DNS/Web3
+# config, so the custom domain binds cleanly.
 [[routes]]
-pattern = "base-rpc.cinachain.com"
+pattern = "rpc-proxy.cinachain.com"
 custom_domain = true
 
 # ALCHEMY_API_KEY is injected as a Worker secret from CI

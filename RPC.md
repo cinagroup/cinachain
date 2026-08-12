@@ -6,12 +6,12 @@ operate the RPC layer reliably.
 ## Overview
 
 The browser never calls Alchemy directly. All RPC traffic flows through a
-self-hosted **rpc-proxy Worker** at `base-rpc.cinachain.com`, which proxies
+self-hosted **rpc-proxy Worker** at `rpc-proxy.cinachain.com`, which proxies
 **Alchemy** server-side (key held as a Worker secret) with two public endpoints
 as availability fallback.
 
 ```
-browser → base-rpc.cinachain.com (rpc-proxy Worker)
+browser → rpc-proxy.cinachain.com (rpc-proxy Worker)
                  ├─ https://base-sepolia.g.alchemy.com/v2/<key>  (primary)
                  ├─ https://sepolia.base.org                     (fallback)
                  └─ https://base-sepolia.publicnode.com          (fallback)
@@ -34,8 +34,8 @@ This architecture fixes the two failure modes that broke direct browser calls:
 |---|---|
 | `config/networks.ts` | `fallback([worker?, base.org, publicnode], { rank: false })`. The Worker (`NEXT_PUBLIC_BASE_RPC`) is prepended when set; public endpoints let the app load even without the Worker (local dev, CI, a deploy in flight). |
 | `env.mjs` | `NEXT_PUBLIC_BASE_RPC` (the Worker URL) in the client schema + `runtimeEnv`. |
-| `.env.production` | `NEXT_PUBLIC_BASE_RPC=https://base-rpc.cinachain.com` (committed; it is a public URL). |
-| `workers/rpc-proxy/` | The Worker. `src/index.ts` proxies Alchemy + public fallback; `wrangler.toml` binds `base-rpc.cinachain.com` as a custom domain. |
+| `.env.production` | `NEXT_PUBLIC_BASE_RPC=https://rpc-proxy.cinachain.com` (committed; it is a public URL). |
+| `workers/rpc-proxy/` | The Worker. `src/index.ts` proxies Alchemy + public fallback; `wrangler.toml` binds `rpc-proxy.cinachain.com` as a custom domain. |
 | `.github/workflows/deploy.yml` | The `workers` job deploys the Worker and injects the Alchemy key via `wrangler secret put ALCHEMY_API_KEY` (piped from the `NEXT_PUBLIC_ALCHEMY_API_KEY` GitHub Secret — the name is reused, but the value is now server-only). |
 
 The DApp no longer references `NEXT_PUBLIC_ALCHEMY_API_KEY`; the GitHub secret
@@ -60,14 +60,14 @@ no browser `Origin`/`Referer`, and its own endpoint is constrained by the CORS
 
 - **Worker live**:
   ```
-  curl -s -X POST https://base-rpc.cinachain.com \
+  curl -s -X POST https://rpc-proxy.cinachain.com \
     -H "Content-Type: application/json" -H "Origin: https://nft.cinachain.com" \
     -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
   ```
   → `{"jsonrpc":"2.0","id":1,"result":"0x14a34"}` (Base Sepolia = 84532).
 - **DApp uses the Worker**: open `https://nft.cinachain.com` (incognito, to
   bypass the ServiceWorker) → DevTools → Network → RPC requests go to
-  `base-rpc.cinachain.com`, **never** to `*.g.alchemy.com`. No CORS errors.
+  `rpc-proxy.cinachain.com`, **never** to `*.g.alchemy.com`. No CORS errors.
 - **Bundle clean**: scan the live JS chunks for `alchemy` — the key must not
   appear anywhere in the frontend.
 
@@ -75,8 +75,8 @@ no browser `Origin`/`Referer`, and its own endpoint is constrained by the CORS
 
 1. **All requests fall back to public nodes** → `NEXT_PUBLIC_BASE_RPC` unset in
    `.env.production`, or the Worker deploy failed (check the `workers` job).
-   Symptom: Network tab shows `sepolia.base.org`, not `base-rpc.cinachain.com`.
-2. **`base-rpc.cinachain.com` returns 403** → the custom domain isn't bound.
+   Symptom: Network tab shows `sepolia.base.org`, not `rpc-proxy.cinachain.com`.
+2. **`rpc-proxy.cinachain.com` returns 403** → the custom domain isn't bound.
    Confirm the `workers` job ran `wrangler deploy` and that the `cinachain.com`
    zone is in the same Cloudflare account as the API token.
 3. **Worker returns 502 "All upstream RPCs failed"** → Alchemy key missing/invalid
