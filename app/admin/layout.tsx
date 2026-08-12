@@ -6,13 +6,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Users, BarChart3, Settings } from "lucide-react"
+import { LayoutDashboard, Users, BarChart3, Settings, Award, CreditCard } from "lucide-react"
 
 const adminNav = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/badges", label: "Badges", icon: Award },
   { href: "/admin/whitelist", label: "Whitelist", icon: Users },
   { href: "/admin/stats", label: "Statistics", icon: BarChart3 },
   { href: "/admin/contract", label: "Contract", icon: Settings },
+  { href: "/admin/billing", label: "Billing", icon: CreditCard },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

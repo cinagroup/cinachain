@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
@@ -252,6 +253,12 @@ export default function MintPage() {
             {mintPhase === "public" &&
               "Public minting is now open to everyone."}
             {mintPhase === "inactive" && "Minting is not currently active."}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Looking to mint badges in bulk?{" "}
+            <Link href="/mint-batch" className="text-link hover:underline">
+              Batch mint ERC-1155 →
+            </Link>
           </p>
         </div>
 

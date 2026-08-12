@@ -19,7 +19,7 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
         { label: "Collections", href: "/collections" },
         { label: "Exchange", href: "/exchange" },
         { label: "Dashboard", href: "/dashboard" },
-        { label: "API Keys", href: "/settings" },
+        { label: "API keys", href: "/settings" },
       ],
     },
     {

@@ -22,4 +22,8 @@ export const menuAdmin = [
     label: "Contract",
     href: "/admin/contract",
   },
+  {
+    label: "Billing",
+    href: "/admin/billing",
+  },
 ]

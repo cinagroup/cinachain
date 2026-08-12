@@ -22,4 +22,12 @@ export const menuDashboard = [
     label: "Account",
     href: "/dashboard/account",
   },
+  {
+    label: "Credits",
+    href: "/credits",
+  },
+  {
+    label: "Key ingress",
+    href: "/keys",
+  },
 ]
