@@ -28,15 +28,21 @@ const alchemyRpc = env.NEXT_PUBLIC_ALCHEMY_API_KEY
     )
   : null
 
-// Public RPC endpoints with reliability-tested fallbacks.
-const BASE_SEPOLIA_RPC = fallback([
-  ...(alchemyRpc ? [alchemyRpc] : []),
-  http("https://sepolia.base.org", { batch: false, timeout: 30_000 }),
-  http("https://base-sepolia.publicnode.com", {
-    batch: false,
-    timeout: 30_000,
-  }),
-])
+// Public RPC endpoints with reliability-tested fallbacks. rank:false disables
+// viem's auto-ranking (which reorders transports by measured latency and could
+// deprioritise the paid Alchemy endpoint) — we want strict priority order:
+// Alchemy first, public endpoints only as failure fallback.
+const BASE_SEPOLIA_RPC = fallback(
+  [
+    ...(alchemyRpc ? [alchemyRpc] : []),
+    http("https://sepolia.base.org", { batch: false, timeout: 30_000 }),
+    http("https://base-sepolia.publicnode.com", {
+      batch: false,
+      timeout: 30_000,
+    }),
+  ],
+  { rank: false }
+)
 
 export const transports = {
   [PRIMARY_CHAIN.id]: BASE_SEPOLIA_RPC,
