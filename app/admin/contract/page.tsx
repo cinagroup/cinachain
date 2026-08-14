@@ -241,7 +241,7 @@ export default function ContractManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between rounded-md bg-secondary p-4">
-              <span className="text-sm font-medium">Current Status:</span>
+              <span className="text-sm font-medium">Current status:</span>
               <span
                 className={
                   isPaused
@@ -391,7 +391,7 @@ export default function ContractManagementPage() {
               Set Merkle root
             </CardTitle>
             <CardDescription>
-              Enable whitelist minting with the root from Whitelist Management
+              Enable whitelist minting with the root from Whitelist management
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

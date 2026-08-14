@@ -32,7 +32,7 @@ export default function FavoritesPage() {
         </div>
         {favorites.length > 0 && (
           <Button variant="outline" onClick={clearFavorites}>
-            Clear All
+            Clear all
           </Button>
         )}
       </div>
@@ -50,7 +50,7 @@ export default function FavoritesPage() {
         <Card className="shadow-vercel-card">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Heart className="mb-4 size-12 text-muted-foreground" />
-            <h2 className="mb-2 text-xl font-semibold">No Favorites Yet</h2>
+            <h2 className="mb-2 text-xl font-semibold">No favorites yet</h2>
             <p className="mb-4 text-center text-muted-foreground">
               Start exploring and tap the heart icon to save NFTs you like.
             </p>

@@ -34,7 +34,7 @@
 /* Vercel-inspired typography overrides */
 @layer utilities {
   .font-display {
-    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
     font-weight: 600;
     letter-spacing: -0.05em;
   }
@@ -46,7 +46,7 @@
   }
 
   .type-display-xl {
-    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
     font-size: var(--type-display-xl-size);
     font-weight: var(--type-display-xl-weight);
     line-height: var(--type-display-xl-line-height);
@@ -54,7 +54,7 @@
   }
 
   .type-display-lg {
-    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
     font-size: var(--type-display-lg-size);
     font-weight: var(--type-display-lg-weight);
     line-height: var(--type-display-lg-line-height);

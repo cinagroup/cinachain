@@ -109,7 +109,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="size-5" />
-                Sign In
+                Sign in
               </CardTitle>
               <CardDescription>
                 Sign in with your wallet to manage API keys.
@@ -124,7 +124,7 @@ export default function SettingsPage() {
                 {signingIn ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : null}
-                Sign In with Ethereum
+                Sign in with Ethereum
               </Button>
               {!address ? (
                 <p className="text-sm text-muted-foreground">
@@ -149,7 +149,7 @@ export default function SettingsPage() {
             {newKey ? (
               <Alert variant="success">
                 <CheckCircle2 className="size-4" />
-                <AlertTitle>API Key Created</AlertTitle>
+                <AlertTitle>API key created</AlertTitle>
                 <AlertDescription>
                   <p>Copy your key now — it won&apos;t be shown again.</p>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">

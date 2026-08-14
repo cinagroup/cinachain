@@ -1,6 +1,6 @@
 // Service Worker for the statically exported CinaChain application.
 
-const CACHE_NAME = "cinachain-v6"
+const CACHE_NAME = "cinachain-v7"
 const OFFLINE_URL = "/offline"
 const PRECACHE_RESOURCES = [OFFLINE_URL, "/manifest.json", "/favicon.ico"]
 

@@ -18,7 +18,7 @@ export default function BadgesPage() {
       <IsWalletDisconnected>
         <div className="flex h-[60vh] flex-col items-center justify-center text-center">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Authentication Required
+            Authentication required
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground">
             Connect your wallet<span className="text-foreground">.</span>

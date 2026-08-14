@@ -36,7 +36,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="size-5" />
-              Admin Access Required
+              Admin access required
             </CardTitle>
             <CardDescription>
               Connect your wallet to access the admin panel
@@ -55,12 +55,12 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       <div className="container mx-auto px-4 py-12">
         <Alert variant="destructive" className="mx-auto max-w-md">
           <AlertCircle className="size-4" />
-          <AlertTitle>Access Denied</AlertTitle>
+          <AlertTitle>Access denied</AlertTitle>
           <AlertDescription className="mb-4">
             Your wallet address is not authorized to access the admin panel.
           </AlertDescription>
           <Button asChild variant="outline" className="w-full">
-            <Link href="/">Return to Home</Link>
+            <Link href="/">Return to home</Link>
           </Button>
         </Alert>
       </div>

@@ -80,7 +80,7 @@ export function GitcoinPassport({
                     ) : (
                       <>
                         <AlertCircle className="mr-1 size-3" />
-                        Below Threshold
+                        Below threshold
                       </>
                     )}
                   </Badge>

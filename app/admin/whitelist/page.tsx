@@ -283,10 +283,10 @@ export default function WhitelistManagementPage() {
                 <Alert className="mb-4 border-[#0070f3]/20 bg-[#d3e5ff]/40">
                   <Link2 className="size-4 text-[#0761d1]" />
                   <AlertDescription className="text-sm">
-                    <span className="font-medium text-[#0761d1]">Merkle Root generated.</span>{" "}
+                    <span className="font-medium text-[#0761d1]">Merkle root generated.</span>{" "}
                     <span className="text-[#0761d1]/80">
                       Set it on the contract in{" "}
-                      <a href="/admin/contract" className="underline">Contract Management → Set Merkle Root</a>{" "}
+                      <a href="/admin/contract" className="underline">Contract management → Set Merkle root</a>{" "}
                       (owner wallet required) to enable whitelist minting.
                     </span>
                     <div className="mt-2 flex items-center gap-2">
@@ -379,14 +379,14 @@ export default function WhitelistManagementPage() {
               <h3 className="mb-1 font-semibold">2. Merkle tree generation</h3>
               <p className="text-muted-foreground">
                 On deploy, the worker builds a Merkle tree (leaf = keccak256 of the
-                address, matching the contract) and computes the Merkle Root.
+                address, matching the contract) and computes the Merkle root.
                 Per-address proofs are stored in KV and served to minters.
               </p>
             </div>
             <div>
               <h3 className="mb-1 font-semibold">3. Contract update</h3>
               <p className="text-muted-foreground">
-                Copy the generated Merkle Root into Contract Management → Set Merkle Root
+                Copy the generated Merkle root into Contract management → Set Merkle root
                 (owner wallet). Whitelist minting is only enabled once the root is set on-chain.
               </p>
             </div>

@@ -35,7 +35,7 @@ export default function Error({
         className={cn(buttonVariants({ size: "lg" }), "btn-pill mt-8")}
       >
         <RotateCcw className="mr-2 size-4" />
-        Try Again
+        Try again
       </button>
     </div>
   )
