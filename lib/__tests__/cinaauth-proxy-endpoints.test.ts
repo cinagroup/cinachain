@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import { rewriteProxiedEndpoints } from "../auth/cinaauth-endpoints"
+import {
+  rewriteProxiedEndpoints,
+  shouldFallbackScope,
+  stripOfflineAccess,
+} from "../auth/cinaauth-endpoints"
 
 const ISSUER = "https://auth.cinaseek.ai"
 const PROXY = "https://nft.cinachain.com/api/auth"
@@ -48,5 +52,42 @@ describe("rewriteProxiedEndpoints", () => {
     )
 
     expect(metadata.token_endpoint).toBe("https://evil.example/token")
+  })
+})
+
+describe("offline_access scope fallback", () => {
+  const tx = (scope: string, scopeFallback = false) => ({ scope, scopeFallback })
+  const invalidScope = {
+    error: "invalid_scope",
+    error_description: "The following scopes are invalid: offline_access",
+  }
+
+  it("falls back when offline_access is rejected on a first attempt", () => {
+    expect(shouldFallbackScope(invalidScope, tx("openid profile email offline_access"))).toBe(true)
+  })
+
+  it("does not retry twice", () => {
+    expect(
+      shouldFallbackScope(invalidScope, tx("openid profile email", true))
+    ).toBe(false)
+  })
+
+  it("ignores other errors and other scopes", () => {
+    expect(shouldFallbackScope({ error: "access_denied" }, tx("openid profile email offline_access"))).toBe(false)
+    expect(
+      shouldFallbackScope(
+        { error: "invalid_scope", error_description: "The following scopes are invalid: profile" },
+        tx("openid profile email offline_access")
+      )
+    ).toBe(false)
+    // offline_access was never requested
+    expect(shouldFallbackScope(invalidScope, tx("openid profile email"))).toBe(false)
+  })
+
+  it("strips only offline_access from the scope list", () => {
+    expect(stripOfflineAccess("openid profile email offline_access")).toBe(
+      "openid profile email"
+    )
+    expect(stripOfflineAccess("openid profile email")).toBe("openid profile email")
   })
 })

@@ -1,6 +1,10 @@
 import * as oauth from "oauth4webapi"
 
-import { rewriteProxiedEndpoints } from "@/lib/auth/cinaauth-endpoints"
+import {
+  rewriteProxiedEndpoints,
+  shouldFallbackScope,
+  stripOfflineAccess,
+} from "@/lib/auth/cinaauth-endpoints"
 import { env } from "@/env.mjs"
 
 /**
@@ -54,6 +58,10 @@ interface CinaauthTransaction {
   nonce: string
   redirectUri: string
   returnTo: string
+  /** Space-separated scope actually requested on this attempt. */
+  scope: string
+  /** True when the request already dropped server-rejected scopes. */
+  scopeFallback: boolean
   createdAt: number
 }
 
@@ -217,14 +225,22 @@ function userinfoClaimsToUser(
 /**
  * Redirects the browser to the CinaAuth authorization endpoint. The browser
  * leaves the app; the response is handled on /auth/callback.
+ *
+ * `scope` defaults to the configured scope; the callback path passes a
+ * reduced scope when the server rejected `offline_access` (the developer
+ * console does not check it by default when registering a client).
  */
-export async function beginCinaauthLogin(returnTo = "/dashboard") {
+export async function beginCinaauthLogin(
+  returnTo = "/dashboard",
+  scope?: string
+) {
   const config = getCinaauthConfig()
   if (!config.clientId) {
     throw new Error(
       "CinaAuth sign-in is not configured. Set NEXT_PUBLIC_CINAAUTH_CLIENT_ID."
     )
   }
+  const requestedScope = scope ?? config.scope
   const authorizationServer = await discoverCinaauth()
   const codeVerifier = oauth.generateRandomCodeVerifier()
   const codeChallenge = await oauth.calculatePKCECodeChallenge(codeVerifier)
@@ -237,7 +253,7 @@ export async function beginCinaauthLogin(returnTo = "/dashboard") {
   authorizeUrl.searchParams.set("client_id", config.clientId)
   authorizeUrl.searchParams.set("redirect_uri", config.redirectUri)
   authorizeUrl.searchParams.set("response_type", "code")
-  authorizeUrl.searchParams.set("scope", config.scope)
+  authorizeUrl.searchParams.set("scope", requestedScope)
   authorizeUrl.searchParams.set("code_challenge", codeChallenge)
   authorizeUrl.searchParams.set("code_challenge_method", "S256")
   authorizeUrl.searchParams.set("state", state)
@@ -249,6 +265,8 @@ export async function beginCinaauthLogin(returnTo = "/dashboard") {
     nonce,
     redirectUri: config.redirectUri,
     returnTo: sanitizeReturnTo(returnTo),
+    scope: requestedScope,
+    scopeFallback: requestedScope !== config.scope,
     createdAt: Date.now(),
   })
   window.location.assign(authorizeUrl.href)
@@ -257,11 +275,16 @@ export async function beginCinaauthLogin(returnTo = "/dashboard") {
 /**
  * Exchanges the authorization code on the callback page for tokens and
  * userinfo, persists the session, and returns where to send the user back.
+ *
+ * When the server rejects `offline_access` (the developer console does not
+ * check it by default), the login automatically restarts once without the
+ * rejected scopes and `{ restarted: true }` is returned — the caller should
+ * keep waiting, the browser is being redirected again.
  */
-export async function completeCinaauthLogin(): Promise<{
-  session: CinaauthSession
-  returnTo: string
-}> {
+export async function completeCinaauthLogin(): Promise<
+  | { session: CinaauthSession; returnTo: string }
+  | { restarted: true }
+> {
   const config = getCinaauthConfig()
   const transaction = takeTransaction()
   if (!transaction || transaction.redirectUri !== config.redirectUri) {
@@ -270,12 +293,24 @@ export async function completeCinaauthLogin(): Promise<{
 
   const authorizationServer = await discoverCinaauth()
   const client = getClient(config)
-  const parameters = oauth.validateAuthResponse(
-    authorizationServer,
-    client,
-    new URL(window.location.href),
-    transaction.state
-  )
+  let parameters: URLSearchParams
+  try {
+    parameters = oauth.validateAuthResponse(
+      authorizationServer,
+      client,
+      new URL(window.location.href),
+      transaction.state
+    )
+  } catch (cause) {
+    if (shouldFallbackScope(cause, transaction)) {
+      await beginCinaauthLogin(
+        transaction.returnTo,
+        stripOfflineAccess(transaction.scope)
+      )
+      return { restarted: true }
+    }
+    throw cause
+  }
   const tokenResponse = await oauth.authorizationCodeGrantRequest(
     authorizationServer,
     client,
@@ -306,6 +341,15 @@ export async function completeCinaauthLogin(): Promise<{
     claims.sub,
     userInfoResponse
   )
+
+  if (!tokens.refresh_token) {
+    // Without offline_access no refresh token is minted; sessions then last
+    // only as long as the access token (~1h). Enable offline_access for the
+    // client in the CinaAuth developer console to restore renewal.
+    console.info(
+      "[cinachain] CinaAuth issued no refresh token — sessions will expire with the access token. Enable the offline_access scope for this OAuth client in the developer console."
+    )
+  }
 
   const session: CinaauthSession = {
     user: userinfoClaimsToUser(userinfo),

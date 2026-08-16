@@ -44,7 +44,7 @@ DApp 的登录使用 CinaAuth 统一认证（`https://auth.cinaseek.ai`，登录
 
 一次性接入配置：
 
-1. 登录 `https://accounts.cinaseek.ai/dashboard/developer` 创建 OAuth 客户端（**Web server application** 类型）。回调地址登记精确匹配值：生产 `https://nft.cinachain.com/auth/callback`；本地调试可另加 `http://localhost:3000/auth/callback`（回环地址允许 HTTP）。登出回调登记 `https://nft.cinachain.com`。
+1. 登录 `https://accounts.cinaseek.ai/dashboard/developer` 创建 OAuth 客户端（**Web server application** 类型），并在 Allowed scopes 中**勾选 offline_access**（默认不勾选；不勾选时登录会自动降级为无刷新令牌的约 1 小时会话，控制台补勾后下次登录自动恢复 30 天续期）。回调地址登记精确匹配值：生产 `https://nft.cinachain.com/auth/callback`；本地调试可另加 `http://localhost:3000/auth/callback`（回环地址允许 HTTP）。登出回调登记 `https://nft.cinachain.com`。
 2. 在 GitHub 仓库 Secrets 中配置 `NEXT_PUBLIC_CINAAUTH_CLIENT_ID`（client id，公开值）与 client secret（名字为 `CINAAUTH_CLIENT_SECRET` 或 `NEXT_PUBLIC_CINAAUTH_CLIENT_SECRET` 均可，工作流两者兼容；secret 只下发到 auth-proxy Worker）。CI 构建 DApp 时注入 client id，推送 main 时把两者写入 Worker secret；client secret 缺失时 CI 会告警并按公共客户端直通模式运行，client id 缺失时 CI 直接失败（登录按钮会整体禁用）。
 3. 确保 `workers/auth-proxy` 已部署且路由生效（根工作流随 billing/media-gateway 一起发布；部署令牌需含 cinachain.com zone 的 Workers 路由权限）。
 

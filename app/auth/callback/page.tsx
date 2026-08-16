@@ -24,10 +24,17 @@ export default function CinaauthCallbackPage() {
     if (started.current) return
     started.current = true
     completeCinaauthLogin()
-      .then(({ returnTo }) => {
+      .then((result) => {
+        if ("restarted" in result) {
+          // The authorize step rejected a scope (offline_access not enabled
+          // for this client) and the login restarted without it; the browser
+          // is being redirected back to the provider — keep showing the
+          // progress state.
+          return
+        }
         // Full navigation: already-mounted components (header sign-in
         // state) re-read the session from localStorage on next mount.
-        window.location.replace(returnTo)
+        window.location.replace(result.returnTo)
       })
       .catch((cause: unknown) => {
         setError(toCinaauthErrorMessage(cause))

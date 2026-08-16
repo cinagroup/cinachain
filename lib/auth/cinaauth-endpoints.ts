@@ -37,3 +37,35 @@ export function rewriteProxiedEndpoints(
   }
   return metadata
 }
+
+export function stripOfflineAccess(scope: string): string {
+  return scope
+    .split(" ")
+    .filter((item) => item && item !== "offline_access")
+    .join(" ")
+}
+
+export interface ScopeFallbackTransaction {
+  scope: string
+  scopeFallback: boolean
+}
+
+/**
+ * True when the authorize step rejected `offline_access` (the CinaAuth
+ * developer console does not check it by default) and the login has not
+ * already been retried without it. `cause` is duck-typed against the OAuth
+ * error shape (`error` / `error_description`) to stay dependency-free.
+ */
+export function shouldFallbackScope(
+  cause: unknown,
+  transaction: ScopeFallbackTransaction
+): boolean {
+  if (transaction.scopeFallback) return false
+  if (!transaction.scope.includes("offline_access")) return false
+  const maybeError = cause as { error?: unknown; error_description?: unknown }
+  return (
+    maybeError?.error === "invalid_scope" &&
+    typeof maybeError?.error_description === "string" &&
+    maybeError.error_description.includes("offline_access")
+  )
+}
