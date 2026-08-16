@@ -10,7 +10,7 @@ import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { SignInButton } from "@/components/blockchain/sign-in-button"
+import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { PWAInstallPrompt } from "@/components/pwa/install-prompt"
 import { ChainReadNotice } from "@/components/shared/chain-read-notice"
 import { useNftBalance } from "@/lib/hooks/use-nft-balance"
@@ -250,7 +250,7 @@ export default function PageDashboard() {
               Connect your wallet to view your personalized dashboard, manage your NFTs, and access exclusive features.
             </p>
             <div className="mt-8">
-              <SignInButton />
+              <WalletConnect />
             </div>
           </div>
         </IsWalletDisconnected>

@@ -10,6 +10,7 @@ Users / Wallets (EOA · Reown Smart Account · Coinbase Smart Wallet)
         ▼
 nft.cinachain.com  (Cloudflare Pages — Next.js static export)
         │
+        ├── /api/auth/*          → auth.cinaseek.ai  (CinaAuth SSO proxy worker)
         ├── rpc / ipfs / cdn / meta .cinachain.com   (Cloudflare Web3 gateways)
         ├── whitelist-api.cinachain.com              (whitelist verification)
         ├── billing-api.cinachain.com                (metering + credits)
@@ -35,6 +36,18 @@ Reown AppKit 1.8 (wagmi 3 / viem 2) with three account paths:
 - **Reown Smart Account** (email/social): UserOps routed through the Reown cloud iframe (gasless)
 
 SIWE verification supports EOA, EIP-1271 and EIP-6492 (smart accounts) via `viem/actions verifyMessage`.
+
+## Sign-In
+
+Site sign-in uses **CinaAuth SSO** (`accounts.cinaseek.ai`) — OpenID Connect
+Authorization Code + PKCE against `auth.cinaseek.ai`, with the browser-side
+OIDC calls forwarded through a same-origin Cloudflare Worker at
+`nft.cinachain.com/api/auth/*` (the provider only allows first-party CORS
+origins). The session (tokens + userinfo) is persisted client-side and
+refreshed via refresh tokens. Wallet connection is independent of sign-in
+and is only required for on-chain actions; SIWE signatures remain in two
+places: the `/integration/sign-in-with-ethereum` demo and the `/settings`
+API key binding verified server-side by the billing worker.
 
 ## Storage
 

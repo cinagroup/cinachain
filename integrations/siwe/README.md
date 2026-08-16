@@ -1,56 +1,43 @@
 # Sign-In with Ethereum - CinaChain Integration
 
-Welcome to the [Sign-In with Ethereum](https://login.xyz/) CinaChain Integration! This integration provides a secure and straightforward method for users to authenticate themselves using their Ethereum wallets.
+Demo components for the [Sign-In with Ethereum](https://login.xyz/) showcase
+page (`/integration/sign-in-with-ethereum`). Site sign-in itself is handled
+by CinaAuth SSO (`lib/auth/cinaauth.ts`); wallet connection (Reown AppKit)
+is independent and used for on-chain actions.
 
-## Features
+## Scope
 
-- Secure user authentication via their Ethereum wallet.
-- Sign-In with Ethereum (SIWE) login and logout functionality.
-- Displaying user's account details post-authentication.
-- React components to handle various authentication states.
+- **UX-only**: the SIWE session lives in `localStorage`
+  (`cinachain-siwe-session`, 24h). Signatures are verified client-side with
+  viem (`lib/siwe-verify.ts` — EOA, EIP-1271 and EIP-6492 smart accounts).
+  There is no server-side authentication here; privileged operations rely on
+  the contracts' own access control.
+- The one production use of wallet-signature auth is the `/settings` API key
+  flow, which posts a SIWE-style binding message to the billing worker for
+  server-side verification (`lib/hooks/use-api-keys.ts`).
 
 ## API
 
-### Actions
+### Hook
 
-`siweLogin()`
-Initiates the SIWE login process, creating and signing a SIWE message and then verifying it through a backend service.
-
-`siweLogout()`
-Logs out the user by sending a request to the backend logout service.
-
-`siweMessage()`
-Creates a SIWE message to be signed by the user's Ethereum wallet, and returns this message along with its signature.
+`useSiwe()` (from `lib/hooks/use-siwe.ts`)
+Returns `{ session, isAuthenticated, isLoading, signInError, signIn, signOut }`.
+`signIn()` builds an EIP-4361 message, requests a wallet signature and
+stores the session only after the signature verifies.
 
 ### Components
 
-`IsSignedInd()`
-A React component that conditionally renders its children if the user is signed in.
+`IsSignedIn()` / `IsSignedOut()`
+Conditionally render children based on the SIWE session.
 
-`IsSignedOut()`
-A React component that conditionally renders its children if the user is signed out.
-
-`ButtonSIWELogin()`
-A button that initiates the SIWE login process when clicked.
-
-`ButtonSIWELogout()`
-A button that initiates the SIWE logout process when clicked.
+`ButtonSIWELogin()` / `ButtonSIWELogout()`
+Buttons that trigger `useSiwe().signIn()` / `signOut()`.
 
 ## File Structure
 
 ```
 integrations/siwe
-├─ actions/
-│  ├─ siwe-login.ts
-│  ├─ siwe-logout.ts
-│  ├─ siwe-message.ts
-├─ api/
-│  ├─ index.ts
-│  ├─ logout.ts
-│  ├─ nonce.ts
-│  ├─ verify.ts
 ├─ components/
-│  ├─ branch-button-login-or-account.tsx
 │  ├─ button-siwe-login.tsx
 │  ├─ button-siwe-logout.tsx
 │  ├─ is-signed-in.tsx

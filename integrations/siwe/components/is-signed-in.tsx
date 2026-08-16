@@ -2,16 +2,16 @@
 
 import { ReactNode } from "react"
 
-import { useUser } from "@/lib/hooks/use-user"
+import { useSiwe } from "@/lib/hooks/use-siwe"
 
 interface IsSignedInProps {
   children: ReactNode
 }
 
 export const IsSignedIn = ({ children }: IsSignedInProps) => {
-  const { user } = useUser()
+  const { isAuthenticated } = useSiwe()
 
-  if (user?.isLoggedIn) return <>{children}</>
+  if (isAuthenticated) return <>{children}</>
 
   return null
 }

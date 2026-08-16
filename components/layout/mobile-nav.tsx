@@ -24,6 +24,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { SignInButton } from "@/components/blockchain/sign-in-button"
+import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 
 import { ModeToggle } from "../shared/mode-toggle"
@@ -140,6 +141,7 @@ export function MobileNav() {
             </MobileLink>
 
             <div className="pr-4 pt-2 [&_button]:min-h-11">
+              <WalletConnect className="mb-2" />
               <SignInButton />
             </div>
           </div>

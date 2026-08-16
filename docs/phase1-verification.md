@@ -12,13 +12,13 @@
 - [ ] `NEXT_PUBLIC_CINA_NFT_CONTRACT` = `0xYourContractAddress`
 - [ ] `NEXT_PUBLIC_WC_PROJECT_ID` = `your-wc-project-id`
 - [ ] `NEXT_PUBLIC_SITE_URL` = `https://nft.cinachain.com`
-- [ ] `NEXTAUTH_SECRET` = (加密，至少 32 字符)
 
 **GitHub Secrets：**
 
 - [ ] `CLOUDFLARE_API_TOKEN`
 - [ ] `CLOUDFLARE_ACCOUNT_ID`
 - [ ] `NEXT_PUBLIC_WC_PROJECT_ID`
+- [ ] `NEXT_PUBLIC_CINAAUTH_CLIENT_ID`（CinaAuth 登录，详见 DEPLOYMENT.md）
 - [ ] 所有 Pages 环境变量（通过 GitHub Variables 或 Secrets）
 
 ### 2. Cloudflare 服务配置
@@ -54,7 +54,8 @@ curl -s https://nft.cinachain.com | grep -o "<title>.*</title>"
 |--------|----------|----------|
 | 首页加载 | 访问 `https://nft.cinachain.com` | 页面正常渲染，无错误 |
 | NFT 展示页 | 访问 `https://nft.cinachain.com/explore` | 显示 NFT 列表或 "No NFTs minted yet" |
-| 钱包连接 | 点击 "Connect Wallet" | RainbowKit 弹窗显示 "CinaChain" |
+| 钱包连接 | 点击 "Connect Wallet" | Reown AppKit 弹窗显示 "CinaChain" |
+| CinaAuth 登录 | 点击 "Sign In" | 跳转 accounts.cinaseek.ai，登录后返回原页面 |
 | RPC 请求 | 打开 DevTools Network 面板 | 合约调用走 `rpc.cinachain.com` |
 | IPFS 图片 | 检查 NFT 图片加载 | 图片从 `ipfs.cinachain.com` 加载 |
 

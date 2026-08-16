@@ -4,7 +4,7 @@ import { useAccount } from "wagmi"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SignInButton } from "@/components/blockchain/sign-in-button"
+import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { useUserBadges } from "@/lib/hooks/use-badges"
 import { hasErc1155Contract } from "@/lib/contracts/addresses"
 import { Award, Lock } from "lucide-react"
@@ -27,7 +27,7 @@ export default function BadgesPage() {
             Connect your wallet to view your CinaChain badges and achievements.
           </p>
           <div className="mt-8">
-            <SignInButton />
+            <WalletConnect />
           </div>
         </div>
       </IsWalletDisconnected>

@@ -98,12 +98,26 @@ jobs:
         working-directory: workers/billing
         run: npm ci --ignore-scripts
 
+      - name: Check CinaAuth client id
+        # The OAuth client id is public but must be baked into the static
+        # export; an empty value silently ships sign-in disabled.
+        env:
+          CINAAUTH_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_CINAAUTH_CLIENT_ID }}
+        run: |
+          if [ -z "$CINAAUTH_CLIENT_ID" ]; then
+            echo "::error::GitHub secret NEXT_PUBLIC_CINAAUTH_CLIENT_ID is not set — CinaAuth sign-in would ship disabled."
+            exit 1
+          fi
+
       - name: Build static export
         # .env.production (committed, public values only) provides the
         # NEXT_PUBLIC_* vars — mirrors the local build exactly. The Alchemy key
         # is no longer a build-time var; it is injected into the rpc-proxy
         # Worker (see the workers job below) and the DApp reaches it via
         # NEXT_PUBLIC_BASE_RPC, so the key never enters the frontend bundle.
+        # Process env (CinaAuth client id) takes precedence over .env files.
+        env:
+          NEXT_PUBLIC_CINAAUTH_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_CINAAUTH_CLIENT_ID }}
         run: npm run build
 
       - name: Strip null bytes (Windows-safe webpack output)
@@ -191,6 +205,38 @@ jobs:
           # never in the frontend bundle). Piped via stdin so the value does
           # not appear in process args or logs.
           printf '%s\n' "${{ secrets.NEXT_PUBLIC_ALCHEMY_API_KEY }}" | ../billing/node_modules/.bin/wrangler secret put ALCHEMY_API_KEY
+
+      # Auth proxy worker (same-origin /api/auth/* forwarder to CinaAuth,
+      # required for the DApp's OIDC browser flow — see DEPLOYMENT.md §2).
+      - name: Deploy auth-proxy worker
+        working-directory: workers/auth-proxy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: ../billing/node_modules/.bin/wrangler deploy
+
+      # Confidential OAuth client: the proxy injects client_secret_basic on
+      # token requests, so the secret lives only as a Worker secret — never
+      # in the static export. Empty CINAAUTH_CLIENT_SECRET = public client
+      # (passthrough mode).
+      - name: Provision auth-proxy CinaAuth credentials
+        working-directory: workers/auth-proxy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CINAAUTH_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_CINAAUTH_CLIENT_ID }}
+          CINAAUTH_CLIENT_SECRET: ${{ secrets.CINAAUTH_CLIENT_SECRET || secrets.NEXT_PUBLIC_CINAAUTH_CLIENT_SECRET }}
+        run: |
+          if [ -n "$CINAAUTH_CLIENT_ID" ]; then
+            printf '%s' "$CINAAUTH_CLIENT_ID" | ../billing/node_modules/.bin/wrangler secret put CINAAUTH_CLIENT_ID
+          else
+            echo "::warning::NEXT_PUBLIC_CINAAUTH_CLIENT_ID not set — auth-proxy cannot authenticate confidential clients."
+          fi
+          if [ -n "$CINAAUTH_CLIENT_SECRET" ]; then
+            printf '%s' "$CINAAUTH_CLIENT_SECRET" | ../billing/node_modules/.bin/wrangler secret put CINAAUTH_CLIENT_SECRET
+          else
+            echo "::warning::Neither CINAAUTH_CLIENT_SECRET nor NEXT_PUBLIC_CINAAUTH_CLIENT_SECRET is set — running the proxy in public-client passthrough mode."
+          fi
 
   portal:
     needs: quality

@@ -5,6 +5,7 @@ import Link from "next/link"
 import useScroll from "@/lib/hooks/use-scroll"
 import { cn } from "@/lib/utils"
 import { SignInButton } from "@/components/blockchain/sign-in-button"
+import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 import { MainNav } from "@/components/layout/main-nav"
 import { MobileNav } from "@/components/layout/mobile-nav"
@@ -36,6 +37,7 @@ export function SiteHeader() {
         <MobileNav />
         <div className="hidden items-center gap-2 md:flex">
           <ModeToggle />
+          <WalletConnect />
           <SignInButton />
           <Link
             href="/mint"

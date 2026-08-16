@@ -33,6 +33,36 @@ npm run dev
 - 根目录 `.env.production` 只允许保存公开构建配置。生产和本地 Worker 机密都使用 Cloudflare Secrets Store binding；普通字符串变量不能替代运行时所需的异步 `get()` binding。
 - `.env.local` 仅用于本机公开客户端配置并保持未跟踪状态；不要在 `.dev.vars` 中为 `ADMIN_KEY` / `INGRESS_ENC_KEY` 定义字符串。
 
+### CinaAuth 登录（OIDC 机密客户端 + 同源代理）
+
+DApp 的登录使用 CinaAuth 统一认证（`https://auth.cinaseek.ai`，登录界面为 `accounts.cinaseek.ai`），走 OpenID Connect Authorization Code + PKCE 流程；静态导出没有服务端运行时，授权码在 `/auth/callback` 页面客户端兑换。
+
+两层结构：
+
+- **CORS 层**：CinaAuth worker 的 CORS 只对第一方来源放行，因此浏览器侧 OIDC 请求（discovery、token、userinfo、JWKS）由 `workers/auth-proxy`（`cinachain-auth-proxy`）做同源转发。路由 `nft.cinachain.com/api/auth/*` 比 Pages 自定义域路由更具体，命中该 worker，其余路径仍由静态导出服务。`authorize` 与 `end-session` 是整页跳转，直连 issuer，不经代理。
+- **机密层**：开发者控制台只有 Web（机密，`client_secret_basic`）和 Native 两种类型，没有 SPA 选项。注册 **Web server application** 后，token 请求的 Basic 认证由 auth-proxy 在服务端注入（凭据存为 Worker secret），浏览器侧保持公共客户端形态，**client secret 永不进入浏览器构建**；PKCE（S256）始终强制发送。
+
+一次性接入配置：
+
+1. 登录 `https://accounts.cinaseek.ai/dashboard/developer` 创建 OAuth 客户端（**Web server application** 类型）。回调地址登记精确匹配值：生产 `https://nft.cinachain.com/auth/callback`；本地调试可另加 `http://localhost:3000/auth/callback`（回环地址允许 HTTP）。登出回调登记 `https://nft.cinachain.com`。
+2. 在 GitHub 仓库 Secrets 中配置 `NEXT_PUBLIC_CINAAUTH_CLIENT_ID`（client id，公开值）与 client secret（名字为 `CINAAUTH_CLIENT_SECRET` 或 `NEXT_PUBLIC_CINAAUTH_CLIENT_SECRET` 均可，工作流两者兼容；secret 只下发到 auth-proxy Worker）。CI 构建 DApp 时注入 client id，推送 main 时把两者写入 Worker secret；client secret 缺失时 CI 会告警并按公共客户端直通模式运行，client id 缺失时 CI 直接失败（登录按钮会整体禁用）。
+3. 确保 `workers/auth-proxy` 已部署且路由生效（根工作流随 billing/media-gateway 一起发布；部署令牌需含 cinachain.com zone 的 Workers 路由权限）。
+
+`.env.production` 里的 `NEXT_PUBLIC_CINAAUTH_CLIENT_ID` 留空即可（CI 用 GitHub secret 注入；本地想跑生产构建可在未跟踪的 `.env.local` 里填）。
+
+本地开发（可选，仅调试登录时需要）：
+
+```powershell
+Set-Content workers\auth-proxy\.dev.vars "CINAAUTH_CLIENT_ID=<client id>`nCINAAUTH_CLIENT_SECRET=<client secret>"
+Set-Location workers/auth-proxy
+& (Resolve-Path "..\billing\node_modules\.bin\wrangler.cmd").Path dev --port 8787
+Set-Location ..\..
+```
+
+并在 `.env.local` 中设置 `NEXT_PUBLIC_CINAAUTH_CLIENT_ID=<client id>` 与 `NEXT_PUBLIC_CINAAUTH_API_BASE_URL=http://localhost:8787/api/auth`（`.dev.vars` 已被 gitignore 覆盖，不会提交）。
+
+会话保存在浏览器 `localStorage`（key `cinachain-auth-session`），access token 过期时用 refresh token 自动续期，续期失败则要求重新登录。管理员入口（`/admin`）仍基于连接钱包地址与 `NEXT_PUBLIC_APP_ADMINS` 白名单，与 CinaAuth 登录无关。
+
 ## 3. 发布前质量门禁
 
 从仓库根目录运行：
@@ -110,7 +140,7 @@ Set-Location ../..
 1. Pull request 运行根质量门禁和文档构建，不执行发布。
 2. 推送到 `main` 后，所有发布 job 仍需先通过质量门禁。
 3. DApp、门户和文档分别发布到自己的 Cloudflare Pages 项目。
-4. Worker job 先验证 Cloudflare 凭据和计费 Secrets Store 元数据，再发布计费与媒体 Worker。
+4. Worker job 先验证 Cloudflare 凭据和计费 Secrets Store 元数据，再发布计费、媒体与认证代理 Worker。
 5. 工作流使用固定的 Wrangler 4 版本，避免发布时隐式漂移。
 
 推送到 `main` 只是触发器，不应当作发布成功证据。以 GitHub Actions job 结果、Cloudflare deployment revision 和线上验收结果为准。
@@ -171,10 +201,21 @@ Set-Location workers/billing
 & $Wrangler deploy
 Set-Location ../media-gateway
 & $Wrangler deploy
+Set-Location ../auth-proxy
+& $Wrangler deploy
 Set-Location ../..
 ```
 
-媒体 Worker 依赖 R2 bucket 和自身配置；计费 Worker 依赖 KV、定时触发器及上述账户级 Secrets Store bindings。执行前应分别检查对应 `wrangler.toml` 与目标 Cloudflare 账户。其他 Worker 必须作为独立变更单元审核、配置和验证，不要假设根工作流已发布它们。
+媒体 Worker 依赖 R2 bucket 和自身配置；计费 Worker 依赖 KV、定时触发器及上述账户级 Secrets Store bindings；认证代理 Worker（CinaAuth 登录的同源 `/api/auth/*` 转发）依赖 cinachain.com zone 上的 Workers 路由 `nft.cinachain.com/api/auth/*`，机密客户端还依赖两个 Worker secret：
+
+```powershell
+Set-Location workers/auth-proxy
+& $Wrangler secret put CINAAUTH_CLIENT_ID
+& $Wrangler secret put CINAAUTH_CLIENT_SECRET
+Set-Location ../..
+```
+
+执行前应分别检查对应 `wrangler.toml` 与目标 Cloudflare 账户。其他 Worker 必须作为独立变更单元审核、配置和验证，不要假设根工作流已发布它们。
 
 ## 7. 合约发布原则
 
@@ -200,6 +241,16 @@ Set-Location ../..
 - [ ] `/explore`、`/mint`、`/dashboard`、`/dashboard/nfts` 和 `/admin` 的加载、空数据、错误与成功状态可辨识
 - [ ] 交易和合约链接指向 Base Sepolia BaseScan
 - [ ] IPFS / R2 媒体回退可用，RPC 请求未暴露服务端凭据
+
+### CinaAuth 登录
+
+- [ ] 已在开发者控制台登记回调 `https://nft.cinachain.com/auth/callback`（Web server application 类型）
+- [ ] GitHub Secret `NEXT_PUBLIC_CINAAUTH_CLIENT_ID` 已配置（client secret 同理），CI 无相关告警
+- [ ] auth-proxy Worker 的 `CINAAUTH_CLIENT_ID` / `CINAAUTH_CLIENT_SECRET` 两个 secret 已存在（`wrangler secret list`）
+- [ ] `nft.cinachain.com/api/auth/.well-known/openid-configuration` 经 auth-proxy worker 返回 discovery 文档（响应含 `issuer: https://auth.cinaseek.ai`）
+- [ ] 顶栏 Sign In 能跳转 accounts.cinaseek.ai，登录后回到发起页面并显示已登录账户（token 交换经代理注入 Basic 认证成功）
+- [ ] 登出会经过 end-session 端点并回到站点首页
+- [ ] 钱包断开不影响登录态；登录态不影响钱包连接入口
 
 ### Workers
 
@@ -236,8 +287,8 @@ Set-Location ../..
 
 ---
 
-**文档版本**: v2.0
+**文档版本**: v2.1
 
-**更新日期**: 2026-08-11
+**更新日期**: 2026-08-16
 
 **维护者**: cinagroup

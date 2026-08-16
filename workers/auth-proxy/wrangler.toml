@@ -1,0 +1,20 @@
+name = "cinachain-auth-proxy"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# Same-origin OIDC proxy for CinaAuth login (see DEPLOYMENT.md §2 "CinaAuth
+# 登录"). The route is more specific than the Pages custom-domain route on
+# nft.cinachain.com, so /api/auth/* hits this worker while the static export
+# keeps serving everything else. The zone (cinachain.com) must be in the same
+# Cloudflare account as the deployment token.
+routes = [
+  { pattern = "nft.cinachain.com/api/auth/*", zone_name = "cinachain.com" }
+]
+
+[vars]
+# CinaAuth issuer / API origin (browser OIDC endpoints are proxied here).
+CINAAUTH_UPSTREAM = "https://auth.cinaseek.ai"
+# Origins allowed to call the proxy cross-origin (same-origin production
+# calls send no Origin-dependent CORS handling; these cover the Pages
+# preview domain and local wrangler dev).
+ALLOWED_ORIGINS = "https://nft.cinachain.com,https://cinachain-dapp-v2.pages.dev,http://localhost:3000"

@@ -3,13 +3,6 @@ import { z } from "zod"
 
 export const env = createEnv({
   server: {
-    // Iron session requires a secret of at least 32 characters.
-    // NOTE: This is only used if server routes exist (currently unused with
-    // static export). Generate a strong secret before enabling server runtime.
-    NEXTAUTH_SECRET: z
-      .string()
-      .min(32)
-      .default("default_secret_for_build_at_least_32_characters_long"),
     DATABASE_URL: z.string().url().optional(),
     APP_ADMINS: z
       .string()
@@ -64,9 +57,21 @@ export const env = createEnv({
     // Paymaster proxy URL for gasless minting (empty = disabled)
     NEXT_PUBLIC_PAYMASTER_PROXY_URL: z.string().optional(),
     NEXT_PUBLIC_APP_ADMINS: z.string().optional(),
+    // CinaAuth OIDC single sign-on (accounts.cinaseek.ai). Register an
+    // OAuth client in the developer console (redirect URI must be
+    // https://<site>/auth/callback, exact match) and set its client id
+    // here. Sign-in stays disabled while the client id is empty.
+    // API_BASE_URL points browser OIDC calls (discovery/token/userinfo/
+    // jwks) at the same-origin proxy worker (workers/auth-proxy); leave
+    // empty to use <origin>/api/auth.
+    NEXT_PUBLIC_CINAAUTH_ISSUER: z
+      .string()
+      .url()
+      .default("https://auth.cinaseek.ai"),
+    NEXT_PUBLIC_CINAAUTH_CLIENT_ID: z.string().default(""),
+    NEXT_PUBLIC_CINAAUTH_API_BASE_URL: z.string().optional(),
   },
   runtimeEnv: {
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     APP_ADMINS: process.env.APP_ADMINS,
     CF_RPC_SERVICE_AUTH_TOKEN: process.env.CF_RPC_SERVICE_AUTH_TOKEN,
@@ -90,5 +95,9 @@ export const env = createEnv({
     NEXT_PUBLIC_WHITELIST_API_URL: process.env.NEXT_PUBLIC_WHITELIST_API_URL,
     NEXT_PUBLIC_PAYMASTER_PROXY_URL: process.env.NEXT_PUBLIC_PAYMASTER_PROXY_URL,
     NEXT_PUBLIC_APP_ADMINS: process.env.NEXT_PUBLIC_APP_ADMINS,
+    NEXT_PUBLIC_CINAAUTH_ISSUER: process.env.NEXT_PUBLIC_CINAAUTH_ISSUER,
+    NEXT_PUBLIC_CINAAUTH_CLIENT_ID: process.env.NEXT_PUBLIC_CINAAUTH_CLIENT_ID,
+    NEXT_PUBLIC_CINAAUTH_API_BASE_URL:
+      process.env.NEXT_PUBLIC_CINAAUTH_API_BASE_URL,
   },
 })

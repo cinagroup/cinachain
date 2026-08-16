@@ -2,50 +2,40 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAccount } from "wagmi"
 import { useQuery } from "@tanstack/react-query"
+
+import { loadCinaauthSession } from "@/lib/auth/cinaauth"
 
 interface User {
   isLoggedIn: boolean
-  address?: string
-  isAdmin?: boolean
+  sub?: string
+  name?: string
+  email?: string
+  picture?: string
 }
-
-const SESSION_KEY = "cinachain-siwe-session"
 
 function getStoredUser(): User {
   if (typeof window === "undefined") return { isLoggedIn: false }
-  try {
-    const stored = localStorage.getItem(SESSION_KEY)
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      if (new Date(parsed.expirationTime) > new Date()) {
-        return {
-          isLoggedIn: true,
-          address: parsed.address,
-        }
-      }
-      localStorage.removeItem(SESSION_KEY)
-    }
-  } catch {
-    localStorage.removeItem(SESSION_KEY)
+  const session = loadCinaauthSession()
+  if (!session) return { isLoggedIn: false }
+  return {
+    isLoggedIn: true,
+    sub: session.user.sub,
+    name: session.user.name,
+    email: session.user.email,
+    picture: session.user.picture,
   }
-  return { isLoggedIn: false }
 }
 
+/**
+ * Reads the CinaAuth sign-in state (see lib/auth/cinaauth.ts). The sign-in
+ * account is independent of the connected wallet, which is only used for
+ * on-chain actions.
+ */
 export function useUser({ redirectTo = "", redirectIfFound = false } = {}) {
-  const { address } = useAccount()
-
   const { data: user, refetch: mutateUser } = useQuery<User>({
-    queryKey: ["user", address],
-    queryFn: () => {
-      if (!address) return { isLoggedIn: false }
-      const stored = getStoredUser()
-      if (stored.isLoggedIn && stored.address?.toLowerCase() === address.toLowerCase()) {
-        return stored
-      }
-      return { isLoggedIn: false }
-    },
+    queryKey: ["cinaauth-user"],
+    queryFn: getStoredUser,
   })
 
   const Router = useRouter()

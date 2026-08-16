@@ -5,7 +5,13 @@
 **上游模板**: turbo-eth/template-web3-app  
 **目标域名**: cinachain.com  
 **DApp 主站**: nft.cinachain.com  
-**状态**: 待实施
+**状态**: 已实施（部分章节过时）
+
+> **2026-08 认证方案变更**：本设计中"RainbowKit + SIWE / next-auth 管理员登录"已被取代。
+> 站点登录现为 CinaAuth SSO（OIDC + PKCE，经 `workers/auth-proxy` 同源代理），钱包连接
+> （Reown AppKit）与登录解耦、仅用于链上操作，`/admin` 门禁基于连接钱包地址白名单而非 SIWE。
+> 现行方案以 `DEPLOYMENT.md` §2「CinaAuth 登录」与 `lib/auth/cinaauth.ts` 为准；
+> 下文涉及 SIWE/next-auth/RainbowKit 的章节仅作历史记录保留。
 
 ---
 

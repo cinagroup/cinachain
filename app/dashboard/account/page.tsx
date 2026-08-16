@@ -17,7 +17,7 @@ import {
   PRIMARY_CHAIN_ID,
   PRIMARY_NETWORK_LABEL,
 } from "@/config/deployment"
-import { useSiwe } from "@/lib/hooks/use-siwe"
+import { useCinaauth } from "@/lib/hooks/use-cinaauth"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -26,7 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { SignInButton } from "@/components/blockchain/sign-in-button"
+import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { WalletAddress } from "@/components/blockchain/wallet-address"
 import { WalletBalance } from "@/components/blockchain/wallet-balance"
 import { WalletEnsName } from "@/components/blockchain/wallet-ens-name"
@@ -38,13 +38,14 @@ export default function AccountPage() {
   const { address, chain } = useAccount()
   const {
     session,
+    user,
     isAuthenticated,
     signIn,
     signOut,
-    isLoading: siweLoading,
-  } = useSiwe()
+    isLoading: authLoading,
+  } = useCinaauth()
 
-  // ENS resolution (independent of SIWE session)
+  // ENS resolution (independent of CinaAuth sign-in)
   const { data: ensName, isLoading: ensLoading } = useEnsName({ address })
 
   const connectedNetwork =
@@ -150,12 +151,12 @@ export default function AccountPage() {
                   <KeyRound className="size-5" />
                   Authentication
                 </CardTitle>
-                <CardDescription>Sign-In with Ethereum status</CardDescription>
+                <CardDescription>CinaAuth single sign-on</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">
-                    SIWE status
+                    CinaAuth status
                   </p>
                   <div className="flex items-center gap-2">
                     <div
@@ -169,7 +170,7 @@ export default function AccountPage() {
                   </div>
                 </div>
 
-                {isAuthenticated && session && (
+                {isAuthenticated && session && user && (
                   <div className="border-success/30 bg-success/10 rounded-md border p-3">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="size-4 text-success" />
@@ -178,17 +179,22 @@ export default function AccountPage() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
+                      {user.name && user.name !== user.email
+                        ? `${user.name} · `
+                        : ""}
+                      {user.email}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Session expires:{" "}
-                      {new Date(session.expirationTime).toLocaleString()}
+                      {new Date(session.expiresAt).toLocaleString()}
                     </p>
                   </div>
                 )}
 
                 <p className="text-xs text-muted-foreground">
-                  SIWE proves wallet ownership via a cryptographic signature.
-                  This is a UX-only sign-in — the smart contract&apos;s{" "}
-                  <code className="rounded bg-secondary px-1">onlyOwner</code>{" "}
-                  modifier is the authoritative access control.
+                  Sign-in uses your CinaAuth account (accounts.cinaseek.ai) via
+                  OpenID Connect. Wallet connection stays separate and is only
+                  needed for on-chain actions.
                 </p>
 
                 <div className="border-t border-border pt-2">
@@ -203,15 +209,15 @@ export default function AccountPage() {
                     </Button>
                   ) : (
                     <Button
-                      onClick={() => void signIn()}
+                      onClick={() => void signIn("/dashboard/account")}
                       size="sm"
                       className="w-full"
-                      disabled={siweLoading}
+                      disabled={authLoading}
                     >
-                      {siweLoading ? (
+                      {authLoading ? (
                         <Loader2 className="mr-2 size-4 animate-spin" />
                       ) : null}
-                      Sign in with Ethereum
+                      Sign in with CinaAuth
                     </Button>
                   )}
                 </div>
@@ -269,7 +275,7 @@ export default function AccountPage() {
               and access exclusive features.
             </p>
             <div className="mt-8">
-              <SignInButton />
+              <WalletConnect />
             </div>
           </div>
         </IsWalletDisconnected>

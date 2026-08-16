@@ -3,7 +3,6 @@
 import { ReactNode } from "react"
 import { ThemeProvider } from "next-themes"
 
-import HandleWalletEvents from "@/components/blockchain/handle-wallet-events"
 import { AppKitProvider } from "@/components/providers/appkit-provider"
 
 interface RootProviderProps {
@@ -27,9 +26,7 @@ export default function RootProvider({ children }: RootProviderProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <AppKitProvider>
-        <HandleWalletEvents>{children}</HandleWalletEvents>
-      </AppKitProvider>
+      <AppKitProvider>{children}</AppKitProvider>
     </ThemeProvider>
   )
 }
