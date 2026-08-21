@@ -15,7 +15,7 @@ contract CinaMegaTest is Test {
     uint256 constant CINA = 3;
 
     function setUp() public {
-        mega = new CinaMega(owner, 1000);
+        mega = new CinaMega(owner, 1_000_000);
     }
 
     // ── Unit math ──
@@ -42,7 +42,7 @@ contract CinaMegaTest is Test {
 
     function test_MintUcina_CapEnforced() public {
         vm.startPrank(alice);
-        mega.mintUcina(1000);
+        mega.mintUcina(1_000_000);
         vm.expectRevert(CinaMega.MintCapExceeded.selector);
         mega.mintUcina(1);
         vm.stopPrank();
@@ -50,10 +50,10 @@ contract CinaMegaTest is Test {
 
     function test_MintUcina_CapIsPerAddress() public {
         vm.prank(alice);
-        mega.mintUcina(1000);
+        mega.mintUcina(1_000_000);
         vm.prank(bob);
-        mega.mintUcina(1000); // bob's own cap
-        assertEq(mega.balanceOf(bob, UCINA), 1000);
+        mega.mintUcina(1_000_000); // bob's own cap
+        assertEq(mega.balanceOf(bob, UCINA), 1_000_000);
     }
 
     function test_MintUcina_ZeroAmountReverts() public {

@@ -43,11 +43,17 @@ foundryup
 
 ### Step 1: 安装依赖
 
+OpenZeppelin Contracts 是**根目录 package.json 的 npm 依赖**（`@openzeppelin/contracts`，精确锁定版本，单一事实来源），forge 通过 `contracts/remappings.txt` 解析到 `node_modules`；`forge-std` 以 git submodule 形式提交在 `contracts/lib/forge-std`。
+
 ```bash
-cd contracts
-forge install OpenZeppelin/openzeppelin-contracts --no-commit
-forge install foundry-rs/forge-std --no-commit
+# 在仓库根目录：
+npm ci --legacy-peer-deps          # 安装 @openzeppelin/contracts
+git submodule update --init --recursive   # 拉取 contracts/lib/forge-std
 ```
+
+> 历史版本说明：早期 OZ 以 5.0.2 vendored 在 `contracts/openzeppelin/`（已移除）。
+> 升级 OZ 版本请使用 `npm install --save-exact @openzeppelin/contracts@<版本>` 并运行 `forge test` 回归。
+> 当前 Base Sepolia 线上合约（见 `.env.production`）为 **OZ 5.0.2** 编译产物，Basescan 复现验证旧合约时需临时 pin 5.0.2。
 
 ### Step 2: 配置环境
 

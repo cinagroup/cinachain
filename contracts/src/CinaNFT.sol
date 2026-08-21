@@ -16,7 +16,6 @@ pragma solidity ^0.8.24;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -26,7 +25,6 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract CinaNFT is
     ERC721Enumerable,
-    ERC721URIStorage,
     Pausable,
     Ownable,
     ReentrancyGuard
@@ -178,7 +176,7 @@ contract CinaNFT is
     function tokenURI(uint256 tokenId)
         public
         view
-        override(ERC721, ERC721URIStorage)
+        override
         returns (string memory)
     {
         _requireOwned(tokenId);
@@ -314,7 +312,7 @@ contract CinaNFT is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721Enumerable, ERC721URIStorage)
+        override(ERC721Enumerable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -322,14 +320,14 @@ contract CinaNFT is
 
     function _increaseBalance(address account, uint128 value)
         internal
-        override(ERC721, ERC721Enumerable)
+        override(ERC721Enumerable)
     {
         super._increaseBalance(account, value);
     }
 
     function _update(address to, uint256 tokenId, address auth)
         internal
-        override(ERC721, ERC721Enumerable)
+        override(ERC721Enumerable)
         returns (address)
     {
         return super._update(to, tokenId, auth);

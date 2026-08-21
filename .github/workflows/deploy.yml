@@ -53,6 +53,43 @@ jobs:
       - name: Test
         run: npm test
 
+  contracts:
+    # Solidity contracts: forge build + full test suite + solc-js artifacts
+    # build (what scripts/deploy.mjs consumes). Check-only, never deploys.
+    # OZ comes from the root npm dependency (remappings.txt resolves it for
+    # forge); forge-std comes from the contracts/lib/forge-std submodule.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (with forge-std submodule)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (@openzeppelin/contracts)
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
+
+      - name: Build contracts
+        working-directory: contracts
+        run: forge build
+
+      - name: Test contracts
+        working-directory: contracts
+        run: forge test
+
+      - name: Build deploy artifacts (solc-js pipeline)
+        run: npm run contracts:build
+
   docs-build:
     runs-on: ubuntu-latest
     permissions:

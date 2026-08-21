@@ -44,7 +44,6 @@ next-env.d.ts
 workers/*/node_modules/
 workers/*/package-lock.json
 !workers/billing/package-lock.json
-contracts/openzeppelin/
 contracts/out/
 
 # Playwright test artifacts

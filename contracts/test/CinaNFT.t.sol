@@ -241,7 +241,7 @@ contract CinaNFTTest is Test {
         vm.deal(alice, 100 ether);
 
         vm.startPrank(alice);
-        small.mintPublic{value: PRICE}(2);
+        small.mintPublic{value: PRICE * 2}(2);
         vm.expectRevert(CinaNFT.MaxSupplyExceeded.selector);
         small.mintPublic{value: PRICE}(1);
         vm.stopPrank();

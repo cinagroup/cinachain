@@ -12,7 +12,9 @@ const solc = require("solc")
 
 const ROOT = resolve(__dirname, "..")
 const SRC = resolve(ROOT, "contracts/src")
-const OZ = resolve(ROOT, "contracts/openzeppelin")
+// OZ ships as the root npm dependency (package.json) — same package forge
+// resolves via contracts/remappings.txt.
+const OZ = resolve(ROOT, "node_modules/@openzeppelin/contracts")
 const OUT = resolve(ROOT, "contracts/out")
 mkdirSync(OUT, { recursive: true })
 

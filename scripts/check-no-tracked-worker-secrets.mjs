@@ -178,7 +178,10 @@ export async function scanCurrentRepository({
     try {
       source = await readFile(path, "utf8")
     } catch (error) {
-      if (error?.code === "ENOENT") continue
+      // ENOENT: file vanished between listing and reading.
+      // EISDIR: tracked gitlinks (e.g. contracts/lib/forge-std) are
+      //         directories on disk, not scannable text files.
+      if (error?.code === "ENOENT" || error?.code === "EISDIR") continue
       throw error
     }
     if (source.includes("\0")) continue

@@ -1,7 +1,8 @@
 # Foundry
 out/
 cache/
-lib/
+
+# forge-std is tracked as a git submodule under lib/ (do NOT ignore it)
 
 # Environment
 .env
@@ -13,5 +14,3 @@ lib/
 # OS
 .DS_Store
 Thumbs.db
-contracts/openzeppelin/
-contracts/out/

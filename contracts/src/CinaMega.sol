@@ -217,6 +217,16 @@ contract CinaMega is ERC1155, Ownable, Pausable, ReentrancyGuard {
         super._update(from, to, ids, values);
     }
 
+    // ─────────────────────────── Emergency pause ───────────────────────────
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     // ─────────────────────────── Ownership guard ───────────────────────────
 
     function renounceOwnership() public override onlyOwner {

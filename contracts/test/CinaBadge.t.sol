@@ -171,9 +171,9 @@ contract CinaBadgeTest is Test {
         assertGt(bytes(uri).length, 10);
     }
 
-    function test_Revert_URI_NonExistentBadge() public {
-        vm.expectRevert(CinaBadge.BadgeTypeNotFound.selector);
-        badge.uri(999);
+    function test_URI_NonExistentBadgeReturnsEmpty() public {
+        // Unknown badge types return "" per ERC-1155 (see uri() docstring)
+        assertEq(bytes(badge.uri(999)).length, 0);
     }
 
     // ── Pause ──
@@ -206,7 +206,7 @@ contract CinaBadgeTest is Test {
         assertEq(ids[4], 5);
     }
 
-    function test_BadgeTypeCount() public view {
+    function test_BadgeTypeCount() public {
         // 5 standard badges, 0 custom yet
         assertEq(badge.badgeTypeCount(), 5);
 
