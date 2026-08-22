@@ -1,0 +1,49 @@
+name: Verify contracts on Basescan
+
+# Submits the deployment-identical standard-json input to the Etherscan V2
+# API (chainid 84532) for every contract in the deployment receipt. Run after
+# a deploy-contracts run once its source is committed.
+#
+# Requires the ETHERSCAN_API_KEY repository secret.
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_run:
+        description: "Run ID of the deploy-contracts run whose receipt should be verified"
+        required: true
+
+concurrency:
+  group: verify-contracts
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Restore deployment receipt
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: deployment-receipt
+          path: contracts/out/
+          run-id: ${{ inputs.deploy_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Verify contracts (standard-json, deployment-identical input)
+        env:
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+        run: node scripts/verify-contracts.mjs

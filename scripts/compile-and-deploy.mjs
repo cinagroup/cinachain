@@ -1,74 +1,25 @@
 /**
  * 编译 CinaChain 合约 — 预处理 import 路径后用 solc 编译
+ * （标准 JSON 输入的构建逻辑在 scripts/lib/compile-input.mjs，与
+ *  Basescan 验证共用 — 保证验证时重放的字节码与部署完全一致）
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from "fs"
-import { resolve, dirname, join, relative } from "path"
+import { writeFileSync, mkdirSync } from "fs"
+import { resolve, dirname } from "path"
 import { fileURLToPath } from "url"
 import { createRequire } from "module"
+import { ROOT, buildCompileInput } from "./lib/compile-input.mjs"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
 const solc = require("solc")
 
-const ROOT = resolve(__dirname, "..")
-const SRC = resolve(ROOT, "contracts/src")
-// OZ ships as the root npm dependency (package.json) — same package forge
-// resolves via contracts/remappings.txt.
-const OZ = resolve(ROOT, "node_modules/@openzeppelin/contracts")
 const OUT = resolve(ROOT, "contracts/out")
 mkdirSync(OUT, { recursive: true })
 
-// Collect all .sol files (src + openzeppelin)
-function collectSol(dir, base = dir) {
-  const files = {}
-  function walk(d) {
-    for (const entry of readdirSync(d)) {
-      const full = join(d, entry)
-      const st = statSync(full)
-      if (st.isDirectory()) walk(full)
-      else if (entry.endsWith(".sol")) {
-        let content = readFileSync(full, "utf8")
-        // Rewrite @openzeppelin/contracts/X → relative path to openzeppelin/X
-        content = content.replace(
-          /from\s+["']@openzeppelin\/contracts\/([^"']+)["']/g,
-          (match, p1) => {
-            const target = resolve(OZ, p1)
-            const rel = relative(dirname(full), target).replace(/\\/g, "/")
-            return `from "${rel}"`
-          }
-        )
-        const key = relative(ROOT, full).replace(/\\/g, "/")
-        files[key] = { content }
-      }
-    }
-  }
-  walk(dir)
-  return files
-}
-
+const input = buildCompileInput()
+const srcCount = Object.keys(input.sources).filter((k) => k.startsWith("contracts/src/")).length
 console.log("📂 Compiling CinaChain contracts...\n")
-
-const srcFiles = collectSol(SRC)
-const ozFiles = collectSol(OZ)
-const sources = { ...srcFiles, ...ozFiles }
-console.log(`   ${Object.keys(srcFiles).length} source files + ${Object.keys(ozFiles).length} OZ files`)
-
-const input = {
-  language: "Solidity",
-  sources,
-  settings: {
-    optimizer: { enabled: true, runs: 200 },
-    // Only codegen OUR contracts — generating artifacts for every OZ file
-    // (143 sources) can trip "stack too deep" in unrelated library codegen.
-    // Note: source unit keys must match the `sources` keys exactly.
-    outputSelection: {
-      "contracts/src/CinaNFT.sol": { "*": ["abi", "evm.bytecode.object"] },
-      "contracts/src/CinaBadge.sol": { "*": ["abi", "evm.bytecode.object"] },
-      "contracts/src/CinaCredit.sol": { "*": ["abi", "evm.bytecode.object"] },
-      "contracts/src/CinaMega.sol": { "*": ["abi", "evm.bytecode.object"] },
-    },
-  },
-}
+console.log(`   ${srcCount} source files + ${Object.keys(input.sources).length - srcCount} OZ files`)
 
 console.log("⚙️  Compiling...")
 const output = JSON.parse(solc.compile(JSON.stringify(input)))
