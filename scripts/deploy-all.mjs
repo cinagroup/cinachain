@@ -161,6 +161,7 @@ async function main() {
         // Pass the NORMALIZED key — the raw secret may carry quotes/whitespace
         // that viem rejects (deploy-all normalizes, the child script does not).
         DEPLOY_PRIVATE_KEY: PK,
+        CINA_MEGA_CONTRACT: megaAddr,
         // The default RPC in init-mega-templates differs; keep it consistent.
         DEPLOY_RPC_URL: RPC === "https://sepolia.base.org" ? "https://base-sepolia-rpc.publicnode.com" : RPC,
       },
