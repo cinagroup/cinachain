@@ -17,22 +17,23 @@
 // serves the assets until then.
 import { readFileSync, existsSync } from "fs"
 import { resolve } from "path"
-import { createWalletClient, createPublicClient, http, toHex } from "viem"
+import { createWalletClient, createPublicClient, toHex } from "viem"
 import { baseSepolia, base } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
+import { rpcTransport } from "./lib/rpc.mjs"
 
 const PK = process.env.DEPLOY_PRIVATE_KEY
 if (!PK) throw new Error("DEPLOY_PRIVATE_KEY required")
 const SKIP_GATEWAY_CHECK = process.env.SKIP_GATEWAY_CHECK === "1"
 const NETWORK = process.env.DEPLOY_NETWORK === "base-mainnet" ? "base" : "base-sepolia"
 const CHAIN = NETWORK === "base" ? base : baseSepolia
-const RPC = NETWORK === "base" ? "https://mainnet.base.org" : "https://base-sepolia-rpc.publicnode.com"
 const ADDR = process.env.CINA_MEGA_CONTRACT
 if (!ADDR) throw new Error("CINA_MEGA_CONTRACT required")
 
 const acct = privateKeyToAccount(PK)
-const pc = createPublicClient({ chain: CHAIN, transport: http(RPC) })
-const wc = createWalletClient({ account: acct, chain: CHAIN, transport: http(RPC) })
+const transport = rpcTransport(NETWORK)
+const pc = createPublicClient({ chain: CHAIN, transport })
+const wc = createWalletClient({ account: acct, chain: CHAIN, transport })
 const mega = JSON.parse(readFileSync(resolve("contracts/out/CinaMega.json"), "utf8"))
 
 const ASSETS = resolve("mega-assets")

@@ -12,10 +12,11 @@
 // skipped, and Mega templates are only initialized when svgLocked() is false.
 import { readFileSync, writeFileSync, existsSync } from "fs"
 import { resolve } from "path"
-import { createWalletClient, createPublicClient, http, parseEther, formatEther } from "viem"
+import { createWalletClient, createPublicClient, parseEther, formatEther } from "viem"
 import { base, baseSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { spawnSync } from "node:child_process"
+import { rpcUrls, rpcTransport } from "./lib/rpc.mjs"
 
 // Tolerate common secret-storage quirks (leading/trailing whitespace,
 // surrounding quotes, missing 0x prefix) without ever logging the value.
@@ -32,12 +33,13 @@ if (!/^0x[0-9a-fA-F]{64}$/.test(PK)) {
 }
 const NETWORK = process.env.DEPLOY_NETWORK === "base-mainnet" ? "base-mainnet" : "base-sepolia"
 const CHAIN = NETWORK === "base-mainnet" ? base : baseSepolia
-const RPC = process.env.DEPLOY_RPC_URL || (NETWORK === "base-mainnet" ? "https://mainnet.base.org" : "https://sepolia.base.org")
 const MINT_CAP = BigInt(process.env.MEGA_MINT_CAP ?? "1000000")
 
 const acct = privateKeyToAccount(PK)
-const pc = createPublicClient({ chain: CHAIN, transport: http(RPC) })
-const wc = createWalletClient({ account: acct, chain: CHAIN, transport: http(RPC) })
+// Fallback chain: rpc-proxy (Alchemy-backed) → publicnode → official endpoint.
+const transport = rpcTransport(NETWORK)
+const pc = createPublicClient({ chain: CHAIN, transport })
+const wc = createWalletClient({ account: acct, chain: CHAIN, transport })
 
 const RECEIPT = resolve(`contracts/out/deployment.${NETWORK}.json`)
 const loadArt = (name) => JSON.parse(readFileSync(resolve(`contracts/out/${name}.json`), "utf8"))
@@ -125,7 +127,7 @@ function summary(title) {
 async function main() {
   console.log("═══════════════════════════════════════════════")
   console.log(`  CinaChain full deployment — ${NETWORK}`)
-  console.log(`  RPC: ${RPC}`)
+  console.log(`  RPC chain: ${rpcUrls(NETWORK).join(" → ")}`)
   console.log(`  Deployer: ${acct.address}`)
   console.log("═══════════════════════════════════════════════")
 
@@ -162,8 +164,8 @@ async function main() {
         // that viem rejects (deploy-all normalizes, the child script does not).
         DEPLOY_PRIVATE_KEY: PK,
         CINA_MEGA_CONTRACT: megaAddr,
-        // The default RPC in init-mega-templates differs; keep it consistent.
-        DEPLOY_RPC_URL: RPC === "https://sepolia.base.org" ? "https://base-sepolia-rpc.publicnode.com" : RPC,
+        // Primary endpoint of the same chain (init-mega uses a single http()).
+        DEPLOY_RPC_URL: rpcUrls(NETWORK)[0],
       },
     })
     if (res.status !== 0) throw new Error("init-mega-templates.mjs failed — re-run to resume")
