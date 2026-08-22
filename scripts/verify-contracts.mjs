@@ -142,6 +142,13 @@ async function main() {
         body,
       })
     ).json()
+    if (String(submit.result ?? "").toLowerCase().includes("already verified")) {
+      // Etherscan reports re-submission of a verified contract as status=0
+      // with this message — it means the contract IS verified.
+      console.log(`   ✅ already verified — ${EXPLORER}/address/${address}#code`)
+      results.push({ name, address, status: "verified" })
+      continue
+    }
     if (submit.status !== "1") throw new Error(`${name}: submit failed — ${submit.result}`)
     console.log(`   ↗ submitted (guid ${submit.result}), polling status...`)
 
