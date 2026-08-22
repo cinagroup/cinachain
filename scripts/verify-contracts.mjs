@@ -27,7 +27,9 @@ const API_KEY = process.env.ETHERSCAN_API_KEY ?? process.env.BASESCAN_API_KEY
 const DRY_RUN = process.env.DRY_RUN === "1"
 const NETWORK = process.env.DEPLOY_NETWORK === "base-mainnet" ? "base-mainnet" : "base-sepolia"
 const CHAIN = NETWORK === "base-mainnet" ? base : baseSepolia
-const RPC = process.env.DEPLOY_RPC_URL || (NETWORK === "base-mainnet" ? "https://mainnet.base.org" : "https://sepolia.base.org")
+// sepolia.base.org has been rejecting GitHub runner requests during
+// verification runs; publicnode served the deploy run's checks reliably.
+const RPC = process.env.DEPLOY_RPC_URL || (NETWORK === "base-mainnet" ? "https://mainnet.base.org" : "https://base-sepolia-rpc.publicnode.com")
 const CHAINID = CHAIN.id // Etherscan V2 chainid (8453 / 84532)
 const EXPLORER = CHAIN.blockExplorers?.default?.url
 
@@ -168,5 +170,7 @@ async function main() {
 
 main().catch((e) => {
   console.error("\n❌ Verification failed:", e?.message ?? e)
+  if (e?.cause) console.error("   cause:", e.cause?.message ?? e.cause)
+  if (e?.details) console.error("   details:", e.details)
   process.exit(1)
 })
