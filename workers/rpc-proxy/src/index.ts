@@ -12,6 +12,13 @@
 //
 // Worker -> upstream is a server-side fetch, so Alchemy's referrer allowlist
 // and browser CORS do not apply; the key rotates without touching the DApp.
+//
+// Abuse controls (the endpoint URL is public in the frontend bundle):
+//   • Method allow-list — only the methods the DApp/pipelines actually use;
+//     debug_*/trace_*/eth_getLogs etc. are refused before reaching Alchemy.
+//   • Body size cap (64 KiB) and JSON-RPC batch cap (50).
+//   • CORS Origin allow-list for browser callers (non-browser callers are
+//     bounded by the method/body caps, not CORS).
 
 interface Env {
   ALCHEMY_API_KEY?: string
@@ -22,6 +29,51 @@ const ALLOWED_ORIGINS = new Set([
   "https://nft.cinachain.com",
   "http://localhost:3000",
 ])
+
+// ─── Abuse controls ───────────────────────────────────────────────────────────
+// The endpoint URL ships in the frontend bundle, so anyone can find it; these
+// controls bound what a stranger can burn through our Alchemy quota.
+
+// Only the methods the DApp (wagmi hooks) and the deploy/verify pipelines use.
+// Deliberately excluded: debug_*/trace_* (compute-heavy quota burners),
+// eth_getLogs (expensive over wide ranges — add back when an events feature
+// needs it), eth_newFilter/eth_getFilterChanges (stateful filter abuse),
+// net_version, archive/state methods nobody here calls.
+const ALLOWED_METHODS = new Set([
+  "eth_chainId",
+  "eth_blockNumber",
+  "eth_call",
+  "eth_getBalance",
+  "eth_getCode",
+  "eth_estimateGas",
+  "eth_gasPrice",
+  "eth_feeHistory",
+  "eth_getTransactionCount",
+  "eth_getTransactionByHash",
+  "eth_getTransactionReceipt",
+  "eth_getBlockByNumber",
+  "eth_sendRawTransaction",
+])
+
+// JSON-RPC bodies are tiny (calldata/raw tx a few KB); 64 KiB is generous.
+const MAX_BODY_BYTES = 64 * 1024
+// JSON-RPC batch entries — viem/wagmi never batch anywhere near this.
+const MAX_BATCH = 50
+
+interface RpcRequest {
+  method?: unknown
+}
+
+// Returns the first disallowed method name, or null when every method in the
+// (possibly batched) body is allowed.
+function firstDisallowedMethod(parsed: RpcRequest | RpcRequest[]): string | null {
+  const requests = Array.isArray(parsed) ? parsed : [parsed]
+  for (const req of requests) {
+    const method = typeof req?.method === "string" ? req.method : ""
+    if (!ALLOWED_METHODS.has(method)) return method || "(missing)"
+  }
+  return null
+}
 
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -57,6 +109,63 @@ const worker = {
       )
     }
 
+    const body = await request.text()
+
+    if (body.length > MAX_BODY_BYTES) {
+      return jsonResponse(
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32600, message: `Request body exceeds ${MAX_BODY_BYTES} bytes` },
+        },
+        413,
+        corsHeaders,
+      )
+    }
+
+    let parsed: RpcRequest | RpcRequest[]
+    try {
+      parsed = JSON.parse(body)
+    } catch {
+      return jsonResponse(
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32700, message: "Parse error" },
+        },
+        400,
+        corsHeaders,
+      )
+    }
+
+    if (Array.isArray(parsed) && parsed.length > MAX_BATCH) {
+      return jsonResponse(
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32600, message: `Batch size exceeds ${MAX_BATCH}` },
+        },
+        400,
+        corsHeaders,
+      )
+    }
+
+    const disallowed = firstDisallowedMethod(parsed)
+    if (disallowed !== null) {
+      return jsonResponse(
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: {
+            code: -32601,
+            message: `Method not allowed through this proxy: ${disallowed}`,
+          },
+        },
+        403,
+        corsHeaders,
+      )
+    }
+
     // Ordered upstreams: Alchemy first (when a key is provisioned), then the
     // public endpoints as availability fallback.
     const upstreams: string[] = []
@@ -66,8 +175,6 @@ const worker = {
       )
     }
     upstreams.push("https://sepolia.base.org", "https://base-sepolia.publicnode.com")
-
-    const body = await request.text()
 
     for (const upstream of upstreams) {
       try {

@@ -91,13 +91,22 @@ no browser `Origin`/`Referer`, and its own endpoint is constrained by the CORS
 
 - The Alchemy key lives **only** in GitHub Secrets → Worker secret. It is never
   in git, `.env.production`, `wrangler.toml`, the frontend bundle, or chat.
-- Browser abuse of the Worker endpoint is bounded by the CORS `Origin` allow-list
-  in `src/index.ts` — only `nft.cinachain.com` (and localhost for dev) can call
-  it from a browser. For stricter limits, add Cloudflare rate-limiting or an
-  `X-RPC-Auth` token on the Worker (any value shipped to the browser is public,
-  so Origin checks are the practical first line).
-- Still set Alchemy dashboard **usage monitoring** + **rate caps** as defence in
-  depth.
+- **Abuse controls** (the endpoint URL is public in the frontend bundle, so
+  strangers can find it):
+  - **Method allow-list** in `src/index.ts` — only the methods the DApp
+    (wagmi hooks) and the deploy/verify pipelines use. `debug_*`/`trace_*`,
+    `eth_getLogs`, stateful filters and archive methods are refused with a
+    `-32601` error **before** reaching Alchemy. When a new feature needs
+    another method (e.g. an events page needing `eth_getLogs`), add it to
+    `ALLOWED_METHODS` and redeploy.
+  - **Body size cap** 64 KiB and **JSON-RPC batch cap** 50 per request.
+  - Browser callers are additionally bounded by the CORS `Origin` allow-list
+    (`nft.cinachain.com` + localhost dev); non-browser callers are bounded by
+    the method/body caps — CORS does not apply to them.
+- For per-IP rate limits on top, add a Cloudflare Rate Limiting rule for
+  `rpc-proxy.cinachain.com` (dashboard) — the Worker stays code-simple.
+- Still set Alchemy dashboard **usage monitoring** + **rate caps** as defence
+  in depth.
 
 ## Going to Base Mainnet
 
