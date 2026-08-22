@@ -145,9 +145,9 @@ async function main() {
     if (submit.status !== "1") throw new Error(`${name}: submit failed — ${submit.result}`)
     console.log(`   ↗ submitted (guid ${submit.result}), polling status...`)
 
-    // ── Poll checkverifystatus ──
-    let status = "Pending"
-    for (let i = 0; i < 12 && status === "Pending"; i++) {
+    // ── Poll checkverifystatus (queue states: "Pending in queue" etc.) ──
+    let status = ""
+    for (let i = 0; i < 30 && (status === "" || status.startsWith("Pending")); i++) {
       await new Promise((r) => setTimeout(r, 5000))
       const check = await (
         await fetch(
