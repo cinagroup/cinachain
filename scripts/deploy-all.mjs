@@ -56,8 +56,28 @@ async function hasCode(address) {
   return code !== "0x" && code !== undefined && code.length > 2
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// Public Base Sepolia RPC endpoints occasionally lag a block or two behind
+// each other behind the load balancer — a read right after a deploy can hit
+// a node that has not indexed the new contract yet ("0x" result). Retry
+// reads with backoff instead of failing the deployment.
+async function withRetry(label, fn, attempts = 6) {
+  let lastErr
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      console.warn(`   ↻ ${label}: ${e?.shortMessage ?? e?.message} (retry ${i + 1}/${attempts})`)
+      await sleep(2500)
+    }
+  }
+  throw lastErr
+}
+
 async function deploy(contractName, args) {
-  if (state.contracts[contractName] && (await hasCode(state.contracts[contractName]))) {
+  if (state.contracts[contractName] && (await withRetry(`hasCode(${contractName})`, () => hasCode(state.contracts[contractName])))) {
     console.log(`⏭️  ${contractName} already deployed at ${state.contracts[contractName]} — skipping`)
     return state.contracts[contractName]
   }
@@ -127,7 +147,9 @@ async function main() {
 
   // ── Mega templates: init + irreversible lock (skipped if already locked) ──
   const megaAbi = loadArt("CinaMega").abi
-  const locked = await pc.readContract({ address: megaAddr, abi: megaAbi, functionName: "svgLocked" })
+  const locked = await withRetry("svgLocked()", () =>
+    pc.readContract({ address: megaAddr, abi: megaAbi, functionName: "svgLocked" })
+  )
   if (locked) {
     console.log("\n⏭️  Mega templates already locked — skipping init")
   } else {
@@ -147,15 +169,18 @@ async function main() {
   // ── Final on-chain verification ──
   console.log("\n🔍 Verifying on-chain state...")
   for (const name of Object.keys(state.contracts)) {
-    if (!(await hasCode(state.contracts[name]))) throw new Error(`${name}: no bytecode at ${state.contracts[name]}`)
+    const ok = await withRetry(`hasCode(${name})`, () => hasCode(state.contracts[name]))
+    if (!ok) throw new Error(`${name}: no bytecode at ${state.contracts[name]}`)
     console.log(`   ✓ ${name} code present at ${state.contracts[name]}`)
   }
-  const megaLocked2 = await pc.readContract({ address: megaAddr, abi: megaAbi, functionName: "svgLocked" })
+  const megaLocked2 = await withRetry("svgLocked()", () =>
+    pc.readContract({ address: megaAddr, abi: megaAbi, functionName: "svgLocked" })
+  )
   if (!megaLocked2) throw new Error("CinaMega templates not locked after init")
   console.log("   ✓ CinaMega templates locked")
-  const creditOwner = await pc.readContract({
-    address: state.contracts.CinaCredit, abi: loadArt("CinaCredit").abi, functionName: "owner",
-  })
+  const creditOwner = await withRetry("CinaCredit.owner()", () =>
+    pc.readContract({ address: state.contracts.CinaCredit, abi: loadArt("CinaCredit").abi, functionName: "owner" })
+  )
   if (creditOwner.toLowerCase() !== acct.address.toLowerCase()) throw new Error("CinaCredit owner mismatch")
   console.log("   ✓ CinaCredit owner = deployer")
 
