@@ -113,16 +113,31 @@ no browser `Origin`/`Referer`, and its own endpoint is constrained by the CORS
 
 ## Alchemy monitoring
 
-The Alchemy key owner should, in the [alchemy.com](https://www.alchemy.com/)
-console → the Base Sepolia app:
+Configured via the Alchemy CLI (`npm i -g @alchemy/cli`, device-code login —
+token at `~/.config/alchemy/config.json`, re-auth with
+`alchemy auth login --device-code` when it expires):
 
-1. **Usage alerts**: Settings → Notifications/Usage → add an email alert at
-   ~80% of the daily compute-unit budget, so quota abuse is noticed the same
-   day. (Team plan adds Slack/webhook targets.)
-2. **Check the caps**: Free tier already enforces fixed CU/s and monthly CU
-   caps per app — abuse is bounded by the plan, not our Worker. On a paid
-   tier, set a custom app-level rate cap sized to real DApp traffic.
-3. **Rotation**: if abuse is ever confirmed, rotate the key — update the
+- **Origin allowlist** on the "CinaChain" app (`4rln2n3xpebv3bvh`):
+  `https://nft.cinachain.com` only. Browser-originated calls to Alchemy with
+  any other Origin are rejected; requests **without** an Origin header
+  (server-side, i.e. our rpc-proxy Worker) are always allowed per Alchemy's
+  documented semantics — the Worker is unaffected (verified live). Do NOT add
+  an IP allowlist: Cloudflare Workers egress from rotating IPs and would be
+  cut off.
+- **Usage queries** (data ~minute-fresh):
+  `alchemy usage summary` / `alchemy usage timeseries`.
+  Baseline 2026-08: ~18k CU month-to-date (~$0.01).
+
+Still dashboard-only ([alchemy.com](https://www.alchemy.com/) → the Base
+Sepolia app), not exposed by the CLI:
+
+1. **Usage alerts** — Settings → Notifications: email alert at ~80% of the
+   daily compute-unit budget so quota abuse is noticed the same day. (Team
+   plan adds Slack/webhook targets.)
+2. **Rate caps** — Free tier already enforces fixed CU/s and monthly CU caps
+   per app; on a paid tier, set a custom app-level rate cap sized to real
+   DApp traffic.
+3. **Rotation** — if abuse is ever confirmed, rotate the key: update the
    `NEXT_PUBLIC_ALCHEMY_API_KEY` GitHub secret and push to `main`; CI re-seals
    it into the Worker (see "Enabling / rotating the Alchemy key").
 
