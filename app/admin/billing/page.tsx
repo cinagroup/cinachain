@@ -209,7 +209,7 @@ export default function BillingManagementPage() {
   }
   const BADGE_CONTRACT =
     process.env.NEXT_PUBLIC_CINA_ERC1155_CONTRACT ||
-    "0x72cc9adb6c877d233e9843ee2d00424b9766d0cf"
+    "0x0a32fc1302bf7765b386de5eae857c26d6c8e0ce"
 
   const mintPending = async (item: {
     address: string
