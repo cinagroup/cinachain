@@ -118,8 +118,8 @@ async function main() {
     }
 
     // ── Submit verifysourcecode (standard-json) via Etherscan V2 ──
+    // (chainid must be a URL query param — V2 ignores it in the form body)
     const body = new URLSearchParams({
-      chainid: String(CHAINID),
       module: "contract",
       action: "verifysourcecode",
       apikey: API_KEY,
@@ -134,7 +134,7 @@ async function main() {
       licenseType: "2", // MIT — SPDX identifier in every source file
     })
     const submit = await (
-      await fetch("https://api.etherscan.io/v2/api", {
+      await fetch(`https://api.etherscan.io/v2/api?chainid=${CHAINID}`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
