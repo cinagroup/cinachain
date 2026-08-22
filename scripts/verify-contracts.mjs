@@ -126,7 +126,9 @@ async function main() {
       codeFormat: "solidity-standard-json-input",
       sourceCode: JSON.stringify(input),
       contractaddress: address,
-      contractname: name,
+      // Standard-json requires "sourcefile.sol:ContractName" — the file part
+      // must match the source unit key in the submitted JSON.
+      contractname: `contracts/src/${name}.sol:${name}`,
       compilerversion: compilerVersion,
       constructorArguements: ctorArgsHex, // (sic) Etherscan's parameter name
       optimizationUsed: "1",
