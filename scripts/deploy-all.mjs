@@ -17,8 +17,19 @@ import { base, baseSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { spawnSync } from "node:child_process"
 
-const PK = process.env.DEPLOY_PRIVATE_KEY
-if (!PK || !PK.startsWith("0x")) throw new Error("DEPLOY_PRIVATE_KEY required (0x...)")
+// Tolerate common secret-storage quirks (leading/trailing whitespace,
+// surrounding quotes, missing 0x prefix) without ever logging the value.
+function normalizePrivateKey(raw) {
+  const k = (raw ?? "").trim().replace(/^["']+|["']+$/g, "").trim()
+  if (/^[0-9a-fA-F]{64}$/.test(k)) return "0x" + k
+  return k
+}
+const PK = normalizePrivateKey(process.env.DEPLOY_PRIVATE_KEY)
+if (!/^0x[0-9a-fA-F]{64}$/.test(PK)) {
+  throw new Error(
+    "DEPLOY_PRIVATE_KEY invalid — expected 0x + 64 hex chars (quotes/whitespace trimmed, 0x auto-added). Re-save the GitHub secret with the raw exported key."
+  )
+}
 const NETWORK = process.env.DEPLOY_NETWORK === "base-mainnet" ? "base-mainnet" : "base-sepolia"
 const CHAIN = NETWORK === "base-mainnet" ? base : baseSepolia
 const RPC = process.env.DEPLOY_RPC_URL || (NETWORK === "base-mainnet" ? "https://mainnet.base.org" : "https://sepolia.base.org")
