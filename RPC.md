@@ -93,6 +93,11 @@ no browser `Origin`/`Referer`, and its own endpoint is constrained by the CORS
   in git, `.env.production`, `wrangler.toml`, the frontend bundle, or chat.
 - **Abuse controls** (the endpoint URL is public in the frontend bundle, so
   strangers can find it):
+  - **Per-IP rate limit** — 120 requests / 60 s per client IP via the Workers
+    rate-limiting binding (`RPC_RATE_LIMITER` in `wrangler.toml`), enforced
+    before the body is read, answering `429` + `Retry-After: 60` (`-32005`).
+    Counting is per-colo best-effort; a Cloudflare dashboard WAF rate-limiting
+    rule on `rpc-proxy.cinachain.com` can be added for global enforcement.
   - **Method allow-list** in `src/index.ts` — only the methods the DApp
     (wagmi hooks) and the deploy/verify pipelines use. `debug_*`/`trace_*`,
     `eth_getLogs`, stateful filters and archive methods are refused with a
@@ -103,10 +108,23 @@ no browser `Origin`/`Referer`, and its own endpoint is constrained by the CORS
   - Browser callers are additionally bounded by the CORS `Origin` allow-list
     (`nft.cinachain.com` + localhost dev); non-browser callers are bounded by
     the method/body caps — CORS does not apply to them.
-- For per-IP rate limits on top, add a Cloudflare Rate Limiting rule for
-  `rpc-proxy.cinachain.com` (dashboard) — the Worker stays code-simple.
 - Still set Alchemy dashboard **usage monitoring** + **rate caps** as defence
-  in depth.
+  in depth (see "Alchemy monitoring" below).
+
+## Alchemy monitoring
+
+The Alchemy key owner should, in the [alchemy.com](https://www.alchemy.com/)
+console → the Base Sepolia app:
+
+1. **Usage alerts**: Settings → Notifications/Usage → add an email alert at
+   ~80% of the daily compute-unit budget, so quota abuse is noticed the same
+   day. (Team plan adds Slack/webhook targets.)
+2. **Check the caps**: Free tier already enforces fixed CU/s and monthly CU
+   caps per app — abuse is bounded by the plan, not our Worker. On a paid
+   tier, set a custom app-level rate cap sized to real DApp traffic.
+3. **Rotation**: if abuse is ever confirmed, rotate the key — update the
+   `NEXT_PUBLIC_ALCHEMY_API_KEY` GitHub secret and push to `main`; CI re-seals
+   it into the Worker (see "Enabling / rotating the Alchemy key").
 
 ## Going to Base Mainnet
 

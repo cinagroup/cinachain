@@ -22,6 +22,10 @@
 
 interface Env {
   ALCHEMY_API_KEY?: string
+  // Workers rate-limiting binding (see wrangler.toml [[unsafe.bindings]])
+  RPC_RATE_LIMITER?: {
+    limit(options: { key: string }): Promise<{ success: boolean }>
+  }
 }
 
 // Base Sepolia only. eth_chainId returns 0x14a34 (84532).
@@ -107,6 +111,24 @@ const worker = {
         405,
         corsHeaders,
       )
+    }
+
+    // Per-IP rate limit — checked before the body is read so throttled
+    // requests cost nothing upstream. 120 req / 60 s per client IP.
+    if (env.RPC_RATE_LIMITER) {
+      const ip = request.headers.get("CF-Connecting-IP") ?? "unknown"
+      const { success } = await env.RPC_RATE_LIMITER.limit({ key: ip })
+      if (!success) {
+        return jsonResponse(
+          {
+            jsonrpc: "2.0",
+            id: null,
+            error: { code: -32005, message: "Rate limit exceeded (120 req/min per IP)" },
+          },
+          429,
+          { ...corsHeaders, "Retry-After": "60" },
+        )
+      }
     }
 
     const body = await request.text()
