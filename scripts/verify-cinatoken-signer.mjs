@@ -76,7 +76,7 @@ export async function verifyCinaTokenSigner({ privateKey, receipt, client }) {
 
 async function main() {
   const receipt = JSON.parse(
-    readFileSync(join(root, "contracts/out/deployment.base-sepolia.json"), "utf8"),
+    readFileSync(join(root, "config/cinatoken-chain.base-sepolia.json"), "utf8"),
   )
   const publicEnv = readFileSync(join(root, ".env.production"), "utf8")
   const rpcUrl =
