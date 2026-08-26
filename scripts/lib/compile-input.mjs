@@ -60,6 +60,7 @@ export function buildCompileInput({ includeOz = true } = {}) {
         "contracts/src/CinaBadge.sol": { "*": ["abi", "evm.bytecode.object"] },
         "contracts/src/CinaCredit.sol": { "*": ["abi", "evm.bytecode.object"] },
         "contracts/src/CinaMega.sol": { "*": ["abi", "evm.bytecode.object"] },
+        "contracts/src/CinaCreditV2.sol": { "*": ["abi", "evm.bytecode.object"] },
       },
     },
   }
