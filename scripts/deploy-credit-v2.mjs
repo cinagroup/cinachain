@@ -41,6 +41,17 @@ async function hasCode(address) {
   return code !== "0x" && code !== undefined && code.length > 2
 }
 
+// Code-presence check where "false" must retry: right after a deploy the
+// load-balanced RPC can still return no code from a lagging node.
+async function awaitCode(address, label, attempts = 8) {
+  for (let i = 0; i < attempts; i++) {
+    if (await hasCode(address)) return true
+    console.warn(`   ↻ ${label}: not yet visible on this RPC node (retry ${i + 1}/${attempts})`)
+    await sleep(2500)
+  }
+  return false
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 async function withRetry(label, fn, attempts = 6) {
   let lastErr
@@ -82,7 +93,7 @@ async function main() {
 
   // ── On-chain verification: code + EOA-first role grants ──
   console.log("\n🔍 Verifying on-chain state...")
-  if (!(await withRetry("hasCode(V2)", () => hasCode(addr)))) throw new Error(`no bytecode at ${addr}`)
+  if (!(await awaitCode(addr, "hasCode(V2)"))) throw new Error(`no bytecode at ${addr}`)
   console.log(`   ✓ code present at ${addr}`)
   const minterRole = await withRetry("MINTER_ROLE()", () =>
     pc.readContract({ address: addr, abi: art.abi, functionName: "MINTER_ROLE" })
