@@ -16,6 +16,26 @@ const ownerAbi = [
     type: "function",
   },
 ]
+// CinaCreditV2 is AccessControl-based: mint authority is MINTER_ROLE, not owner().
+const accessControlAbi = [
+  {
+    inputs: [],
+    name: "MINTER_ROLE",
+    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "bytes32", name: "role", type: "bytes32" },
+      { internalType: "address", name: "account", type: "address" },
+    ],
+    name: "hasRole",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+]
 
 export function readPublicEnvValue(text, name) {
   for (const rawLine of text.split(/\r?\n/u)) {
@@ -63,9 +83,30 @@ export async function verifyCinaTokenSigner({ privateKey, receipt, client }) {
     if (!bytecode || bytecode === "0x") {
       throw new Error(`${contractName} has no deployed bytecode`)
     }
-    const liveOwner = getAddress(
-      await client.readContract({ address, abi: ownerAbi, functionName: "owner" }),
-    )
+
+    let liveOwner = null
+    try {
+      liveOwner = getAddress(
+        await client.readContract({ address, abi: ownerAbi, functionName: "owner" }),
+      )
+    } catch {
+      // No owner() — AccessControl model (CinaCreditV2): require MINTER_ROLE.
+      const role = await client.readContract({
+        address,
+        abi: accessControlAbi,
+        functionName: "MINTER_ROLE",
+      })
+      const granted = await client.readContract({
+        address,
+        abi: accessControlAbi,
+        functionName: "hasRole",
+        args: [role, signer],
+      })
+      if (!granted) {
+        throw new Error(`${contractName}: signer lacks MINTER_ROLE (AccessControl model)`)
+      }
+      continue
+    }
     if (liveOwner !== signer) {
       throw new Error(`${contractName} owner does not match the DEPLOY_PRIVATE_KEY signer`)
     }

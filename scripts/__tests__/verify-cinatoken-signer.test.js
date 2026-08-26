@@ -75,4 +75,34 @@ describe("CinaToken signer provisioning preflight", () => {
       }),
     ).rejects.toThrow(/owner does not match/u)
   })
+
+  it("accepts an AccessControl contract when the signer holds MINTER_ROLE", async () => {
+    // CinaCreditV2 model: owner() reverts; authority is hasRole(MINTER_ROLE, signer)
+    const roleClient = {
+      getChainId: async () => 84532,
+      getBytecode: async () => "0x6000",
+      readContract: async ({ functionName } = {}) => {
+        if (functionName === "owner") throw new Error("owner: not a function")
+        if (functionName === "MINTER_ROLE") return "0x" + "ab".repeat(32)
+        if (functionName === "hasRole") return true
+        throw new Error(`unexpected readContract call: ${functionName}`)
+      },
+    }
+    await expect(
+      verifyCinaTokenSigner({ privateKey, receipt: fixtureReceipt(), client: roleClient }),
+    ).resolves.toEqual({ signer, chainId: 84532 })
+
+    const deniedClient = {
+      ...roleClient,
+      readContract: async ({ functionName } = {}) => {
+        if (functionName === "owner") throw new Error("owner: not a function")
+        if (functionName === "MINTER_ROLE") return "0x" + "ab".repeat(32)
+        if (functionName === "hasRole") return false
+        throw new Error(`unexpected readContract call: ${functionName}`)
+      },
+    }
+    await expect(
+      verifyCinaTokenSigner({ privateKey, receipt: fixtureReceipt(), client: deniedClient }),
+    ).rejects.toThrow(/lacks MINTER_ROLE/u)
+  })
 })

@@ -4,6 +4,6 @@
   "deployer": "0xa1fBED1846E1fA0d7c1D44f60195F2Fc3dC23060",
   "contracts": {
     "CinaBadge": "0x0a32Fc1302bf7765b386dE5Eae857c26D6C8E0ce",
-    "CinaCredit": "0x03A5637a465707cCD59dCe16c1965F4ac84b495A"
+    "CinaCredit": "0x22f3e0AAA4785169D2C227d37dF17C168fBae85a"
   }
 }
