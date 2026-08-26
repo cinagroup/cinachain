@@ -24,10 +24,10 @@ export const menuDashboard = [
   },
   {
     label: "Credits",
-    href: "/credits",
+    href: "/dashboard/credits",
   },
   {
     label: "Key ingress",
-    href: "/keys",
+    href: "/dashboard/keys",
   },
 ]

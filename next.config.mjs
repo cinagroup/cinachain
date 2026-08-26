@@ -2,6 +2,13 @@ import "./env.mjs"
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Legacy dashboard-sibling paths → dashboard sub-paths (sidebar continuity)
+  async redirects() {
+    return [
+      { source: "/credits", destination: "/dashboard/credits", permanent: false },
+      { source: "/keys", destination: "/dashboard/keys", permanent: false },
+    ]
+  },
   reactStrictMode: true,
   output: "export",
   images: {
