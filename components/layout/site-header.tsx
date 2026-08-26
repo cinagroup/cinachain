@@ -10,6 +10,7 @@ import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 import { MainNav } from "@/components/layout/main-nav"
 import { MobileNav } from "@/components/layout/mobile-nav"
 import { ModeToggle } from "@/components/shared/mode-toggle"
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
 
 export function SiteHeader() {
   const scrolled = useScroll(0)
@@ -37,6 +38,7 @@ export function SiteHeader() {
         <MobileNav />
         <div className="hidden items-center gap-2 md:flex">
           <ModeToggle />
+          <LanguageSwitcher />
           <WalletConnect />
           <SignInButton />
           <Link

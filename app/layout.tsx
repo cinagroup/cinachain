@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 import RootProvider from "@/components/providers/root-provider"
 import { PWARegister } from "@/components/pwa/pwa-register"
+import { I18nProvider } from "@/lib/i18n"
 
 const url = env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
@@ -79,7 +80,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             fontMono.variable
           )}
         >
-          <RootProvider>{children}</RootProvider>
+          <I18nProvider>
+            <RootProvider>{children}</RootProvider>
+          </I18nProvider>
           <Toaster />
           <PWARegister />
         </body>
