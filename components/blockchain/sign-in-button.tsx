@@ -55,7 +55,7 @@ export function SignInButton() {
           : "Set NEXT_PUBLIC_CINAAUTH_CLIENT_ID to enable CinaAuth sign-in"
       }
     >
-      {isLoading ? "Signing..." : "Sign In"}
+      {isLoading ? "Signing..." : "Sign in"}
     </Button>
   )
 }

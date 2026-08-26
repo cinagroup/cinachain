@@ -42,7 +42,7 @@ export default function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="container mx-auto max-w-[960px] px-6 pb-20 pt-32 text-center">
+        <div className="container mx-auto max-w-screen-desktop px-6 pb-20 pt-32 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 shadow-vercel-sm">
             <span className="text-xs font-medium text-foreground/60">
               Building on {PRIMARY_NETWORK_LABEL}
@@ -57,7 +57,7 @@ export default function HomePage() {
             <span className="text-muted-foreground">.</span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-[600px] text-lg leading-8 text-muted-foreground">
+          <p className="mx-auto mt-6 max-w-screen-tablet text-lg leading-8 text-muted-foreground">
             {`A full-stack Web3 ecosystem currently running on ${PRIMARY_NETWORK_LABEL} — NFT platform, badge system, gasless transactions, and edge-deployed infrastructure.`}
           </p>
 
@@ -95,7 +95,7 @@ export default function HomePage() {
 
       {/* ═══════════════ Products ═══════════════ */}
       <section className="content-auto-section border-t border-border">
-        <div className="container mx-auto max-w-[1400px] px-6 py-24">
+        <div className="container mx-auto max-w-screen-ultra px-6 py-24">
           <SectionHeader
             eyebrow="Products"
             title="A growing ecosystem."
@@ -155,7 +155,7 @@ export default function HomePage() {
 
       {/* ═══════════════ Tech Stack ═══════════════ */}
       <section className="content-auto-section border-t border-border bg-card/50">
-        <div className="container mx-auto max-w-[1400px] px-6 py-24">
+        <div className="container mx-auto max-w-screen-ultra px-6 py-24">
           <SectionHeader
             eyebrow="Infrastructure"
             title="A testnet stack built to scale."
@@ -189,7 +189,7 @@ export default function HomePage() {
 
       {/* ═══════════════ Roadmap ═══════════════ */}
       <section className="content-auto-section border-t border-border">
-        <div className="container mx-auto max-w-[1400px] px-6 py-24">
+        <div className="container mx-auto max-w-screen-ultra px-6 py-24">
           <SectionHeader
             eyebrow="Roadmap"
             title="Built incrementally."
@@ -243,7 +243,7 @@ export default function HomePage() {
 
       {/* ═══════════════ Team ═══════════════ */}
       <section className="content-auto-section border-t border-border bg-card/50">
-        <div className="container mx-auto max-w-[1400px] px-6 py-24">
+        <div className="container mx-auto max-w-screen-ultra px-6 py-24">
           <SectionHeader
             eyebrow="Team"
             title="Built by cinagroup."
@@ -272,7 +272,7 @@ export default function HomePage() {
 
       {/* ═══════════════ CTA Footer — dark polarity band ═══════════════ */}
       <section className="content-auto-section band-dark border-t border-border">
-        <div className="container mx-auto max-w-[960px] px-6 py-24 text-center">
+        <div className="container mx-auto max-w-screen-desktop px-6 py-24 text-center">
           <h2 className="font-display text-4xl tracking-tight sm:text-5xl">
             Start building on CinaChain<span className="text-white/50">.</span>
           </h2>
@@ -284,7 +284,7 @@ export default function HomePage() {
               href="/mint"
               className={cn(
                 buttonVariants({ size: "lg" }),
-                "btn-pill bg-white text-[#171717]"
+                "btn-pill bg-white text-primary"
               )}
             >
               Mint your first NFT

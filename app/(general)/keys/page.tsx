@@ -92,7 +92,7 @@ export default function KeysPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-[960px] px-6 py-12">
+    <div className="container mx-auto max-w-screen-desktop px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
         Billing
       </span>

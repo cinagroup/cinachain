@@ -133,7 +133,7 @@ export default function BatchMintPage() {
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1400px] px-6 py-12">
+        <div className="container max-w-screen-ultra px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
               Batch Mint
@@ -161,7 +161,7 @@ export default function BatchMintPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1400px] px-6 py-12">
+      <div className="container max-w-screen-ultra px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
@@ -212,9 +212,9 @@ export default function BatchMintPage() {
 
           {/* Pending Message */}
           {isMinting && txHash && !confirmed && !reverted && (
-            <Alert className="border-[#0070f3]/20 bg-[#d3e5ff]">
-              <Loader2 className="size-4 animate-spin text-[#0761d1]" />
-              <AlertDescription className="text-sm text-[#0761d1]">
+            <Alert className="border-link/20 bg-link-bg-soft">
+              <Loader2 className="size-4 animate-spin text-link-deep" />
+              <AlertDescription className="text-sm text-link-deep">
                 Transaction submitted. Waiting for confirmation...
               </AlertDescription>
             </Alert>

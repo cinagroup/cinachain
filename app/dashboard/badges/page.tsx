@@ -96,7 +96,7 @@ function BadgesContent() {
         <Card className="mb-6 shadow-vercel-card">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Award className="size-5 text-[#0070f3]" />
+              <Award className="size-5 text-link" />
               <p className="text-sm text-foreground">
                 You&apos;ve earned{" "}
                 <span className="font-semibold">{ownedCount}</span> badge
@@ -115,14 +115,14 @@ function BadgesContent() {
             key={badge.id}
             className={`rounded-lg border p-5 transition-all ${
               badge.owned
-                ? "border-[#0070f3]/30 bg-card shadow-vercel-card"
+                ? "border-link/30 bg-card shadow-vercel-card"
                 : "border-border bg-secondary/50 opacity-60"
             }`}
           >
             <div className="flex items-start gap-3">
               <div
                 className={`flex size-12 items-center justify-center rounded-lg text-2xl ${
-                  badge.owned ? "bg-[#0070f3]/10" : "bg-secondary grayscale"
+                  badge.owned ? "bg-link/10" : "bg-secondary grayscale"
                 }`}
               >
                 {badge.icon}

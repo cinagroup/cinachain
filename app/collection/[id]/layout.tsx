@@ -6,7 +6,7 @@ export default function CollectionLayout({ children }: { children: ReactNode }) 
   return (
     <div className="relative flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="container max-w-[1400px] flex-1 px-6 py-12">
+      <main className="container max-w-screen-ultra flex-1 px-6 py-12">
         {children}
       </main>
       <Footer />

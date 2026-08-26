@@ -20,7 +20,7 @@ export default function StatsPage() {
 
   if (!hasNftContract) {
     return (
-      <div className="container max-w-[1400px] px-6 py-12">
+      <div className="container max-w-screen-ultra px-6 py-12">
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
@@ -33,7 +33,7 @@ export default function StatsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1400px] px-6 py-12">
+      <div className="container max-w-screen-ultra px-6 py-12">
         <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
           Administration
         </span>
@@ -131,7 +131,7 @@ export default function StatsPage() {
               </div>
               <div className="h-4 overflow-hidden rounded-full bg-secondary">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#7928ca] to-[#0070f3] transition-all duration-500"
+                  className="h-full rounded-full bg-link transition-all duration-500"
                   style={{ width: `${Math.min(progress, 100)}%` }}
                 />
               </div>

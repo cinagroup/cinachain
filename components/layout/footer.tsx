@@ -52,7 +52,7 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
 
   return (
     <footer className={classes} {...props}>
-      <div className="container max-w-[1200px] px-6 py-12">
+      <div className="container max-w-screen-wide px-6 py-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div>
             <Link

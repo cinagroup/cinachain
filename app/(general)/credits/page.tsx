@@ -55,7 +55,7 @@ export default function CreditsPage() {
   if (!hasCreditContract) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1400px] px-6 py-12">
+        <div className="container max-w-screen-ultra px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
               Billing
@@ -80,7 +80,7 @@ export default function CreditsPage() {
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1400px] px-6 py-12">
+        <div className="container max-w-screen-ultra px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
               Billing
@@ -113,7 +113,7 @@ export default function CreditsPage() {
   // Main connected UI
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1400px] px-6 py-12">
+      <div className="container max-w-screen-ultra px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">

@@ -183,7 +183,7 @@ export default function MintPage() {
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1400px] px-6 py-12">
+        <div className="container max-w-screen-ultra px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
               Mint
@@ -211,7 +211,7 @@ export default function MintPage() {
   if (whitelistLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container max-w-[1400px] px-6 py-12">
+        <div className="container max-w-screen-ultra px-6 py-12">
           <Card className="max-w-md shadow-vercel-card">
             <CardContent className="pt-6">
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -238,7 +238,7 @@ export default function MintPage() {
   // Main mint UI
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1400px] px-6 py-12">
+      <div className="container max-w-screen-ultra px-6 py-12">
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
@@ -275,9 +275,9 @@ export default function MintPage() {
 
         {/* Whitelist deployed but address not on it — public mint still open */}
         {notWhitelisted && (
-          <Alert className="mb-6 border-[#0070f3]/20 bg-[#d3e5ff]/40">
-            <Info className="size-4 text-[#0761d1]" />
-            <AlertDescription className="text-sm text-[#0761d1]">
+          <Alert className="border-link/20 bg-link-bg-soft/40 mb-6">
+            <Info className="size-4 text-link-deep" />
+            <AlertDescription className="text-sm text-link-deep">
               This address is not on the whitelist. Public minting is still open
               — you can mint at the regular price.
             </AlertDescription>

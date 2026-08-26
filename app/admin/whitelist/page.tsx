@@ -173,7 +173,7 @@ export default function WhitelistManagementPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1400px] px-6 py-12">
+      <div className="container max-w-screen-ultra px-6 py-12">
         <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
           Administration
         </span>
@@ -280,11 +280,11 @@ export default function WhitelistManagementPage() {
 
               {/* Merkle root — must be set on the contract by the owner */}
               {merkleRoot && (
-                <Alert className="mb-4 border-[#0070f3]/20 bg-[#d3e5ff]/40">
-                  <Link2 className="size-4 text-[#0761d1]" />
+                <Alert className="border-link/20 bg-link-bg-soft/40 mb-4">
+                  <Link2 className="size-4 text-link-deep" />
                   <AlertDescription className="text-sm">
-                    <span className="font-medium text-[#0761d1]">Merkle root generated.</span>{" "}
-                    <span className="text-[#0761d1]/80">
+                    <span className="font-medium text-link-deep">Merkle root generated.</span>{" "}
+                    <span className="text-link-deep/80">
                       Set it on the contract in{" "}
                       <a href="/admin/contract" className="underline">Contract management → Set Merkle root</a>{" "}
                       (owner wallet required) to enable whitelist minting.
