@@ -11,9 +11,11 @@ import { MainNav } from "@/components/layout/main-nav"
 import { MobileNav } from "@/components/layout/mobile-nav"
 import { ModeToggle } from "@/components/shared/mode-toggle"
 import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { useI18n } from "@/lib/i18n"
 
 export function SiteHeader() {
   const scrolled = useScroll(0)
+  const { t } = useI18n()
 
   return (
     <header
@@ -47,7 +49,7 @@ export function SiteHeader() {
             className="inline-flex items-center justify-center rounded-sm bg-foreground px-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
             style={{ height: "28px" }}
           >
-            Mint NFT
+            {t("nav.mint")}
           </Link>
         </div>
       </div>

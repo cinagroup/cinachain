@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation"
 
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 const primaryLinks = [
-  { href: "/explore", label: "Explore" },
-  { href: "/mint", label: "Mint" },
-  { href: "/collections", label: "Collections" },
-  { href: "/exchange", label: "Exchange" },
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/explore", key: "nav.explore", fallback: "Explore" },
+  { href: "/mint", key: "nav.mint", fallback: "Mint" },
+  { href: "/collections", key: "nav.collections", fallback: "Collections" },
+  { href: "/exchange", key: "nav.exchange", fallback: "Exchange" },
+  { href: "/dashboard", key: "nav.dashboard", fallback: "Dashboard" },
 ] as const
 
 function isActivePath(pathname: string, href: string) {
@@ -20,11 +21,13 @@ function isActivePath(pathname: string, href: string) {
 
 export function MainNav() {
   const pathname = usePathname()
+  const { t } = useI18n()
 
   return (
     <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
-      {primaryLinks.map(({ href, label }) => {
+      {primaryLinks.map(({ href, key, fallback }) => {
         const isActive = isActivePath(pathname, href)
+        const label = t(key) !== key ? t(key) : fallback
 
         return (
           <Link
