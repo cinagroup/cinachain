@@ -42,12 +42,14 @@ if (!receipt.contracts || Object.keys(receipt.contracts).length === 0) {
 const DEPLOYER = receipt.deployer
 
 const MINT_PRICE_WEI = 10n ** 15n // 0.001 ETH
-// Constructor args must mirror scripts/deploy-all.mjs exactly.
+// Constructor args must mirror the deploy scripts exactly.
 const argSpec = {
   CinaNFT: (deployer) => ["CinaChain NFT", "CINA", 10000n, MINT_PRICE_WEI, deployer],
   CinaBadge: (deployer) => ["ipfs://QmBadges/{id}.json", deployer],
   CinaCredit: (deployer) => [deployer, 1000000n, deployer, 200n],
   CinaMega: (deployer) => [deployer, 1000000n],
+  // EOA-first (deploy-credit-v2.mjs): deployer holds admin/minter/pauser
+  CinaCreditV2: (deployer) => [deployer, deployer, deployer],
 }
 
 const pc = createPublicClient({ chain: CHAIN, transport: rpcTransport(NETWORK) })

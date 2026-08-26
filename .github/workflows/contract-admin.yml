@@ -13,6 +13,16 @@ on:
         options:
           - setup-tier-badges
           - setup-contributor-badges
+          - deploy-credit-v2
+          - credit-mint
+      mint_to:
+        description: "credit-mint: recipient address (0x…)"
+        required: false
+        default: ""
+      mint_amount_eth:
+        description: "credit-mint: amount in CINA-C (ether units)"
+        required: false
+        default: "1"
 
 concurrency:
   group: contract-admin
@@ -23,9 +33,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
     steps:
-      - name: Checkout
+      - name: Checkout (with forge-std submodule)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -35,6 +48,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Restore deployment receipt (best-effort)
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        continue-on-error: true
+        with:
+          name: deployment-receipt
+          path: contracts/out/
+          run-id: 32545687204 # last full deploy-contracts run; V2 addresses live in scripts as defaults
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build contract artifacts (solc-js)
+        run: npm run contracts:build
 
       - name: Run task (setup-tier-badges)
         if: inputs.task == 'setup-tier-badges'
@@ -47,3 +72,25 @@ jobs:
         env:
           DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
         run: node scripts/setup-contributor-badges.mjs
+
+      - name: Run task (deploy-credit-v2)
+        if: inputs.task == 'deploy-credit-v2'
+        env:
+          DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+        run: node scripts/deploy-credit-v2.mjs
+
+      - name: Run task (credit-mint)
+        if: inputs.task == 'credit-mint'
+        env:
+          DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+          CREDIT_MINT_TO: ${{ inputs.mint_to }}
+          CREDIT_MINT_AMOUNT_ETH: ${{ inputs.mint_amount_eth }}
+        run: node scripts/credit-mint.mjs
+
+      - name: Upload deployment receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: deployment-receipt
+          path: contracts/out/deployment.base-sepolia.json
+          if-no-files-found: ignore
