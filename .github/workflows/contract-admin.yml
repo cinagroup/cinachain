@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - setup-tier-badges
+          - setup-contributor-badges
 
 concurrency:
   group: contract-admin
@@ -40,3 +41,9 @@ jobs:
         env:
           DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
         run: node scripts/setup-tier-badges.mjs
+
+      - name: Run task (setup-contributor-badges)
+        if: inputs.task == 'setup-contributor-badges'
+        env:
+          DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+        run: node scripts/setup-contributor-badges.mjs
