@@ -10,7 +10,7 @@ import { baseSepolia } from "viem/chains"
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts"
 
 const RPC = process.env.DEPLOY_RPC_URL || "https://sepolia.base.org"
-const CREDIT = process.env.CINA_CREDIT_CONTRACT || "0x78f5aebc75b7d197b10622cccabe8429617836d7"
+const CREDIT = process.env.CINA_CREDIT_CONTRACT || "0x03a5637a465707ccd59dce16c1965f4ac84b495a"
 const MODE = process.argv[2]
 const chain = baseSepolia
 

@@ -1,0 +1,42 @@
+name: Contract admin task
+
+# Owner-gated on-chain maintenance tasks that need the deployer key from the
+# DEPLOY_PRIVATE_KEY secret (same key-is-only-in-CI rule as deploy-contracts).
+# Add new tasks to the allow-list below as scripts grow.
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task to run"
+        required: true
+        type: choice
+        options:
+          - setup-tier-badges
+
+concurrency:
+  group: contract-admin
+  cancel-in-progress: false
+
+jobs:
+  run-task:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      - name: Run task (setup-tier-badges)
+        if: inputs.task == 'setup-tier-badges'
+        env:
+          DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+        run: node scripts/setup-tier-badges.mjs

@@ -3,18 +3,26 @@
  * CinaBadge.nextCustomBadgeId 从 100 起，按创建顺序分配。
  * 用法: DEPLOY_PRIVATE_KEY=0x... CINA_BADGE_CONTRACT=0x... node scripts/setup-tier-badges.mjs
  */
-import { createWalletClient, createPublicClient, http } from "viem"
+import { createWalletClient, createPublicClient } from "viem"
 import { baseSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
+import { rpcTransport } from "./lib/rpc.mjs"
 
-const PK = process.env.DEPLOY_PRIVATE_KEY
-const BADGE = process.env.CINA_BADGE_CONTRACT || "0x72cc9adb6c877d233e9843ee2d00424b9766d0cf"
-const RPC = process.env.DEPLOY_RPC_URL || "https://sepolia.base.org"
-if (!PK) throw new Error("DEPLOY_PRIVATE_KEY required")
+// Tolerate secret-storage quirks (whitespace/quotes/missing 0x) — same
+// normalization as scripts/deploy-all.mjs.
+function normalizePrivateKey(raw) {
+  const k = (raw ?? "").trim().replace(/^["']+|["']+$/g, "").trim()
+  if (/^[0-9a-fA-F]{64}$/.test(k)) return "0x" + k
+  return k
+}
+const PK = normalizePrivateKey(process.env.DEPLOY_PRIVATE_KEY)
+if (!/^0x[0-9a-fA-F]{64}$/.test(PK)) throw new Error("DEPLOY_PRIVATE_KEY invalid (0x + 64 hex)")
+const BADGE = process.env.CINA_BADGE_CONTRACT || "0x0a32fc1302bf7765b386de5eae857c26d6c8e0ce"
+const transport = rpcTransport("base-sepolia")
 
 const account = privateKeyToAccount(PK)
-const wallet = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) })
-const publicClient = createPublicClient({ chain: baseSepolia, transport: http(RPC) })
+const wallet = createWalletClient({ account, chain: baseSepolia, transport })
+const publicClient = createPublicClient({ chain: baseSepolia, transport })
 
 const BADGE_ABI = [
   { name: "createBadgeType", type: "function", stateMutability: "nonpayable",
