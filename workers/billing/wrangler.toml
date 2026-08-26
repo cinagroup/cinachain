@@ -21,7 +21,7 @@ API_VERSION = "v1"
 # CinaCredit the ledger treats as the on-chain ceiling (balanceOf + Transfer
 # indexing). 2026-08-22 contract set; the request path re-reads balanceOf so
 # existing ledger rows self-correct to the new contract on next use.
-CINA_CREDIT_ADDRESS = "0x03a5637a465707ccd59dce16c1965f4ac84b495a"
+CINA_CREDIT_ADDRESS = "0x22f3e0aaa4785169d2c227d37df17c168fbae85a"
 BASE_SEPOLIA_RPC = "https://sepolia.base.org"
 
 # Account-level Secrets Store bindings. Only the store and secret names are

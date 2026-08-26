@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   AlertCircle,
-  ArrowLeftRight,
   BadgeCheck,
   BookOpen,
   CheckCircle2,
@@ -61,20 +60,13 @@ export default function BillingManagementPage() {
   const { address } = useAccount()
   const queryClient = useQueryClient()
   const publicClient = usePublicClient()
-  const {
-    creditRate,
-    isPaused,
-    isLoading: creditLoading,
-    formatCredit,
-  } = useCreditBalance(address)
+  const { isPaused, isLoading: creditLoading } = useCreditBalance(address)
 
   const { writeContractAsync, isPending } = useWriteContract()
   const [txHash, setTxHash] = useState<Hash | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [successAction, setSuccessAction] = useState<string | null>(null)
 
-  // Exchange rate input
-  const [newRate, setNewRate] = useState("")
   // Issue credit inputs
   const [recipient, setRecipient] = useState("")
   const [amount, setAmount] = useState("")
@@ -140,12 +132,7 @@ export default function BillingManagementPage() {
   const isBusy = isPending || (!!txHash && !confirmed && !reverted)
 
   const runWrite = async (
-    functionName:
-      | "setRate"
-      | "mintTo"
-      | "pause"
-      | "unpause"
-      | "setRedeemEnabled",
+    functionName: "mintTo" | "pause" | "unpause",
     label: string,
     args?: readonly unknown[]
   ) => {
@@ -295,12 +282,6 @@ export default function BillingManagementPage() {
     )
   }
 
-  const rateInt = POSITIVE_INT_RE.test(newRate.trim())
-    ? parseInt(newRate.trim(), 10)
-    : NaN
-  const currentRate = creditRate !== undefined ? Number(creditRate) : NaN
-  const shownRate = !Number.isNaN(rateInt) ? rateInt : currentRate
-
   return (
     <div className="container max-w-[1400px] px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
@@ -310,8 +291,8 @@ export default function BillingManagementPage() {
         Billing management<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Manage the CinaCredit exchange rate, issue credit, inspect the ledger,
-        and control emergency top-up operations.
+        Issue CinaCredit (ops-issued model), inspect the ledger, and control
+        emergency credit operations.
       </p>
 
       {/* Paused warning */}
@@ -319,7 +300,8 @@ export default function BillingManagementPage() {
         <Alert variant="destructive" className="mt-6">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            Credit top-ups are currently paused. Users cannot top up with ETH.
+            Credit operations are currently paused — all CinaCredit transfers,
+            mints and burns are frozen on-chain.
           </AlertDescription>
         </Alert>
       )}
@@ -376,72 +358,6 @@ export default function BillingManagementPage() {
       )}
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
-        {/* Exchange Rate */}
-        <Card className="shadow-vercel-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowLeftRight className="size-5" />
-              Exchange rate
-            </CardTitle>
-            <CardDescription>Set how many credit 1 ETH mints</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between rounded-md border border-border bg-secondary p-4">
-              <span className="text-sm font-medium">Current rate</span>
-              <span className="font-mono-tech text-sm text-foreground">
-                1 ETH ={" "}
-                {creditLoading
-                  ? "…"
-                  : !Number.isNaN(shownRate)
-                  ? shownRate.toLocaleString()
-                  : "—"}{" "}
-                credit (current:{" "}
-                {creditLoading || creditRate === undefined
-                  ? "—"
-                  : formatCredit(creditRate)}
-                )
-              </span>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-rate">New rate (credit per ETH)</Label>
-              <Input
-                id="new-rate"
-                type="number"
-                inputMode="numeric"
-                step="1"
-                min="1"
-                placeholder="1000000"
-                value={newRate}
-                onChange={(e) => setNewRate(e.target.value)}
-                disabled={isBusy}
-              />
-            </div>
-            <Button
-              onClick={() => {
-                if (!POSITIVE_INT_RE.test(newRate.trim()) || rateInt <= 0) {
-                  setError("Rate must be a positive integer")
-                  return
-                }
-                if (
-                  !window.confirm(
-                    `Set exchange rate to ${newRate.trim()} credit per 1 ETH?`
-                  )
-                ) {
-                  return
-                }
-                void runWrite("setRate", "Rate update", [
-                  BigInt(newRate.trim()),
-                ])
-              }}
-              disabled={isBusy || !newRate.trim()}
-              variant="outline"
-              className="w-full"
-            >
-              Update rate
-            </Button>
-          </CardContent>
-        </Card>
-
         {/* Issue Credit */}
         <Card className="shadow-vercel-card">
           <CardHeader>
@@ -450,7 +366,7 @@ export default function BillingManagementPage() {
               Issue credit
             </CardTitle>
             <CardDescription>
-              Mint credit directly to a recipient address
+              Mint CinaCredit directly to a recipient address (MINTER_ROLE)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -578,12 +494,12 @@ export default function BillingManagementPage() {
               Emergency controls
             </CardTitle>
             <CardDescription>
-              Pause, resume, or enable redemption
+              Pause or resume all on-chain credit operations
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between rounded-md border border-border bg-secondary p-4">
-              <span className="text-sm font-medium">Top-ups status</span>
+              <span className="text-sm font-medium">Credit operations</span>
               <span
                 className={
                   isPaused
@@ -596,8 +512,12 @@ export default function BillingManagementPage() {
             </div>
             <Button
               onClick={() => {
-                if (window.confirm("Pause all credit top-ups immediately?")) {
-                  void runWrite("pause", "Pause top-ups")
+                if (
+                  window.confirm(
+                    "Pause all CinaCredit operations? Transfers, mints and burns freeze on-chain."
+                  )
+                ) {
+                  void runWrite("pause", "Pause credit operations")
                 }
               }}
               disabled={isBusy}
@@ -609,12 +529,12 @@ export default function BillingManagementPage() {
               ) : (
                 <Pause className="mr-2 size-4" />
               )}
-              Pause top-ups
+              Pause credit operations
             </Button>
             <Button
               onClick={() => {
-                if (window.confirm("Resume credit top-ups?")) {
-                  void runWrite("unpause", "Resume top-ups")
+                if (window.confirm("Resume credit operations?")) {
+                  void runWrite("unpause", "Resume credit operations")
                 }
               }}
               disabled={isBusy}
@@ -626,24 +546,7 @@ export default function BillingManagementPage() {
               ) : (
                 <Play className="mr-2 size-4" />
               )}
-              Resume top-ups
-            </Button>
-            <Button
-              onClick={() => {
-                if (window.confirm("Enable credit redemption?")) {
-                  void runWrite("setRedeemEnabled", "Enable redemption", [true])
-                }
-              }}
-              disabled={isBusy}
-              variant="outline"
-              className="w-full"
-            >
-              {isBusy ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : (
-                <BadgeCheck className="mr-2 size-4" />
-              )}
-              Enable redemption
+              Resume credit operations
             </Button>
           </CardContent>
         </Card>

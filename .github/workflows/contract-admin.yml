@@ -55,7 +55,7 @@ jobs:
         with:
           name: deployment-receipt
           path: contracts/out/
-          run-id: 32545687204 # last full deploy-contracts run; V2 addresses live in scripts as defaults
+          run-id: 32923890951 # latest run carrying the full receipt (incl. CinaCreditV2); V2 addresses live in scripts as defaults
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build contract artifacts (solc-js)

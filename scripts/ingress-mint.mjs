@@ -9,7 +9,7 @@ import { privateKeyToAccount } from "viem/accounts"
 const PK = process.env.DEPLOY_PRIVATE_KEY
 const BILLING_URL = process.env.BILLING_URL || "https://billing-api.cinachain.com"
 const ADMIN_KEY = process.env.ADMIN_KEY
-const CREDIT = process.env.CINA_CREDIT_CONTRACT || "0x03a5637a465707ccd59dce16c1965f4ac84b495a"
+const CREDIT = process.env.CINA_CREDIT_CONTRACT || "0x22f3e0aaa4785169d2c227d37df17c168fbae85a"
 const RPC = process.env.DEPLOY_RPC_URL || "https://sepolia.base.org"
 if (!PK || !ADMIN_KEY) throw new Error("DEPLOY_PRIVATE_KEY and ADMIN_KEY required")
 

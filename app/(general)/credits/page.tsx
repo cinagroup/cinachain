@@ -1,27 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
-import { AlertCircle, CheckCircle2, ExternalLink, Loader2 } from "lucide-react"
-import { formatEther, parseEther, type Hash } from "viem"
-import {
-  useAccount,
-  useReadContracts,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from "wagmi"
+import { AlertCircle, BookOpen, Info } from "lucide-react"
 
-import { EXPLORER_NAME, getBlockExplorerUrl } from "@/config/deployment"
-import {
-  CINA_CREDIT_CONTRACT,
-  hasCreditContract,
-} from "@/lib/contracts/addresses"
-import { CINA_CREDIT_ABI } from "@/lib/contracts/cina-credit"
-import { extractErrorMessage } from "@/lib/error-utils"
+import { useAccount } from "wagmi"
+
+import { getBlockExplorerUrl } from "@/config/deployment"
+import { CINA_CREDIT_CONTRACT, hasCreditContract } from "@/lib/contracts/addresses"
 import { useCreditBalance } from "@/lib/hooks/use-credit-balance"
-import { cn } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -29,161 +16,40 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 
-const MIN_TOP_UP_ETH = 0.001
-const BPS_DIVISOR = 10000n
-const VALID_AMOUNT_RE = /^\d*\.?\d+$/
+const BILLING_API_URL = process.env.NEXT_PUBLIC_BILLING_API_URL ?? ""
+
+/** billing worker GET /v1/credits/:address */
+interface LedgerData {
+  onchainSnapshot?: string
+  committedUsage?: string
+  usable?: string
+  cumulativeSpend?: string
+}
+
+const fmt = (wei?: string) =>
+  wei === undefined ? "…" : (Number(BigInt(wei)) / 1e18).toLocaleString()
 
 export default function CreditsPage() {
   const { address, isConnected } = useAccount()
-  const queryClient = useQueryClient()
-  const {
-    creditBalance,
-    creditRate,
-    feeBps,
-    isPaused,
-    isLoading,
-    ethToCredit,
-    formatBalance,
-    formatCredit,
-  } = useCreditBalance(address)
+  const { creditBalance, totalSupply, isPaused, isLoading, formatBalance } =
+    useCreditBalance(address)
 
-  const [ethAmount, setEthAmount] = useState("")
-  const [localError, setLocalError] = useState<string | null>(null)
-  const [txHash, setTxHash] = useState<Hash | undefined>(undefined)
-  const [confirmed, setConfirmed] = useState(false)
-  const [lastAction, setLastAction] = useState<"topup" | "redeem">("topup")
-  const [redeemAmount, setRedeemAmount] = useState("")
-  const [redeemBusy, setRedeemBusy] = useState(false)
-  const [redeemError, setRedeemError] = useState<string | null>(null)
+  const [ledger, setLedger] = useState<LedgerData | null>(null)
+  const [ledgerError, setLedgerError] = useState(false)
 
-  const { writeContractAsync, isPending } = useWriteContract()
-  const { isSuccess: txConfirmed, error: receiptError } =
-    useWaitForTransactionReceipt({
-      hash: txHash,
-      query: { enabled: !!txHash },
-    })
-
-  // After a confirmed tx (top-up or redeem): clear the form and refresh the balance
   useEffect(() => {
-    if (txConfirmed) {
-      setConfirmed(true)
-      setEthAmount("")
-      setRedeemAmount("")
-      // wagmi registers contract reads under these prefixes
-      void queryClient.invalidateQueries({ queryKey: ["readContracts"] })
-      void queryClient.invalidateQueries({ queryKey: ["balance"] })
-    }
-  }, [txConfirmed, queryClient])
-
-  // Redeem reads: enabled flag + treasury credit held by the contract
-  const { data: redeemData } = useReadContracts({
-    contracts: [
-      {
-        address: CINA_CREDIT_CONTRACT,
-        abi: CINA_CREDIT_ABI,
-        functionName: "redeemEnabled",
-      },
-      {
-        address: CINA_CREDIT_CONTRACT,
-        abi: CINA_CREDIT_ABI,
-        functionName: "balanceOf",
-        args: [CINA_CREDIT_CONTRACT],
-      },
-    ],
-    query: { enabled: hasCreditContract },
-  })
-  const redeemEnabled =
-    redeemData?.[0]?.status === "success" && redeemData[0].result === true
-  const treasuryCredit =
-    redeemData?.[1]?.status === "success" ? redeemData[1].result : undefined
-  // redeem 金额单位是 credit（合约 redeem(uint256 creditAmount)，1e18 缩放）；预计 ETH = creditWei / rate
-  const WEI_PER_CREDIT = 1_000_000_000_000_000_000n
-  const redeemWei = /^\d+$/.test(redeemAmount)
-    ? BigInt(redeemAmount) * WEI_PER_CREDIT
-    : 0n
-  const ethOut =
-    creditRate && redeemWei > 0n ? redeemWei / creditRate : undefined
-
-  const trimmedAmount = ethAmount.trim()
-  const ethNum = Number(trimmedAmount)
-  const formatValid =
-    !!trimmedAmount &&
-    VALID_AMOUNT_RE.test(trimmedAmount) &&
-    !Number.isNaN(ethNum) &&
-    Number.isFinite(ethNum)
-  const amountValid = formatValid && ethNum >= MIN_TOP_UP_ETH
-  const grossCredit = amountValid ? ethToCredit(ethNum) : 0n
-  const fee =
-    grossCredit > 0n && feeBps ? (grossCredit * feeBps) / BPS_DIVISOR : 0n
-  const youReceive = grossCredit > fee ? grossCredit - fee : 0n
-
-  const handleTopUp = async () => {
-    setLocalError(null)
-    setConfirmed(false)
-    setLastAction("topup")
-    if (!formatValid) {
-      setLocalError("Enter a valid ETH amount (e.g. 0.05)")
-      return
-    }
-    const decimals = trimmedAmount.includes(".")
-      ? trimmedAmount.split(".")[1].length
-      : 0
-    if (decimals > 18) {
-      setLocalError("Maximum of 18 decimal places")
-      return
-    }
-    if (ethNum < MIN_TOP_UP_ETH) {
-      setLocalError(`Amount must be at least ${MIN_TOP_UP_ETH} ETH`)
-      return
-    }
-    if (isPaused) {
-      setLocalError("Top-ups are paused. Please check back later.")
-      return
-    }
-    try {
-      const hash = await writeContractAsync({
-        address: CINA_CREDIT_CONTRACT,
-        abi: CINA_CREDIT_ABI,
-        functionName: "mintWithEth",
-        value: parseEther(trimmedAmount),
+    if (!address || !BILLING_API_URL) return
+    setLedger(null)
+    setLedgerError(false)
+    fetch(`${BILLING_API_URL}/v1/credits/${address}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        setLedger((await res.json()) as LedgerData)
       })
-      setTxHash(hash)
-    } catch (err) {
-      setLocalError(extractErrorMessage(err))
-    }
-  }
-
-  const handleRedeem = async () => {
-    setRedeemError(null)
-    setConfirmed(false)
-    setLastAction("redeem")
-    if (!/^\d+$/.test(redeemAmount) || redeemWei <= 0n) {
-      setRedeemError("Enter a positive credit amount")
-      return
-    }
-    if (!redeemEnabled) {
-      setRedeemError("Redemption is currently disabled")
-      return
-    }
-    setRedeemBusy(true)
-    try {
-      const hash = await writeContractAsync({
-        address: CINA_CREDIT_CONTRACT,
-        abi: CINA_CREDIT_ABI,
-        functionName: "redeem",
-        args: [redeemWei],
-      })
-      setTxHash(hash)
-    } catch (err) {
-      setRedeemError(extractErrorMessage(err))
-    } finally {
-      setRedeemBusy(false)
-    }
-  }
+      .catch(() => setLedgerError(true))
+  }, [address])
 
   // Contract not configured state
   if (!hasCreditContract) {
@@ -223,8 +89,8 @@ export default function CreditsPage() {
               Credits<span className="text-foreground">.</span>
             </h1>
             <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-              Top up your credit balance with ETH to pay for on-chain features
-              and gasless transactions.
+              CinaCredit powers API billing and settles marketplace earnings —
+              connect your wallet to view your balance.
             </p>
           </div>
 
@@ -232,7 +98,7 @@ export default function CreditsPage() {
             <CardHeader>
               <CardTitle>Connect wallet</CardTitle>
               <CardDescription>
-                Connect your wallet to view your credit balance and top up
+                Connect your wallet to view your credit balance and usage
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -257,8 +123,8 @@ export default function CreditsPage() {
             Credits<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            Top up your credit balance with ETH to pay for on-chain features and
-            gasless transactions.
+            CinaCredit is the settlement token for the cina economy — it caps
+            your API billing usage and settles marketplace earnings.
           </p>
         </div>
 
@@ -267,7 +133,8 @@ export default function CreditsPage() {
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="size-4" />
             <AlertDescription>
-              Credit top-ups are currently paused. Please check back later.
+              Credit operations are currently paused (all transfers, mints and
+              burns are frozen). Please check back later.
             </AlertDescription>
           </Alert>
         )}
@@ -278,7 +145,7 @@ export default function CreditsPage() {
             <CardHeader>
               <CardTitle>Your balance</CardTitle>
               <CardDescription>
-                Available CinaCredit for billing
+                On-chain CinaCredit (CINA-C) held by your wallet
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -288,202 +155,113 @@ export default function CreditsPage() {
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">credit</p>
               </div>
-              {creditRate !== undefined && (
+              {totalSupply !== undefined && (
                 <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Exchange rate</span>
+                    <span className="text-muted-foreground">Total supply</span>
                     <span className="font-medium text-foreground">
-                      1 ETH = {formatCredit(creditRate)} credit
+                      {formatBalance(totalSupply)}
                     </span>
                   </div>
-                  {feeBps !== undefined && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Platform fee
-                      </span>
-                      <span className="font-medium text-foreground">
-                        {(Number(feeBps) / 100).toFixed(2)}%
-                      </span>
-                    </div>
-                  )}
+                  <a
+                    href={getBlockExplorerUrl("address", CINA_CREDIT_CONTRACT)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground underline"
+                  >
+                    View contract on the explorer
+                  </a>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Top Up card */}
+          {/* How credits work card (ops-issued model) */}
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Top up</CardTitle>
-              <CardDescription>Mint new credit with ETH</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Transaction feedback */}
-              {(localError || receiptError) && (
-                <Alert variant="destructive">
-                  <AlertCircle className="size-4" />
-                  <AlertDescription className="break-all text-sm">
-                    {localError ?? extractErrorMessage(receiptError)}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {confirmed && txHash && (
-                <Alert variant="success" className="border">
-                  <CheckCircle2 className="size-4" />
-                  <AlertDescription>
-                    {lastAction === "redeem"
-                      ? "Redeem confirmed!"
-                      : "Top-up confirmed!"}{" "}
-                    Your credit balance has been updated.{" "}
-                    <a
-                      href={getBlockExplorerUrl("tx", txHash)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 underline"
-                    >
-                      View on {EXPLORER_NAME}{" "}
-                      <ExternalLink className="size-3" />
-                    </a>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* ETH amount */}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="eth-amount"
-                  className="text-sm font-medium text-foreground"
-                >
-                  ETH amount
-                </Label>
-                <Input
-                  id="eth-amount"
-                  type="number"
-                  inputMode="decimal"
-                  step="0.001"
-                  min={MIN_TOP_UP_ETH}
-                  placeholder="0.05"
-                  value={ethAmount}
-                  onChange={(e) => {
-                    setEthAmount(e.target.value)
-                    setConfirmed(false)
-                  }}
-                  className="h-10"
-                  disabled={isPending}
-                />
-              </div>
-
-              {/* Top-up summary */}
-              <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Gross credit</span>
-                  <span className="font-medium text-foreground">
-                    {amountValid ? formatCredit(grossCredit) : "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Platform fee</span>
-                  <span className="font-medium text-foreground">
-                    {feeBps !== undefined
-                      ? `${(Number(feeBps) / 100).toFixed(2)}%`
-                      : "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Fee amount</span>
-                  <span className="font-medium text-foreground">
-                    {amountValid ? formatCredit(fee) : "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between border-t border-border pt-3">
-                  <span className="font-medium text-foreground">
-                    You receive
-                  </span>
-                  <span className="font-display text-lg text-foreground">
-                    {amountValid ? formatCredit(youReceive) : "—"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Top Up button */}
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={handleTopUp}
-                disabled={isPending || !amountValid || isPaused}
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Confirming...
-                  </>
-                ) : (
-                  "Top up"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Redeem card */}
-          <Card className="shadow-vercel-card">
-            <CardHeader>
-              <CardTitle>Redeem</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="size-5" />
+                How credits work
+              </CardTitle>
               <CardDescription>
-                Burn CinaCredit for ETH at the current rate (treasury-funded)
+                CinaCredit is issued by the CinaChain team
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2 text-sm">
-                <span
-                  className={cn(
-                    "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-semibold",
-                    redeemEnabled
-                      ? "bg-cyan/20 text-cyan-deep"
-                      : "bg-secondary text-muted-foreground"
-                  )}
-                >
-                  {redeemEnabled ? "Enabled" : "Disabled"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Treasury:{" "}
-                  {treasuryCredit === undefined
-                    ? "—"
-                    : formatBalance(treasuryCredit)}{" "}
-                  credit
-                </span>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="redeemAmount">Credit to redeem</Label>
-                <Input
-                  id="redeemAmount"
-                  type="number"
-                  min="1"
-                  value={redeemAmount}
-                  onChange={(e) => setRedeemAmount(e.target.value)}
-                  disabled={redeemBusy}
-                />
-              </div>
-              {redeemEnabled && ethOut !== undefined && redeemWei > 0n && (
-                <p className="text-xs text-muted-foreground">
-                  ≈ {formatEther(ethOut)} ETH
-                </p>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                <span className="font-medium text-foreground">
+                  Credits are ops-issued.
+                </span>{" "}
+                Top-ups are granted by the team to your wallet address — contact
+                the CinaChain team to add credit for API usage.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">
+                  One token, two roles.
+                </span>{" "}
+                Your balance is the ceiling for API billing (usage is metered
+                server-side and consumes it), and it is also the token in which
+                marketplace earnings settle on-chain.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">
+                  Keep an eye on usage.
+                </span>{" "}
+                API calls reduce the credit available to your address — the
+                ledger below shows how much of your on-chain balance is still
+                usable.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Ledger card (billing worker) */}
+          <Card className="shadow-vercel-card md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="size-5" />
+                Billing ledger
+              </CardTitle>
+              <CardDescription>
+                Server-side metering for your address (billing worker)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ledgerError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="size-4" />
+                  <AlertDescription className="text-sm">
+                    Ledger unavailable — the billing service could not be
+                    reached.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <dl className="grid gap-x-12 gap-y-3 text-sm sm:grid-cols-2">
+                  <div className="flex justify-between border-b border-border py-2">
+                    <dt className="text-muted-foreground">On-chain balance</dt>
+                    <dd className="font-mono-tech text-xs">
+                      {ledger ? fmt(ledger.onchainSnapshot) : "…"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-b border-border py-2">
+                    <dt className="text-muted-foreground">Committed usage</dt>
+                    <dd className="font-mono-tech text-xs">
+                      {ledger ? fmt(ledger.committedUsage) : "…"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-b border-border py-2">
+                    <dt className="text-muted-foreground">Usable</dt>
+                    <dd className="font-mono-tech text-xs">
+                      {ledger ? fmt(ledger.usable) : "…"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-b border-border py-2">
+                    <dt className="text-muted-foreground">Cumulative spend</dt>
+                    <dd className="font-mono-tech text-xs">
+                      {ledger ? fmt(ledger.cumulativeSpend) : "…"}
+                    </dd>
+                  </div>
+                </dl>
               )}
-              {redeemError && (
-                <p className="text-sm text-destructive">{redeemError}</p>
-              )}
-              <Button
-                onClick={handleRedeem}
-                disabled={redeemBusy || !redeemAmount || !redeemEnabled}
-                className="w-full"
-                variant="outline"
-              >
-                {redeemBusy ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : (
-                  "Redeem"
-                )}
-              </Button>
             </CardContent>
           </Card>
         </div>
