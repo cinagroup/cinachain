@@ -20,12 +20,32 @@ nft.cinachain.com  (Cloudflare Pages — Next.js static export)
 
 ## Contracts (Base Sepolia)
 
+2026-08-22 contract set (OpenZeppelin 5.6.0, owner `0xa1fBED…6060`; sources
+verified on Basescan):
+
 | Contract | Standard | Address | Purpose |
 |---|---|---|---|
-| CinaNFT | ERC-721 | `0x9178c3dd...` | Main NFT collection |
-| CinaBadge | ERC-1155 | `0x72cc9adb...` | Badges / tiers |
-| CinaCredit | ERC-20 | `0x78f5aebc...` | Billing credits |
-| CinaMega | ERC-1155 | `0x3443febc...` | Mega-collections + exchange |
+| CinaNFT | ERC-721 | `0xbd0557a0...` | Main NFT collection |
+| CinaBadge | ERC-1155 | `0x0a32fc13...` | Badges: spend tiers 100-104, contributor tiers 105-108 |
+| CinaCredit | ERC-20 | `0x03a5637a...` | Billing credits (see semantics below) |
+| CinaMega | ERC-1155 | `0x335e9569...` | Mega-collections + exchange |
+
+## CinaCredit Semantics (single-token circular economy)
+
+CinaCredit is **one token serving both sides of the cina economy**:
+
+- **Prepaid metering (cinachain)** — the on-chain balance is the *ceiling*
+  for API billing: usage is metered server-side by the billing worker and
+  burns down the on-chain balance; top-ups (`mintWithEth`) mint directly.
+- **Earnings settlement (cinatoken)** — marketplace withdrawals mint
+  CINA-C to the contributor's wallet as final settlement.
+
+Users can spend earned CINA-C on API usage and top up to contribute —
+prepaid credits and settled earnings are fully fungible on-chain. **Product
+surfaces must disclose that an on-chain balance can be consumed by API
+usage**; internal ledgers (billing worker / gateway database) remain the
+per-source accounting records. Decided 2026-08; revisit only if accounting
+separation becomes necessary before a Base-mainnet launch.
 
 ## Wallet Layer
 
