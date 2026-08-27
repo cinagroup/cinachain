@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Copy, KeyRound, Link2 } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 
 interface WhitelistEntry {
   address: string
@@ -16,6 +17,7 @@ interface WhitelistEntry {
 const TOKEN_STORAGE_KEY = "cinachain-admin-token"
 
 export default function WhitelistManagementPage() {
+  const { t } = useI18n()
   const [entries, setEntries] = useState<WhitelistEntry[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [isDeploying, setIsDeploying] = useState(false)
@@ -365,7 +367,7 @@ export default function WhitelistManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>How it works</CardTitle>
+            <CardTitle>{t("admin.howItWorks")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>

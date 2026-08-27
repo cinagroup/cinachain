@@ -114,4 +114,51 @@ export const zh: Record<string, string> = {
 
   // ── Language switcher ──
   "language.switch": "切换语言",
+
+  // ── Explore page ──
+  "explore.title": "探索",
+  "explore.collectionUnavailable": "合集数据不可用",
+  "explore.showingLastKnown": "显示最近已知数据",
+
+  // ── Mint page ──
+  "mint.title": "铸造",
+  "mint.connectWallet": "连接钱包",
+  "mint.mintItems": "铸造项目",
+
+  // ── Exchange page ──
+  "exchange.title": "兑换",
+  "exchange.swapDirection": "兑换方向",
+
+  // ── My NFTs page ──
+  "nfts.yourNfts": "我的 NFT",
+  "nfts.connectWallet": "连接你的钱包",
+  "nfts.collectionSummary": "合集摘要",
+
+  // ── Badges page ──
+  "badges.title": "徽章",
+  "badges.noBadges": "暂无徽章",
+
+  // ── Favorites page ──
+  "favorites.title": "收藏",
+  "favorites.noFavorites": "暂无收藏",
+
+  // ── Account page ──
+  "account.title": "账户",
+  "account.quickLinks": "快捷链接",
+
+  // ── Settings page ──
+  "settings.title": "设置",
+  "settings.apiKeys": "API 密钥",
+
+  // ── Admin pages ──
+  "admin.quickActions": "快捷操作",
+  "admin.mintBadges": "铸造徽章",
+  "admin.manageWhitelist": "管理白名单",
+  "admin.viewStats": "查看统计",
+  "admin.contractSettings": "合约设置",
+  "admin.billingSettings": "计费设置",
+  "admin.badgeTypes": "徽章类型",
+  "admin.howItWorks": "工作原理",
+  "admin.mintingProgress": "铸造进度",
+  "admin.contractInfo": "合约信息",
 }

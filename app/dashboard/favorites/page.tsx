@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
 import { Heart } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 
 export default function FavoritesPage() {
+  const { t } = useI18n()
   const { favorites, clearFavorites, mounted } = useFavorites()
 
   // ONE multicall for all tokenURI reads (instead of one eth_call per card)
@@ -50,7 +52,7 @@ export default function FavoritesPage() {
         <Card className="shadow-vercel-card">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Heart className="mb-4 size-12 text-muted-foreground" />
-            <h2 className="mb-2 text-xl font-semibold">No favorites yet</h2>
+            <h2 className="mb-2 text-xl font-semibold">{t("favorites.noFavorites")}</h2>
             <p className="mb-4 text-center text-muted-foreground">
               Start exploring and tap the heart icon to save NFTs you like.
             </p>

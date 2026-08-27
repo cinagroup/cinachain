@@ -7,8 +7,10 @@ import { MINT_PRICE_ETH } from "@/lib/contracts/addresses"
 import { hasNftContract } from "@/lib/contracts/addresses"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 
 export default function StatsPage() {
+  const { t } = useI18n()
   const { mintedCount, maxCount, mintPrice, isLoading } = useContractStats()
 
   const price = mintPrice.data ? Number(mintPrice.data) / 1e18 : MINT_PRICE_ETH
@@ -116,7 +118,7 @@ export default function StatsPage() {
         {/* Progress Bar */}
         <Card className="mt-8 shadow-vercel-card">
           <CardHeader>
-            <CardTitle>Minting progress</CardTitle>
+            <CardTitle>{t("admin.mintingProgress")}</CardTitle>
             <CardDescription>
               Visual representation of collection completion
             </CardDescription>

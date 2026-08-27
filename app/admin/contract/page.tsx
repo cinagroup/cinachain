@@ -37,8 +37,10 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useI18n } from "@/lib/i18n"
 
 export default function ContractManagementPage() {
+  const { t } = useI18n()
   const { paused, refetch: refetchStats } = useContractStats()
   const isPaused = paused.data === true
 
@@ -468,7 +470,7 @@ export default function ContractManagementPage() {
       {/* Contract info */}
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
-          <CardTitle>Contract information</CardTitle>
+          <CardTitle>{t("admin.contractInfo")}</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="space-y-3 text-sm">

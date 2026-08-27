@@ -7,8 +7,10 @@ import { TrendingUp, Package, DollarSign, PauseCircle, PlayCircle, FileText, Set
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
 import { hasNftContract } from "@/lib/contracts/addresses"
 import { AlertCircle } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 
 export default function AdminOverviewPage() {
+  const { t } = useI18n()
   const {
     mintedCount,
     maxCount,
@@ -113,7 +115,7 @@ export default function AdminOverviewPage() {
         {/* Quick Actions */}
         <Card className="mt-8 shadow-vercel-card">
           <CardHeader>
-            <CardTitle>Quick actions</CardTitle>
+            <CardTitle>{t("admin.quickActions")}</CardTitle>
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
           <CardContent>
@@ -121,31 +123,31 @@ export default function AdminOverviewPage() {
               <QuickAction
                 href="/admin/badges"
                 icon={<Award className="size-5" />}
-                title="Mint badges"
+                title={t("admin.mintBadges")}
                 description="Award achievement badges to community members"
               />
               <QuickAction
                 href="/admin/whitelist"
                 icon={<FileText className="size-5" />}
-                title="Manage whitelist"
+                title={t("admin.manageWhitelist")}
                 description="Upload CSV files and manage whitelist addresses"
               />
               <QuickAction
                 href="/admin/stats"
                 icon={<BarChart3 className="size-5" />}
-                title="View statistics"
+                title={t("admin.viewStats")}
                 description="Detailed minting analytics and revenue tracking"
               />
               <QuickAction
                 href="/admin/contract"
                 icon={<Settings className="size-5" />}
-                title="Contract settings"
+                title={t("admin.contractSettings")}
                 description="Pause, update prices, withdraw funds"
               />
               <QuickAction
                 href="/admin/billing"
                 icon={<Coins className="size-5" />}
-                title="Billing settings"
+                title={t("admin.billingSettings")}
                 description="Exchange rate, credit issuance, ledger"
               />
             </div>

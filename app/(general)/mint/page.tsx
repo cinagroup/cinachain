@@ -35,10 +35,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
+import { useI18n } from "@/lib/i18n"
 
 const MAX_PUBLIC_PER_TX = 10
 
 export default function MintPage() {
+  const { t } = useI18n()
   const { address, isConnected } = useAccount()
   const queryClient = useQueryClient()
   const {
@@ -195,7 +197,7 @@ export default function MintPage() {
 
           <Card className="max-w-md shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Connect wallet</CardTitle>
+              <CardTitle>{t("mint.connectWallet")}</CardTitle>
               <CardDescription>Connect your wallet to mint</CardDescription>
             </CardHeader>
             <CardContent>

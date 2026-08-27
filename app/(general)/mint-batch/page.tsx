@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
+import { useI18n } from "@/lib/i18n"
 
 const MINT_BATCH_ABI = [
   {
@@ -44,6 +45,7 @@ interface MintItem {
 }
 
 export default function BatchMintPage() {
+  const { t } = useI18n()
   const { address, isConnected } = useAccount()
   const { writeContractAsync, isPending: writePending } = useWriteContract()
   const [items, setItems] = useState<MintItem[]>([{ id: "1", amount: "1" }])
@@ -145,7 +147,7 @@ export default function BatchMintPage() {
 
           <Card className="max-w-md shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Connect wallet</CardTitle>
+              <CardTitle>{t("mint.connectWallet")}</CardTitle>
               <CardDescription>
                 Connect your wallet to batch mint
               </CardDescription>
@@ -231,7 +233,7 @@ export default function BatchMintPage() {
           {/* Mint Items */}
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Mint items</CardTitle>
+              <CardTitle>{t("mint.mintItems")}</CardTitle>
               <CardDescription>
                 Add multiple token IDs and amounts to mint in one transaction
               </CardDescription>

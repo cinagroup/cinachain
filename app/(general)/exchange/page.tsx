@@ -35,6 +35,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
+import { useI18n } from "@/lib/i18n"
 
 function TypeSelect({
   id,
@@ -66,6 +67,7 @@ function TypeSelect({
 }
 
 export default function ExchangePage() {
+  const { t } = useI18n()
   const { address } = useAccount()
   const queryClient = useQueryClient()
   const { balances } = useCinaMegaBalances(address)
@@ -235,7 +237,7 @@ export default function ExchangePage() {
               size="icon"
               onClick={swapDirection}
               disabled={isPending}
-              title="Swap direction"
+              title={t("exchange.swapDirection")}
               aria-label="Swap exchange direction"
             >
               <ArrowLeftRight className="size-5 rotate-90" />

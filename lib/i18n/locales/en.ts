@@ -114,4 +114,51 @@ export const en: Record<string, string> = {
 
   // ── Language switcher ──
   "language.switch": "Switch language",
+
+  // ── Explore page ──
+  "explore.title": "Explore",
+  "explore.collectionUnavailable": "Collection data unavailable",
+  "explore.showingLastKnown": "Showing last known data",
+
+  // ── Mint page ──
+  "mint.title": "Mint",
+  "mint.connectWallet": "Connect wallet",
+  "mint.mintItems": "Mint items",
+
+  // ── Exchange page ──
+  "exchange.title": "Exchange",
+  "exchange.swapDirection": "Swap direction",
+
+  // ── My NFTs page ──
+  "nfts.yourNfts": "Your NFTs",
+  "nfts.connectWallet": "Connect your wallet",
+  "nfts.collectionSummary": "Collection summary",
+
+  // ── Badges page ──
+  "badges.title": "Badges",
+  "badges.noBadges": "No badges yet",
+
+  // ── Favorites page ──
+  "favorites.title": "Favorites",
+  "favorites.noFavorites": "No favorites yet",
+
+  // ── Account page ──
+  "account.title": "Account",
+  "account.quickLinks": "Quick links",
+
+  // ── Settings page ──
+  "settings.title": "Settings",
+  "settings.apiKeys": "API keys",
+
+  // ── Admin pages ──
+  "admin.quickActions": "Quick actions",
+  "admin.mintBadges": "Mint badges",
+  "admin.manageWhitelist": "Manage whitelist",
+  "admin.viewStats": "View statistics",
+  "admin.contractSettings": "Contract settings",
+  "admin.billingSettings": "Billing settings",
+  "admin.badgeTypes": "Badge types",
+  "admin.howItWorks": "How it works",
+  "admin.mintingProgress": "Minting progress",
+  "admin.contractInfo": "Contract information",
 }

@@ -33,8 +33,10 @@ import { WalletEnsName } from "@/components/blockchain/wallet-ens-name"
 import { CopyButton } from "@/components/shared/copy-button"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
+import { useI18n } from "@/lib/i18n"
 
 export default function AccountPage() {
+  const { t } = useI18n()
   const { address, chain } = useAccount()
   const {
     session,
@@ -228,7 +230,7 @@ export default function AccountPage() {
           {/* Quick Links */}
           <Card className="mt-6 shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Quick links</CardTitle>
+              <CardTitle>{t("account.quickLinks")}</CardTitle>
               <CardDescription>
                 Useful resources for your wallet
               </CardDescription>

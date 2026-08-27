@@ -8,10 +8,12 @@ import { useBatchTokenUris } from "@/lib/hooks/use-batch-token-uris"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
 import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
 import { ChainReadNotice } from "@/components/shared/chain-read-notice"
+import { useI18n } from "@/lib/i18n"
 
 const PAGE_SIZE = 24
 
 export default function ExplorePage() {
+  const { t } = useI18n()
   const { data: stats, status, isRetrying, refetch } = useContractStats()
 
   // Show token IDs from 1 to mintedCount (capped at 100 for performance)
@@ -79,7 +81,7 @@ export default function ExplorePage() {
             isRetrying={isRetrying}
             onRetry={() => void refetch()}
             state="error"
-            title="Collection data unavailable"
+            title={t("explore.collectionUnavailable")}
           />
         </div>
       )}
@@ -91,7 +93,7 @@ export default function ExplorePage() {
             isRetrying={isRetrying}
             onRetry={() => void refetch()}
             state="stale"
-            title="Showing last known data"
+            title={t("explore.showingLastKnown")}
           />
         </div>
       )}

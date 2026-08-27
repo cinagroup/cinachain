@@ -22,8 +22,10 @@ import { NftCard, NftCardSkeleton } from "@/components/nft/nft-card"
 import { ChainReadNotice } from "@/components/shared/chain-read-notice"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
+import { useI18n } from "@/lib/i18n"
 
 export default function MyNftsPage() {
+  const { t } = useI18n()
   const { address } = useAccount()
 
   // Paged enumeration — "Load more" appends the next 50 tokens
@@ -59,7 +61,7 @@ export default function MyNftsPage() {
         {/* Summary */}
         <Card className="mb-6 shadow-vercel-card">
           <CardHeader>
-            <CardTitle>Collection summary</CardTitle>
+            <CardTitle>{t("nfts.collectionSummary")}</CardTitle>
             <CardDescription>Total NFTs owned</CardDescription>
           </CardHeader>
           <CardContent>
@@ -109,7 +111,7 @@ export default function MyNftsPage() {
         {/* Owned NFTs grid */}
         {showGrid && (
           <div>
-            <h2 className="font-display mb-4 text-xl">Your NFTs</h2>
+            <h2 className="font-display mb-4 text-xl">{t("nfts.yourNfts")}</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {tokenIds.map((tokenId) => (
                 <NftCard
@@ -158,7 +160,7 @@ export default function MyNftsPage() {
 
       <IsWalletDisconnected>
         <div className="py-12 text-center">
-          <h2 className="font-display mb-2 text-xl">Connect your wallet</h2>
+          <h2 className="font-display mb-2 text-xl">{t("nfts.connectWallet")}</h2>
           <p className="text-muted-foreground">
             Connect your wallet to view your NFT collection.
           </p>

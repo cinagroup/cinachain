@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useI18n } from "@/lib/i18n"
 
 const BADGE_ABI = [
   {
@@ -44,6 +45,7 @@ const BADGE_ABI = [
 ] as const
 
 export default function AdminBadgesPage() {
+  const { t } = useI18n()
   const { writeContractAsync, isPending } = useWriteContract()
   const [recipient, setRecipient] = useState("")
   const [badgeId, setBadgeId] = useState("1")
@@ -227,7 +229,7 @@ export default function AdminBadgesPage() {
       {/* Badge reference */}
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
-          <CardTitle>Badge types</CardTitle>
+          <CardTitle>{t("admin.badgeTypes")}</CardTitle>
           <CardDescription>
             Standard badge types available for minting
           </CardDescription>
