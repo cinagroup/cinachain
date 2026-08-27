@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useAccount } from "wagmi"
 import { KeyRound, Loader2, Send, CheckCircle2, AlertCircle } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,6 +32,7 @@ interface IngressRecord {
 }
 
 export default function KeysPage() {
+  const { t } = useI18n()
   const { address } = useAccount()
   const [apiKey, setApiKey] = useState("")
   const [model, setModel] = useState("demo")
@@ -97,7 +99,7 @@ export default function KeysPage() {
         Billing
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Key ingress<span className="text-muted-foreground">.</span>
+        {t("keys.title")}<span className="text-muted-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Share an API key with the platform pool and earn CinaCredit once it is

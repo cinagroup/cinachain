@@ -100,6 +100,18 @@ export const zh: Record<string, string> = {
   "admin.paused": "已暂停",
   "admin.active": "正常",
 
+
+  // ── Dashboard overview ──
+  "dashboard.welcomeBack": "欢迎回来，",
+  "dashboard.ethBalance": "ETH 余额",
+  "dashboard.nftsOwned": "持有 NFT",
+  "dashboard.cinaChainNfts": "CinaChain NFT",
+  "dashboard.collectionProgress": "合集进度",
+  "dashboard.totalMinted": "已铸造",
+  "dashboard.membershipTier": "会员等级",
+  "dashboard.creditSpent": "积分已消耗",
+  "dashboard.topTierReached": "已达到最高等级",
+
   // ── Language switcher ──
   "language.switch": "切换语言",
 }

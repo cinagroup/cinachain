@@ -100,6 +100,18 @@ export const en: Record<string, string> = {
   "admin.paused": "Paused",
   "admin.active": "Active",
 
+
+  // ── Dashboard overview ──
+  "dashboard.welcomeBack": "Welcome back,",
+  "dashboard.ethBalance": "ETH balance",
+  "dashboard.nftsOwned": "NFTs owned",
+  "dashboard.cinaChainNfts": "CinaChain NFTs",
+  "dashboard.collectionProgress": "Collection progress",
+  "dashboard.totalMinted": "Total minted",
+  "dashboard.membershipTier": "Membership tier",
+  "dashboard.creditSpent": "credit spent",
+  "dashboard.topTierReached": "Top tier reached",
+
   // ── Language switcher ──
   "language.switch": "Switch language",
 }

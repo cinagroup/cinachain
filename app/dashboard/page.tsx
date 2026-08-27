@@ -19,6 +19,7 @@ import { useContractStats } from "@/lib/hooks/use-contract-stats"
 import { useTierProgress } from "@/lib/hooks/use-tier-progress"
 import { trimFormattedBalance } from "@/lib/utils"
 import { formatUnits, type Address } from "viem"
+import { useI18n } from "@/lib/i18n"
 
 function StatCard({
   label,
@@ -115,6 +116,7 @@ function TierProgressCard({ address }: { address?: Address }) {
 }
 
 export default function PageDashboard() {
+  const { t } = useI18n()
   const { address } = useAccount()
   const { data: nftBalance, isLoading: nftLoading } = useNftBalance(address)
   const { data: balance, isLoading: balanceLoading } = useBalance({ address })
@@ -150,7 +152,7 @@ export default function PageDashboard() {
               Dashboard
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-              Welcome back, <WalletEnsName /><span className="text-foreground">.</span>
+              {t("dashboard.welcomeBack")} <WalletEnsName /><span className="text-foreground">.</span>
             </h1>
             <WalletAddress className="font-mono-tech mt-2 block text-sm text-muted-foreground" />
           </div>
@@ -158,24 +160,24 @@ export default function PageDashboard() {
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              label="ETH balance"
+              label={t("dashboard.ethBalance")}
               value={`${balanceStr} ETH`}
               isLoading={balanceLoading}
             />
             <StatCard
-              label="NFTs owned"
+              label={t("dashboard.nftsOwned")}
               value={nftBalance?.toString() || "0"}
-              sublabel="CinaChain NFTs"
+              sublabel={t("dashboard.cinaChainNfts")}
               isLoading={nftLoading}
             />
             <StatCard
-              label="Whitelist"
+              label={t("sidebar.whitelist")}
               value={whitelistStatus?.text ?? "..."}
               sublabel={whitelistStatus?.sub}
               isLoading={whitelistLoading}
             />
             <StatCard
-              label="Collection progress"
+              label={t("dashboard.collectionProgress")}
               value={
                 contractStats
                   ? `${contractStats.mintedCount.toLocaleString()} / ${contractStats.maxCount.toLocaleString()}`
