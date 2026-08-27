@@ -8,6 +8,7 @@ import { useAccount } from "wagmi"
 import { getBlockExplorerUrl } from "@/config/deployment"
 import { CINA_CREDIT_CONTRACT, hasCreditContract } from "@/lib/contracts/addresses"
 import { useCreditBalance } from "@/lib/hooks/use-credit-balance"
+import { useI18n } from "@/lib/i18n"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Card,
@@ -35,6 +36,7 @@ export default function CreditsPage() {
   const { address, isConnected } = useAccount()
   const { creditBalance, totalSupply, isPaused, isLoading, formatBalance } =
     useCreditBalance(address)
+  const { t } = useI18n()
 
   const [ledger, setLedger] = useState<LedgerData | null>(null)
   const [ledgerError, setLedgerError] = useState(false)
@@ -61,7 +63,7 @@ export default function CreditsPage() {
               Billing
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-              Credits<span className="text-foreground">.</span>
+              {t("credits.title")}<span className="text-foreground">.</span>
             </h1>
           </div>
           <Alert variant="destructive" className="max-w-md">
@@ -86,7 +88,7 @@ export default function CreditsPage() {
               Billing
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-              Credits<span className="text-foreground">.</span>
+              {t("credits.title")}<span className="text-foreground">.</span>
             </h1>
             <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
               CinaCredit powers API billing and settles marketplace earnings —
@@ -96,7 +98,7 @@ export default function CreditsPage() {
 
           <Card className="max-w-md shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Connect wallet</CardTitle>
+              <CardTitle>{t("action.connectWallet")}</CardTitle>
               <CardDescription>
                 Connect your wallet to view your credit balance and usage
               </CardDescription>
@@ -120,11 +122,10 @@ export default function CreditsPage() {
             Billing
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            Credits<span className="text-foreground">.</span>
+            {t("credits.title")}<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            CinaCredit is the settlement token for the cina economy — it caps
-            your API billing usage and settles marketplace earnings.
+            {t("credits.description")}
           </p>
         </div>
 
@@ -143,7 +144,7 @@ export default function CreditsPage() {
           {/* Balance card */}
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle>Your balance</CardTitle>
+              <CardTitle>{t("credits.yourBalance")}</CardTitle>
               <CardDescription>
                 On-chain CinaCredit (CINA-C) held by your wallet
               </CardDescription>
@@ -158,7 +159,7 @@ export default function CreditsPage() {
               {totalSupply !== undefined && (
                 <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total supply</span>
+                    <span className="text-muted-foreground">{t("credits.totalSupply")}</span>
                     <span className="font-medium text-foreground">
                       {formatBalance(totalSupply)}
                     </span>
@@ -181,23 +182,23 @@ export default function CreditsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="size-5" />
-                How credits work
+                {t("credits.howItWorks")}
               </CardTitle>
               <CardDescription>
-                CinaCredit is issued by the CinaChain team
+                {t("credits.issuedByTeam")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <p>
                 <span className="font-medium text-foreground">
-                  Credits are ops-issued.
+                  {t("credits.opsIssued")}
                 </span>{" "}
                 Top-ups are granted by the team to your wallet address — contact
                 the CinaChain team to add credit for API usage.
               </p>
               <p>
                 <span className="font-medium text-foreground">
-                  One token, two roles.
+                  {t("credits.oneTokenTwoRoles")}
                 </span>{" "}
                 Your balance is the ceiling for API billing (usage is metered
                 server-side and consumes it), and it is also the token in which
@@ -205,7 +206,7 @@ export default function CreditsPage() {
               </p>
               <p>
                 <span className="font-medium text-foreground">
-                  Keep an eye on usage.
+                  {t("credits.keepAnEyeOnUsage")}
                 </span>{" "}
                 API calls reduce the credit available to your address — the
                 ledger below shows how much of your on-chain balance is still
@@ -219,7 +220,7 @@ export default function CreditsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="size-5" />
-                Billing ledger
+                {t("credits.billingLedger")}
               </CardTitle>
               <CardDescription>
                 Server-side metering for your address (billing worker)
@@ -237,25 +238,25 @@ export default function CreditsPage() {
               ) : (
                 <dl className="grid gap-x-12 gap-y-3 text-sm sm:grid-cols-2">
                   <div className="flex justify-between border-b border-border py-2">
-                    <dt className="text-muted-foreground">On-chain balance</dt>
+                    <dt className="text-muted-foreground">{t("credits.onChainBalance")}</dt>
                     <dd className="font-mono-tech text-xs">
                       {ledger ? fmt(ledger.onchainSnapshot) : "…"}
                     </dd>
                   </div>
                   <div className="flex justify-between border-b border-border py-2">
-                    <dt className="text-muted-foreground">Committed usage</dt>
+                    <dt className="text-muted-foreground">{t("credits.committedUsage")}</dt>
                     <dd className="font-mono-tech text-xs">
                       {ledger ? fmt(ledger.committedUsage) : "…"}
                     </dd>
                   </div>
                   <div className="flex justify-between border-b border-border py-2">
-                    <dt className="text-muted-foreground">Usable</dt>
+                    <dt className="text-muted-foreground">{t("credits.usable")}</dt>
                     <dd className="font-mono-tech text-xs">
                       {ledger ? fmt(ledger.usable) : "…"}
                     </dd>
                   </div>
                   <div className="flex justify-between border-b border-border py-2">
-                    <dt className="text-muted-foreground">Cumulative spend</dt>
+                    <dt className="text-muted-foreground">{t("credits.cumulativeSpend")}</dt>
                     <dd className="font-mono-tech text-xs">
                       {ledger ? fmt(ledger.cumulativeSpend) : "…"}
                     </dd>

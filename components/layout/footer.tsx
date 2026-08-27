@@ -1,3 +1,5 @@
+"use client"
+
 import { HTMLAttributes } from "react"
 import Link from "next/link"
 import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa"
@@ -5,20 +7,22 @@ import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa"
 import { DEPLOYMENT_STAGE, PRIMARY_NETWORK_LABEL } from "@/config/deployment"
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 
 export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
+  const { t } = useI18n()
   const classes = cn(className, "border-t border-border bg-background")
 
   const columns = [
     {
-      title: "Product",
+      title: t("footer.product"),
       links: [
-        { label: "Explore", href: "/explore" },
-        { label: "Mint", href: "/mint" },
-        { label: "Collections", href: "/collections" },
-        { label: "Exchange", href: "/exchange" },
-        { label: "Dashboard", href: "/dashboard" },
+        { label: t("nav.explore"), href: "/explore" },
+        { label: t("nav.mint"), href: "/mint" },
+        { label: t("nav.collections"), href: "/collections" },
+        { label: t("nav.exchange"), href: "/exchange" },
+        { label: t("nav.dashboard"), href: "/dashboard" },
         { label: "API keys", href: "/settings" },
       ],
     },
@@ -35,7 +39,7 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
       ],
     },
     {
-      title: "Resources",
+      title: t("footer.resources"),
       links: [
         { label: "Documentation", href: siteConfig.links.docs },
         { label: "GitHub", href: siteConfig.links.github },
