@@ -161,4 +161,16 @@ export const en: Record<string, string> = {
   "admin.howItWorks": "How it works",
   "admin.mintingProgress": "Minting progress",
   "admin.contractInfo": "Contract information",
+
+  // ── Badges page ──
+  "badges.connectWallet": "Connect your wallet",
+  "badges.connectToView": "Connect your wallet to view your CinaChain badges and achievements.",
+  "badges.yourBadges": "Your badges",
+
+  // ── Admin billing ──
+  "admin.billingManagement": "Billing management",
+  "admin.issueCredit": "Issue credit",
+  "admin.recipientAddress": "Recipient address",
+  "admin.emergencyControls": "Emergency controls",
+  "admin.creditOperations": "Credit operations",
 }

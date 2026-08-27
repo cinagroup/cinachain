@@ -2,6 +2,7 @@
 
 import { useAccount } from "wagmi"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
+import { useI18n } from "@/lib/i18n"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { WalletConnect } from "@/components/blockchain/wallet-connect"
@@ -10,6 +11,7 @@ import { hasErc1155Contract } from "@/lib/contracts/addresses"
 import { Award, Lock } from "lucide-react"
 
 export default function BadgesPage() {
+  const { t } = useI18n()
   return (
     <div className="min-h-screen bg-background">
       <IsWalletConnected>
@@ -21,10 +23,10 @@ export default function BadgesPage() {
             Authentication required
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground">
-            Connect your wallet<span className="text-foreground">.</span>
+            {t("badges.connectWallet")}<span className="text-foreground">.</span>
           </h1>
           <p className="mt-4 max-w-md text-base text-muted-foreground">
-            Connect your wallet to view your CinaChain badges and achievements.
+            {t("badges.connectToView")}
           </p>
           <div className="mt-8">
             <WalletConnect />

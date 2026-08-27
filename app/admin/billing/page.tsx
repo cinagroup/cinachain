@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useI18n } from "@/lib/i18n"
 
 const BILLING_API_URL =
   process.env.NEXT_PUBLIC_BILLING_API_URL || "https://billing-api.cinachain.com"
@@ -57,6 +58,7 @@ interface LedgerData {
 }
 
 export default function BillingManagementPage() {
+  const { t } = useI18n()
   const { address } = useAccount()
   const queryClient = useQueryClient()
   const publicClient = usePublicClient()
@@ -288,7 +290,7 @@ export default function BillingManagementPage() {
         Administration
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Billing management<span className="text-foreground">.</span>
+        {t("admin.billingManagement")}<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
         Issue CinaCredit (ops-issued model), inspect the ledger, and control
@@ -371,7 +373,7 @@ export default function BillingManagementPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="recipient">Recipient address</Label>
+              <Label htmlFor="recipient">{t("admin.recipientAddress")}</Label>
               <Input
                 id="recipient"
                 type="text"
@@ -458,25 +460,25 @@ export default function BillingManagementPage() {
             ) : (
               <dl className="space-y-3 text-sm">
                 <div className="flex justify-between border-b border-border py-2">
-                  <dt className="text-muted-foreground">On-chain snapshot</dt>
+                  <dt className="text-muted-foreground">{t("credits.onChainBalance")}</dt>
                   <dd className="font-mono-tech break-all text-xs">
                     {ledger ? ledger.onchainSnapshot : "…"}
                   </dd>
                 </div>
                 <div className="flex justify-between border-b border-border py-2">
-                  <dt className="text-muted-foreground">Committed usage</dt>
+                  <dt className="text-muted-foreground">{t("credits.committedUsage")}</dt>
                   <dd className="font-mono-tech break-all text-xs">
                     {ledger ? ledger.committedUsage : "…"}
                   </dd>
                 </div>
                 <div className="flex justify-between border-b border-border py-2">
-                  <dt className="text-muted-foreground">Usable</dt>
+                  <dt className="text-muted-foreground">{t("credits.usable")}</dt>
                   <dd className="font-mono-tech break-all text-xs">
                     {ledger ? ledger.usable : "…"}
                   </dd>
                 </div>
                 <div className="flex justify-between py-2">
-                  <dt className="text-muted-foreground">Cumulative spend</dt>
+                  <dt className="text-muted-foreground">{t("credits.cumulativeSpend")}</dt>
                   <dd className="font-mono-tech break-all text-xs">
                     {ledger ? ledger.cumulativeSpend : "…"}
                   </dd>
@@ -499,7 +501,7 @@ export default function BillingManagementPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between rounded-md border border-border bg-secondary p-4">
-              <span className="text-sm font-medium">Credit operations</span>
+              <span className="text-sm font-medium">{t("admin.creditOperations")}</span>
               <span
                 className={
                   isPaused

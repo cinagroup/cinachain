@@ -9,6 +9,7 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 import { useAccount } from "wagmi"
 
 import { useApiKeys } from "@/lib/hooks/use-api-keys"
@@ -24,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input"
 
 export default function SettingsPage() {
+  const { t } = useI18n()
   const { keys, isAuthenticated, signIn, signInError, createKey, revokeKey } =
     useApiKeys()
   const { address } = useAccount()
@@ -96,7 +98,7 @@ export default function SettingsPage() {
             Account
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            API Keys<span className="text-foreground">.</span>
+            {t("settings.apiKeys")}<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
             Create API keys bound to your wallet address for the billing

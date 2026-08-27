@@ -161,4 +161,16 @@ export const zh: Record<string, string> = {
   "admin.howItWorks": "工作原理",
   "admin.mintingProgress": "铸造进度",
   "admin.contractInfo": "合约信息",
+
+  // ── Badges page ──
+  "badges.connectWallet": "连接你的钱包",
+  "badges.connectToView": "连接钱包以查看你的 CinaChain 徽章和成就。",
+  "badges.yourBadges": "你的徽章",
+
+  // ── Admin billing ──
+  "admin.billingManagement": "计费管理",
+  "admin.issueCredit": "发放积分",
+  "admin.recipientAddress": "接收地址",
+  "admin.emergencyControls": "应急控制",
+  "admin.creditOperations": "积分操作",
 }
