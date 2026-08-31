@@ -296,8 +296,11 @@ jobs:
           WHITELIST_ADMIN_TOKEN: ${{ secrets.WHITELIST_ADMIN_TOKEN }}
         run: |
           set -euo pipefail
-          test -n "$WHITELIST_ADMIN_TOKEN"
-          printf '%s' "$WHITELIST_ADMIN_TOKEN" | npx --no-install wrangler secret put ADMIN_TOKEN
+          if [ -n "$WHITELIST_ADMIN_TOKEN" ]; then
+            printf '%s' "$WHITELIST_ADMIN_TOKEN" | npx --no-install wrangler secret put ADMIN_TOKEN
+          else
+            echo "::warning::WHITELIST_ADMIN_TOKEN is not configured. Existing Cloudflare secret is preserved; a fresh Worker remains fail-closed for admin writes."
+          fi
 
       # Deploy the Paymaster edge route in fail-closed mode. Sponsorship stays
       # disabled until its CDP dashboard policy and explicit vars are reviewed.
