@@ -92,8 +92,7 @@ export default function ExchangePage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            CinaMega contract not configured. Set
-            NEXT_PUBLIC_CINA_MEGA_CONTRACT.
+            {t("exchange.contractNotConfigured")}
           </AlertDescription>
         </Alert>
       </div>
@@ -138,19 +137,19 @@ export default function ExchangePage() {
   return (
     <div className="container max-w-screen-ultra px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-        Exchange
+        {t("exchange.title")}
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Exchange CinaMega<span className="text-foreground">.</span>
+        {t("exchange.heading")}<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Convert between UCINA, MCINA and CINA at the fixed rate. Exchanges are
-        atomic — your source tokens are burned and the destination minted in the
-        same transaction.
+        {t("exchange.description")}
       </p>
 
       <div className="font-mono-tech mt-6 rounded-md border border-border bg-secondary p-4 text-sm">
-        <span className="font-semibold text-foreground">Fixed rate</span>
+        <span className="font-semibold text-foreground">
+          {t("exchange.fixedRate")}
+        </span>
         <span className="ml-3 text-muted-foreground">{MEGA_RATE_TEXT}</span>
       </div>
 
@@ -165,14 +164,15 @@ export default function ExchangePage() {
         <Alert variant="success" className="mt-6">
           <CheckCircle2 className="size-4" />
           <AlertDescription>
-            Exchanged!{" "}
+            {t("exchange.success")} {" "}
             <a
               href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
+              {t("common.viewOn", { explorer: EXPLORER_NAME })}{" "}
+              <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -182,28 +182,30 @@ export default function ExchangePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ArrowLeftRight className="size-5" />
-            Exchange
+            {t("exchange.title")}
             {isGasless && (
               <span className="font-mono-tech bg-cyan/20 rounded-full px-2 py-0.5 text-xs text-cyan-deep">
-                ⚡ Gasless
+                {t("common.gasless")}
               </span>
             )}
           </CardTitle>
           <CardDescription>
             {address ? (
               <>
-                You hold: UCINA {formatAmount(balances[1] ?? 0n)} · MCINA{" "}
-                {formatAmount(balances[2] ?? 0n)} · CINA{" "}
-                {formatAmount(balances[3] ?? 0n)}
+                {t("exchange.youHold", {
+                  ucina: formatAmount(balances[1] ?? 0n),
+                  mcina: formatAmount(balances[2] ?? 0n),
+                  cina: formatAmount(balances[3] ?? 0n),
+                })}
               </>
             ) : (
-              "Connect a wallet to exchange"
+              t("exchange.connectWallet")
             )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="exchange-from-type">You give (source)</Label>
+            <Label htmlFor="exchange-from-type">{t("exchange.youGive")}</Label>
             <TypeSelect
               id="exchange-from-type"
               value={fromType}
@@ -220,13 +222,17 @@ export default function ExchangePage() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               disabled={isPending}
-              placeholder="Amount"
-              aria-label={`Amount of ${MEGA_COLLECTION_INFO[fromType].name} to exchange`}
+              placeholder={t("exchange.amount")}
+              aria-label={t("exchange.amountAria", {
+                token: MEGA_COLLECTION_INFO[fromType].name,
+              })}
             />
             {exceedsBalance && (
               <p className="text-xs text-destructive">
-                Insufficient balance — you hold {formatAmount(balance)}{" "}
-                {MEGA_COLLECTION_INFO[fromType].name}
+                {t("exchange.insufficientBalance", {
+                  amount: formatAmount(balance),
+                  token: MEGA_COLLECTION_INFO[fromType].name,
+                })}
               </p>
             )}
           </div>
@@ -238,14 +244,14 @@ export default function ExchangePage() {
               onClick={swapDirection}
               disabled={isPending}
               title={t("exchange.swapDirection")}
-              aria-label="Swap exchange direction"
+              aria-label={t("exchange.swapDirection")}
             >
               <ArrowLeftRight className="size-5 rotate-90" />
             </Button>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="exchange-to-type">You receive (destination)</Label>
+            <Label htmlFor="exchange-to-type">{t("exchange.youReceiveDestination")}</Label>
             <TypeSelect
               id="exchange-to-type"
               value={toType}
@@ -258,7 +264,7 @@ export default function ExchangePage() {
             <div className="rounded-md border border-border bg-secondary p-4">
               <div className="flex items-baseline justify-between">
                 <span className="text-sm text-muted-foreground">
-                  You receive
+                  {t("exchange.youReceive")}
                 </span>
                 <span className="font-display text-lg">
                   {conversion.ok
@@ -272,19 +278,21 @@ export default function ExchangePage() {
               </div>
               {conversion.ok && conversion.dust > 0n && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Dust burned: {formatAmount(conversion.dust)} units (floor
-                  conversion)
+                  {t("exchange.dustBurned", {
+                    amount: formatAmount(conversion.dust),
+                  })}
                 </p>
               )}
               {conversion.error === "too-small" && (
                 <p className="mt-1 text-xs text-warning-deep">
-                  Amount too small — minimum for 1{" "}
-                  {MEGA_COLLECTION_INFO[toType].name}:{" "}
-                  {formatAmount(
-                    (MEGA_UNITS[toType] + MEGA_UNITS[fromType] - 1n) /
-                      MEGA_UNITS[fromType]
-                  )}{" "}
-                  {MEGA_COLLECTION_INFO[fromType].name}
+                  {t("exchange.amountTooSmall", {
+                    destination: MEGA_COLLECTION_INFO[toType].name,
+                    amount: formatAmount(
+                      (MEGA_UNITS[toType] + MEGA_UNITS[fromType] - 1n) /
+                        MEGA_UNITS[fromType]
+                    ),
+                    source: MEGA_COLLECTION_INFO[fromType].name,
+                  })}
                 </p>
               )}
             </div>
@@ -302,11 +310,11 @@ export default function ExchangePage() {
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
-                  Exchanging...
+                  {t("exchange.exchanging")}
                 </>
               ) : (
                 <>
-                  Exchange{" "}
+                  {t("exchange.title")} {" "}
                   {conversion.ok
                     ? `${formatAmount(parsedAmount)} ${
                         MEGA_COLLECTION_INFO[fromType].name

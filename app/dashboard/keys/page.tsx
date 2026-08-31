@@ -67,11 +67,11 @@ export default function KeysPage() {
     setError(null)
     setSuccess(null)
     if (!address) {
-      setError("Connect your wallet first")
+      setError(t("keys.connectWalletFirst"))
       return
     }
     if (apiKey.length < 20) {
-      setError("API key too short")
+      setError(t("keys.tooShort"))
       return
     }
     setSubmitting(true)
@@ -83,11 +83,16 @@ export default function KeysPage() {
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? `submit failed: ${res.status}`)
-      setSuccess(`Ingress registered: ${String(body.id)} (${String(body.status)})`)
+      setSuccess(
+        t("keys.registered", {
+          id: String(body.id),
+          status: String(body.status),
+        })
+      )
       setApiKey("")
       await loadRecords()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit key")
+      setError(err instanceof Error ? err.message : t("keys.submitFailed"))
     } finally {
       setSubmitting(false)
     }
@@ -96,14 +101,13 @@ export default function KeysPage() {
   return (
     <div className="container mx-auto max-w-screen-desktop px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-        Billing
+        {t("sidebar.billing")}
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
         {t("keys.title")}<span className="text-muted-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Share an API key with the platform pool and earn CinaCredit once it is
-        consumed (spec §6.3 — declared amount, deferred minting).
+        {t("keys.ingressDescription")}
       </p>
 
       {error && (
@@ -123,16 +127,15 @@ export default function KeysPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <KeyRound className="size-5" />
-            Submit API key
+            {t("keys.submitTitle")}
           </CardTitle>
           <CardDescription>
-            Your key is encrypted at rest and never exposed; you earn credits
-            when the pool consumes it
+            {t("keys.submitDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="apiKey">API key</Label>
+            <Label htmlFor="apiKey">{t("settings.apiKeys")}</Label>
             <Input
               id="apiKey"
               type="password"
@@ -144,7 +147,7 @@ export default function KeysPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="model">Model</Label>
+              <Label htmlFor="model">{t("keys.model")}</Label>
               <select
                 id="model"
                 className="flex h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-vercel-sm"
@@ -158,7 +161,7 @@ export default function KeysPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="declared">Declared amount (micro-credit)</Label>
+              <Label htmlFor="declared">{t("keys.declaredAmount")}</Label>
               <Input
                 id="declared"
                 type="number"
@@ -171,21 +174,20 @@ export default function KeysPage() {
           </div>
           <Button onClick={handleSubmit} disabled={submitting || !address} className="w-full" size="lg">
             {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}
-            Submit key
+            {t("keys.submitAction")}
           </Button>
         </CardContent>
       </Card>
 
       <Card className="mt-6 shadow-vercel-card">
         <CardHeader>
-          <CardTitle>Your ingress records</CardTitle>
-          <CardDescription>Pending / minting / minted status</CardDescription>
+          <CardTitle>{t("keys.recordsTitle")}</CardTitle>
+          <CardDescription>{t("keys.recordsDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           {records.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No records yet — submit a key above. Status updates after the pool
-              consumes it (confirmedMicro grows toward declaredMicro).
+              {t("keys.noRecords")}
             </p>
           ) : (
             <ul className="space-y-3">
@@ -194,7 +196,11 @@ export default function KeysPage() {
                   <div>
                     <p className="font-mono-tech text-xs">{r.id}</p>
                     <p className="text-xs text-muted-foreground">
-                      {r.model} · confirmed {Number(r.confirmedMicro).toLocaleString()} / {Number(r.declaredMicro).toLocaleString()} micro
+                      {t("keys.recordProgress", {
+                        model: r.model,
+                        confirmed: Number(r.confirmedMicro).toLocaleString(),
+                        declared: Number(r.declaredMicro).toLocaleString(),
+                      })}
                     </p>
                   </div>
                   <span className="text-xs font-medium">{r.status}</span>

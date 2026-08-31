@@ -7,6 +7,7 @@ import { LuMenu } from "react-icons/lu"
 
 import { menuDashboard } from "@/config/menu-dashboard"
 import { siteConfig } from "@/config/site"
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import {
   Accordion,
@@ -23,25 +24,25 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { SignInButton } from "@/components/blockchain/sign-in-button"
-import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { BrandMark, BrandName } from "@/components/brand/brand-mark"
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
 
 import { ModeToggle } from "../shared/mode-toggle"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const { t } = useI18n()
   const isDashboardActive = isActivePath(pathname, "/dashboard")
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <div className="flex items-center justify-end md:hidden">
+      <div className="flex items-center justify-end lg:hidden">
         <SheetTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Open navigation menu"
+            aria-label={t("nav.openMenu")}
             className="size-11 text-base hover:bg-transparent focus-visible:bg-transparent"
           >
             <LuMenu className="size-5" />
@@ -49,8 +50,8 @@ export function MobileNav() {
         </SheetTrigger>
       </div>
       <SheetContent side="right" className="pr-0">
-        <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-        <div className="flex items-center justify-between">
+        <SheetTitle className="sr-only">{t("nav.menuTitle")}</SheetTitle>
+        <div className="mr-4 flex items-center justify-between">
           <MobileLink
             href="/"
             className="flex items-center gap-2"
@@ -59,7 +60,8 @@ export function MobileNav() {
             <BrandMark size={28} />
             <BrandName className="text-base" />
           </MobileLink>
-          <div className="[&_button]:size-11">
+          <div className="flex items-center gap-1">
+            <LanguageSwitcher />
             <ModeToggle />
           </div>
         </div>
@@ -72,7 +74,7 @@ export function MobileNav() {
               isActive={isActivePath(pathname, "/explore")}
               onOpenChange={setOpen}
             >
-              Explore
+              {t("nav.explore")}
             </MobileLink>
             <MobileLink
               href="/mint"
@@ -80,7 +82,7 @@ export function MobileNav() {
               isActive={isActivePath(pathname, "/mint")}
               onOpenChange={setOpen}
             >
-              Mint
+              {t("nav.mint")}
             </MobileLink>
             <MobileLink
               href="/collections"
@@ -88,7 +90,7 @@ export function MobileNav() {
               isActive={isActivePath(pathname, "/collections")}
               onOpenChange={setOpen}
             >
-              Collections
+              {t("nav.collections")}
             </MobileLink>
             <MobileLink
               href="/exchange"
@@ -96,7 +98,7 @@ export function MobileNav() {
               isActive={isActivePath(pathname, "/exchange")}
               onOpenChange={setOpen}
             >
-              Exchange
+              {t("nav.exchange")}
             </MobileLink>
 
             <Separator />
@@ -110,7 +112,7 @@ export function MobileNav() {
             >
               <AccordionItem value="dashboard" className="border-b-0">
                 <AccordionTrigger className="min-h-11 rounded-md px-3 text-base font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                  Dashboard
+                  {t("nav.dashboard")}
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="flex flex-col space-y-2 pt-2">
@@ -122,7 +124,7 @@ export function MobileNav() {
                         isActive={isActivePath(pathname, item.href)}
                         onOpenChange={setOpen}
                       >
-                        {item.label}
+                        {t(`sidebar.${item.key}`)}
                       </MobileLink>
                     ))}
                   </div>
@@ -137,13 +139,8 @@ export function MobileNav() {
               className="text-base font-medium"
               onOpenChange={setOpen}
             >
-              Documentation
+              {t("nav.documentation")}
             </MobileLink>
-
-            <div className="pr-4 pt-2 [&_button]:min-h-11">
-              <WalletConnect className="mb-2" />
-              <SignInButton />
-            </div>
           </div>
         </ScrollArea>
       </SheetContent>

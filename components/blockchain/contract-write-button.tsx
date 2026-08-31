@@ -1,5 +1,8 @@
+"use client"
+
 import { ButtonHTMLAttributes } from "react"
 
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 import { Button } from "../ui/button"
@@ -20,10 +23,12 @@ export const ContractWriteButton = ({
   isLoadingTx,
   isLoadingWrite,
   write = true,
-  loadingWriteText = "Sign the transaction in your wallet",
-  loadingTxText = "Writing...",
+  loadingWriteText,
+  loadingTxText,
   ...props
 }: ContractWriteButtonProps) => {
+  const { t } = useI18n()
+
   return (
     <Button
       className={className}
@@ -31,9 +36,9 @@ export const ContractWriteButton = ({
       {...props}
     >
       {isLoadingWrite
-        ? loadingWriteText
+        ? loadingWriteText ?? t("transaction.signInWallet")
         : isLoadingTx
-        ? loadingTxText
+        ? loadingTxText ?? t("transaction.writing")
         : children}
     </Button>
   )

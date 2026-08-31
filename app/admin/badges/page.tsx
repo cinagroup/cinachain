@@ -64,20 +64,20 @@ export default function AdminBadgesPage() {
   // A mined-but-reverted tx must not look like success
   useEffect(() => {
     if (reverted) {
-      setError("Transaction reverted on-chain — no badge was minted.")
+      setError(t("admin.badgeTransactionReverted"))
     }
-  }, [reverted])
+  }, [reverted, t])
 
   const handleMint = async () => {
     setError(null)
     setTxHash(null)
 
     if (!recipient || !/^0x[a-fA-F0-9]{40}$/.test(recipient)) {
-      setError("Invalid recipient address")
+      setError(t("admin.invalidRecipient"))
       return
     }
     if (!hasErc1155Contract) {
-      setError("Badge contract not configured")
+      setError(t("admin.badgeContractNotConfiguredShort"))
       return
     }
 
@@ -91,7 +91,7 @@ export default function AdminBadgesPage() {
       setTxHash(hash)
     } catch (err) {
       const anyErr = err as { shortMessage?: string; message?: string }
-      setError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge")
+      setError(anyErr.shortMessage ?? anyErr.message ?? t("admin.badgeMintFailed"))
     }
   }
 
@@ -101,8 +101,7 @@ export default function AdminBadgesPage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            Badge contract not configured. Set
-            NEXT_PUBLIC_CINA_ERC1155_CONTRACT.
+            {t("admin.badgeContractNotConfigured")}
           </AlertDescription>
         </Alert>
       </div>
@@ -112,13 +111,13 @@ export default function AdminBadgesPage() {
   return (
     <div className="container max-w-screen-ultra px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-        Administration
+        {t("admin.title")}
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Badge management<span className="text-foreground">.</span>
+        {t("admin.badgeManagement")}<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Award badges and achievements to community members.
+        {t("admin.badgeManagementDescription")}
       </p>
 
       {/* Feedback */}
@@ -132,14 +131,15 @@ export default function AdminBadgesPage() {
         <Alert variant="success" className="mt-6">
           <CheckCircle2 className="size-4" />
           <AlertDescription>
-            Badge minted!{" "}
+            {t("admin.badgeMinted")} {" "}
             <a
               href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
+              {t("common.viewOn", { explorer: EXPLORER_NAME })}{" "}
+              <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -148,7 +148,7 @@ export default function AdminBadgesPage() {
         <Alert className="border-link/30 bg-link/10 mt-6">
           <Loader2 className="size-4 animate-spin text-link-deep" />
           <AlertDescription className="text-sm text-link-deep">
-            Transaction submitted. Waiting for confirmation...
+            {t("admin.transactionPending")}
           </AlertDescription>
         </Alert>
       )}
@@ -157,13 +157,13 @@ export default function AdminBadgesPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="size-5" />
-            Mint badge
+            {t("admin.mintBadge")}
           </CardTitle>
-          <CardDescription>Award a badge to a specific address</CardDescription>
+          <CardDescription>{t("admin.mintBadgeDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="recipient">Recipient address</Label>
+            <Label htmlFor="recipient">{t("admin.recipientAddress")}</Label>
             <Input
               id="recipient"
               type="text"
@@ -176,7 +176,7 @@ export default function AdminBadgesPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="badgeId">Badge type</Label>
+              <Label htmlFor="badgeId">{t("admin.badgeType")}</Label>
               <select
                 id="badgeId"
                 className="flex h-10 w-full rounded-md border border-input bg-card px-3 text-sm shadow-vercel-sm"
@@ -186,14 +186,14 @@ export default function AdminBadgesPage() {
               >
                 {Object.entries(BADGE_INFO).map(([id, info]) => (
                   <option key={id} value={id}>
-                    {info.icon} {info.name} (#{id})
+                    {info.icon} {t(`admin.badge.${id}.name`)} (#{id})
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
+              <Label htmlFor="amount">{t("admin.amount")}</Label>
               <Input
                 id="amount"
                 type="number"
@@ -214,12 +214,12 @@ export default function AdminBadgesPage() {
             {isBusy ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                Minting...
+                {t("admin.minting")}
               </>
             ) : (
               <>
                 <Award className="mr-2 size-4" />
-                Mint badge
+                {t("admin.mintBadge")}
               </>
             )}
           </Button>
@@ -231,7 +231,7 @@ export default function AdminBadgesPage() {
         <CardHeader>
           <CardTitle>{t("admin.badgeTypes")}</CardTitle>
           <CardDescription>
-            Standard badge types available for minting
+            {t("admin.badgeTypesDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -245,13 +245,13 @@ export default function AdminBadgesPage() {
                   <span className="text-xl">{info.icon}</span>
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      {info.name}
+                      {t(`admin.badge.${id}.name`)}
                     </p>
                     <p className="text-xs text-muted-foreground">#{id}</p>
                   </div>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {info.description}
+                  {t(`admin.badge.${id}.description`)}
                 </p>
               </div>
             ))}

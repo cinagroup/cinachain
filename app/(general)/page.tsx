@@ -1,3 +1,5 @@
+"use client"
+
 import { type ReactNode } from "react"
 import Link from "next/link"
 import {
@@ -24,12 +26,15 @@ import {
   PRIMARY_NETWORK_NAME,
 } from "@/config/deployment"
 import { siteConfig } from "@/config/site"
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 import { HeroStats } from "@/components/home/hero-stats"
 
 export default function HomePage() {
+  const { t } = useI18n()
+
   return (
     <div className="min-h-screen bg-background">
       {/* ═══════════════ Hero ═══════════════ */}
@@ -45,10 +50,10 @@ export default function HomePage() {
         <div className="container mx-auto max-w-screen-desktop px-6 pb-20 pt-32 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 shadow-vercel-sm">
             <span className="text-xs font-medium text-foreground/60">
-              Building on {PRIMARY_NETWORK_LABEL}
+              {t("home.buildingOn", { network: PRIMARY_NETWORK_LABEL })}
             </span>
             <span className="bg-violet/10 inline-flex h-4 items-center rounded-full px-2 text-[10px] font-semibold text-violet">
-              {DEPLOYMENT_STAGE}
+              {t(`status.${DEPLOYMENT_STAGE.toLowerCase()}`)}
             </span>
           </div>
 
@@ -58,7 +63,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-screen-tablet text-lg leading-8 text-muted-foreground">
-            {`A full-stack Web3 ecosystem currently running on ${PRIMARY_NETWORK_LABEL} — NFT platform, badge system, gasless transactions, and edge-deployed infrastructure.`}
+            {t("home.heroDescription", { network: PRIMARY_NETWORK_LABEL })}
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -67,7 +72,7 @@ export default function HomePage() {
               className={cn(buttonVariants({ size: "lg" }), "btn-pill")}
             >
               <Sparkles className="mr-2 size-4" />
-              Explore NFTs
+              {t("home.exploreNfts")}
             </Link>
             <Link
               href="/mint"
@@ -76,7 +81,7 @@ export default function HomePage() {
                 "btn-pill"
               )}
             >
-              Mint NFT
+              {t("home.mintNft")}
             </Link>
             <Link
               href="/dashboard"
@@ -85,7 +90,7 @@ export default function HomePage() {
                 "btn-pill"
               )}
             >
-              Dashboard
+              {t("nav.dashboard")}
             </Link>
           </div>
 
@@ -97,9 +102,9 @@ export default function HomePage() {
       <section className="content-auto-section border-t border-border">
         <div className="container mx-auto max-w-screen-ultra px-6 py-24">
           <SectionHeader
-            eyebrow="Products"
-            title="A growing ecosystem."
-            description="Four products built on shared infrastructure, designed to work together."
+            eyebrow={t("home.productsEyebrow")}
+            title={t("home.productsTitle")}
+            description={t("home.productsDescription")}
           />
 
           <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -107,45 +112,45 @@ export default function HomePage() {
               icon={<Layers className="size-6" />}
               name="CinaChain NFT"
               tag="ERC-721"
-              description="10,000 unique collectibles with whitelist + public mint phases. Full enumerable support for dashboard integration."
+              description={t("home.productNftDescription")}
               href="/explore"
-              cta="View collection"
+              cta={t("home.viewCollection")}
               status={DEPLOYMENT_STAGE}
             />
             <ProductCard
               icon={<Award className="size-6" />}
               name="CinaBadge"
               tag="ERC-1155"
-              description="Soulbound achievement badges, event tickets, and membership tiers. Batch minting and airdrop support."
+              description={t("home.productBadgeDescription")}
               href="/dashboard/badges"
-              cta="View badges"
+              cta={t("home.viewBadges")}
               status={DEPLOYMENT_STAGE}
             />
             <ProductCard
               icon={<Coins className="size-6" />}
               name="CinaMega"
               tag="ERC-1155"
-              description="Three template-based mega-collections — UCINA, MCINA, CINA — with billions of copies each and a fixed 1:1000:1,000,000 exchange."
+              description={t("home.productMegaDescription")}
               href="/collections"
-              cta="View collections"
+              cta={t("home.viewCollections")}
               status="Beta"
             />
             <ProductCard
               icon={<Zap className="size-6" />}
-              name="Gasless minting"
+              name={t("home.gaslessMinting")}
               tag="CDP Paymaster"
-              description="Coinbase Smart Wallet integration with passkey-based onboarding. Users mint without holding ETH."
+              description={t("home.productGaslessDescription")}
               href="/mint"
-              cta="Try gasless"
+              cta={t("home.tryGasless")}
               status="Beta"
             />
             <ProductCard
               icon={<Server className="size-6" />}
-              name="Edge API"
+              name={t("home.edgeApi")}
               tag="Cloudflare Workers"
-              description="Whitelist verification and paymaster proxy running on Cloudflare's global edge network."
+              description={t("home.productApiDescription")}
               href="https://whitelist-api.cinachain.com/health"
-              cta="API status"
+              cta={t("home.apiStatus")}
               status={DEPLOYMENT_STAGE}
               external
             />
@@ -157,31 +162,31 @@ export default function HomePage() {
       <section className="content-auto-section border-t border-border bg-card/50">
         <div className="container mx-auto max-w-screen-ultra px-6 py-24">
           <SectionHeader
-            eyebrow="Infrastructure"
-            title="A testnet stack built to scale."
-            description="Every layer is being validated on Base Sepolia before the mainnet launch."
+            eyebrow={t("home.infrastructureEyebrow")}
+            title={t("home.infrastructureTitle")}
+            description={t("home.infrastructureDescription")}
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <TechCard
               icon={<Shield className="size-5" />}
               title={PRIMARY_NETWORK_NAME}
-              description="Coinbase's Ethereum L2 configured for CinaChain contracts and transactions."
+              description={t("home.baseDescription")}
             />
             <TechCard
               icon={<Globe className="size-5" />}
               title="IPFS"
-              description="Decentralized metadata with 3-gateway fallback for reliability."
+              description={t("home.ipfsDescription")}
             />
             <TechCard
               icon={<Wallet className="size-5" />}
-              title="Smart wallet"
-              description="Passkey-based wallets. No seed phrases. Gasless transactions."
+              title={t("home.smartWallet")}
+              description={t("home.smartWalletDescription")}
             />
             <TechCard
               icon={<Code className="size-5" />}
               title="Cloudflare"
-              description="Edge-deployed Pages + Workers. Sub-50ms global latency."
+              description={t("home.cloudflareDescription")}
             />
           </div>
         </div>
@@ -191,50 +196,50 @@ export default function HomePage() {
       <section className="content-auto-section border-t border-border">
         <div className="container mx-auto max-w-screen-ultra px-6 py-24">
           <SectionHeader
-            eyebrow="Roadmap"
-            title="Built incrementally."
-            description="Each phase is validated on testnet before the next begins."
+            eyebrow={t("home.roadmapEyebrow")}
+            title={t("home.roadmapTitle")}
+            description={t("home.roadmapDescription")}
           />
 
           <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <RoadmapCard
               phase="01"
-              title="Infrastructure"
+              title={t("home.roadmapInfrastructure")}
               status="done"
               items={[
-                "Cloudflare Pages deploy",
-                "Custom IPFS gateways",
-                "RPC proxy worker",
+                t("home.roadmapCloudflareDeploy"),
+                t("home.roadmapIpfsGateways"),
+                t("home.roadmapRpcProxy"),
               ]}
             />
             <RoadmapCard
               phase="02"
-              title="NFT platform"
+              title={t("home.roadmapNftPlatform")}
               status="done"
               items={[
-                "ERC-721 contract deployed",
-                "Mint + whitelist system",
-                "Dashboard & explore",
+                t("home.roadmapErc721"),
+                t("home.roadmapMintWhitelist"),
+                t("home.roadmapDashboardExplore"),
               ]}
             />
             <RoadmapCard
               phase="03"
-              title="Admin & badges"
+              title={t("home.roadmapAdminBadges")}
               status="done"
               items={[
-                "Admin control panel",
-                "ERC-1155 badge system",
-                "Gasless minting (CDP)",
+                t("home.roadmapAdminPanel"),
+                t("home.roadmapBadgeSystem"),
+                t("home.roadmapGasless"),
               ]}
             />
             <RoadmapCard
               phase="04"
-              title="Scale & expand"
+              title={t("home.roadmapScale")}
               status="active"
               items={[
-                "USDC paymaster integration",
-                "Mainnet deployment",
-                "Marketplace integration",
+                t("home.roadmapUsdc"),
+                t("home.roadmapMainnet"),
+                t("home.roadmapMarketplace"),
               ]}
             />
           </div>
@@ -245,26 +250,26 @@ export default function HomePage() {
       <section className="content-auto-section border-t border-border bg-card/50">
         <div className="container mx-auto max-w-screen-ultra px-6 py-24">
           <SectionHeader
-            eyebrow="Team"
-            title="Built by cinagroup."
-            description="A team focused on shipping real products on-chain."
+            eyebrow={t("home.teamEyebrow")}
+            title={t("home.teamTitle")}
+            description={t("home.teamDescription")}
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <TeamCard
               icon={<Users className="size-8" />}
               name="cinagroup"
-              role="Core team"
+              role={t("home.coreTeam")}
             />
             <TeamCard
               icon={<BrandMark size={40} />}
               name="CinaChain"
-              role="Brand & community"
+              role={t("home.brandCommunity")}
             />
             <TeamCard
               icon={<FaGithub className="size-8" />}
-              name="Open source"
-              role="Powered by the community"
+              name={t("home.openSource")}
+              role={t("home.poweredByCommunity")}
             />
           </div>
         </div>
@@ -274,10 +279,11 @@ export default function HomePage() {
       <section className="content-auto-section band-dark border-t border-border">
         <div className="container mx-auto max-w-screen-desktop px-6 py-24 text-center">
           <h2 className="font-display text-4xl tracking-tight sm:text-5xl">
-            Start building on CinaChain<span className="text-white/50">.</span>
+            {t("home.ctaTitle")}
+            <span className="text-white/50">.</span>
           </h2>
           <p className="mx-auto mt-4 max-w-[480px] text-base text-white/60">
-            Mint your first NFT, earn badges, and join the ecosystem.
+            {t("home.ctaDescription")}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
@@ -287,7 +293,7 @@ export default function HomePage() {
                 "btn-pill bg-white text-primary"
               )}
             >
-              Mint your first NFT
+              {t("home.mintFirstNft")}
               <ArrowRight className="ml-2 size-4" />
             </Link>
             <Link
@@ -297,7 +303,7 @@ export default function HomePage() {
               className="inline-flex h-12 items-center gap-2 rounded-full border border-white/20 px-6 text-base font-medium text-white transition-opacity hover:opacity-90"
             >
               <FaDiscord className="size-4" />
-              Join Discord
+              {t("home.joinDiscord")}
             </Link>
           </div>
 
@@ -306,7 +312,7 @@ export default function HomePage() {
               href={siteConfig.links.github}
               target="_blank"
               rel="noreferrer noopener"
-              aria-label="CinaChain on GitHub"
+              aria-label={t("footer.githubAria")}
               className="flex size-11 items-center justify-center text-white/50 transition-colors hover:text-white"
             >
               <FaGithub className="size-5" />
@@ -315,7 +321,7 @@ export default function HomePage() {
               href={siteConfig.links.twitter}
               target="_blank"
               rel="noreferrer noopener"
-              aria-label="CinaChain on X"
+              aria-label={t("footer.xAria")}
               className="flex size-11 items-center justify-center text-white/50 transition-colors hover:text-white"
             >
               <FaTwitter className="size-5" />
@@ -324,7 +330,7 @@ export default function HomePage() {
               href={siteConfig.links.discord}
               target="_blank"
               rel="noreferrer noopener"
-              aria-label="CinaChain on Discord"
+              aria-label={t("footer.discordAria")}
               className="flex size-11 items-center justify-center text-white/50 transition-colors hover:text-white"
             >
               <FaDiscord className="size-5" />
@@ -333,7 +339,9 @@ export default function HomePage() {
 
           <div className="mt-8 flex items-center justify-center gap-2 text-xs text-white/50">
             <Lock className="size-3" />
-            <span>{PRIMARY_NETWORK_LABEL} · Powered by Cloudflare</span>
+            <span>
+              {t("home.poweredBy", { network: PRIMARY_NETWORK_LABEL })}
+            </span>
           </div>
         </div>
       </section>
@@ -386,6 +394,11 @@ function ProductCard({
   status: "Live" | "Beta" | "Coming soon"
   external?: boolean
 }) {
+  const { t } = useI18n()
+  const statusLabel = t(
+    `status.${status === "Coming soon" ? "comingSoon" : status.toLowerCase()}`
+  )
+
   return (
     <Link
       href={href}
@@ -410,7 +423,7 @@ function ProductCard({
               status === "Coming soon" && "bg-secondary text-muted-foreground"
             )}
           >
-            {status}
+            {statusLabel}
           </span>
         </div>
       </div>
@@ -442,7 +455,9 @@ function TechCard({
       <div className="mb-3 flex size-9 items-center justify-center rounded-md bg-secondary text-foreground">
         {icon}
       </div>
-      <h3 className="text-sm font-medium tracking-tight text-foreground">{title}</h3>
+      <h3 className="text-sm font-medium tracking-tight text-foreground">
+        {title}
+      </h3>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">
         {description}
       </p>
@@ -461,6 +476,8 @@ function RoadmapCard({
   status: "done" | "active"
   items: string[]
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="relative rounded-lg border border-border bg-card p-5 shadow-vercel-card">
       <div className="flex items-center justify-between">
@@ -470,12 +487,12 @@ function RoadmapCard({
         {status === "done" ? (
           <span className="flex items-center gap-1 text-xs font-medium text-success">
             <CheckCircle2 className="size-3.5" />
-            Done
+            {t("status.done")}
           </span>
         ) : (
           <span className="flex items-center gap-1 text-xs font-medium text-violet">
             <Sparkles className="size-3.5" />
-            In progress
+            {t("status.inProgress")}
           </span>
         )}
       </div>

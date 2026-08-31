@@ -134,7 +134,11 @@ export default function ContractManagementPage() {
       setSuccessAction(label)
     } catch (err) {
       const anyErr = err as { shortMessage?: string; message?: string }
-      setError(anyErr.shortMessage ?? anyErr.message ?? `Failed to ${label}`)
+      setError(
+        anyErr.shortMessage ??
+          anyErr.message ??
+          t("admin.actionFailed", { action: label })
+      )
     }
   }
 
@@ -144,8 +148,7 @@ export default function ContractManagementPage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            NFT contract address not configured. Set
-            NEXT_PUBLIC_CINA_NFT_CONTRACT in environment.
+            {t("admin.nftContractNotConfigured")}
           </AlertDescription>
         </Alert>
       </div>
@@ -155,13 +158,13 @@ export default function ContractManagementPage() {
   return (
     <div className="container max-w-screen-ultra px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-        Administration
+        {t("admin.title")}
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        Contract management<span className="text-foreground">.</span>
+        {t("admin.contractManagement")}<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Manage your NFT contract settings and operations.
+        {t("admin.contractManagementDescription")}
       </p>
 
       {/* Paused warning */}
@@ -169,7 +172,7 @@ export default function ContractManagementPage() {
         <Alert variant="destructive" className="mt-6">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            Minting is currently paused. Users cannot mint new NFTs.
+            {t("admin.mintingPausedWarning")}
           </AlertDescription>
         </Alert>
       )}
@@ -186,14 +189,15 @@ export default function ContractManagementPage() {
         <Alert variant="success" className="mt-6">
           <CheckCircle2 className="size-4" />
           <AlertDescription>
-            {successAction} successful!{" "}
+            {t("admin.actionSuccessful", { action: successAction })} {" "}
             <a
               href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
+              {t("common.viewOn", { explorer: EXPLORER_NAME })}{" "}
+              <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -203,7 +207,7 @@ export default function ContractManagementPage() {
         <Alert className="border-link/30 bg-link/10 mt-6">
           <Loader2 className="size-4 animate-spin text-link-deep" />
           <AlertDescription className="text-sm text-link-deep">
-            Transaction submitted. Waiting for confirmation...
+            {t("admin.transactionPending")}
           </AlertDescription>
         </Alert>
       )}
@@ -212,14 +216,15 @@ export default function ContractManagementPage() {
         <Alert variant="destructive" className="mt-6">
           <AlertCircle className="size-4" />
           <AlertDescription className="break-all">
-            Transaction reverted on-chain — the action failed.{" "}
+            {t("admin.transactionReverted")} {" "}
             <a
               href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
+              {t("common.viewOn", { explorer: EXPLORER_NAME })}{" "}
+              <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -235,15 +240,17 @@ export default function ContractManagementPage() {
               ) : (
                 <Pause className="size-5" />
               )}
-              Minting status
+              {t("admin.mintingStatus")}
             </CardTitle>
             <CardDescription>
-              Pause or resume the minting process
+              {t("admin.mintingStatusDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between rounded-md bg-secondary p-4">
-              <span className="text-sm font-medium">Current status:</span>
+              <span className="text-sm font-medium">
+                {t("admin.currentStatus")}
+              </span>
               <span
                 className={
                   isPaused
@@ -251,14 +258,14 @@ export default function ContractManagementPage() {
                     : "font-semibold text-green-500"
                 }
               >
-                {isPaused ? "Paused" : "Active"}
+                {isPaused ? t("admin.paused") : t("admin.active")}
               </span>
             </div>
             <Button
               onClick={() =>
                 handleAction(
                   isPaused ? "unpause" : "pause",
-                  isPaused ? "Resume minting" : "Pause minting"
+                  isPaused ? t("admin.resumeMinting") : t("admin.pauseMinting")
                 )
               }
               disabled={isBusy}
@@ -272,7 +279,7 @@ export default function ContractManagementPage() {
               ) : (
                 <Pause className="mr-2 size-4" />
               )}
-              {isPaused ? "Resume minting" : "Pause minting"}
+              {isPaused ? t("admin.resumeMinting") : t("admin.pauseMinting")}
             </Button>
           </CardContent>
         </Card>
@@ -282,15 +289,17 @@ export default function ContractManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="size-5" />
-              Withdraw funds
+              {t("admin.withdrawFunds")}
             </CardTitle>
             <CardDescription>
-              Withdraw collected ETH from the contract
+              {t("admin.withdrawDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-4 flex items-center justify-between rounded-md border border-border bg-secondary p-4">
-              <span className="text-sm font-medium">Contract balance</span>
+              <span className="text-sm font-medium">
+                {t("admin.contractBalance")}
+              </span>
               <span className="font-mono-tech text-sm text-foreground">
                 {contractBalance
                   ? `${trimEth(
@@ -304,17 +313,17 @@ export default function ContractManagementPage() {
             </div>
             <Alert className="mb-4">
               <AlertDescription className="text-sm">
-                This will transfer all ETH in the contract to the owner address.
+                {t("admin.withdrawNotice")}
               </AlertDescription>
             </Alert>
             <Button
               onClick={() => {
                 if (
                   window.confirm(
-                    "Withdraw ALL ETH from the contract to the owner address? This cannot be undone."
+                    t("admin.withdrawConfirm")
                   )
                 ) {
-                  void handleAction("withdraw", "Withdrawal")
+                  void handleAction("withdraw", t("admin.withdrawal"))
                 }
               }}
               disabled={
@@ -329,8 +338,8 @@ export default function ContractManagementPage() {
                 <DollarSign className="mr-2 size-4" />
               )}
               {contractBalance && contractBalance.value === 0n
-                ? "Nothing to withdraw"
-                : "Withdraw all funds"}
+                ? t("admin.nothingToWithdraw")
+                : t("admin.withdrawAll")}
             </Button>
           </CardContent>
         </Card>
@@ -340,13 +349,13 @@ export default function ContractManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="size-5" />
-              Set mint price
+              {t("admin.setMintPrice")}
             </CardTitle>
-            <CardDescription>Update the price per NFT in ETH</CardDescription>
+            <CardDescription>{t("admin.setMintPriceDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="price">New price (ETH)</Label>
+              <Label htmlFor="price">{t("admin.newPrice")}</Label>
               <Input
                 id="price"
                 type="number"
@@ -362,17 +371,17 @@ export default function ContractManagementPage() {
               onClick={() => {
                 const price = parseFloat(newPriceEth)
                 if (isNaN(price) || price <= 0) {
-                  setError("Price must be greater than 0")
+                  setError(t("admin.priceGreaterThanZero"))
                   return
                 }
                 if (
                   !window.confirm(
-                    `Set mint price to ${newPriceEth} ETH per NFT?`
+                    t("admin.setPriceConfirm", { price: newPriceEth })
                   )
                 ) {
                   return
                 }
-                void handleAction("setMintPrice", "Price update", [
+                void handleAction("setMintPrice", t("admin.priceUpdate"), [
                   parseEther(newPriceEth),
                 ])
               }}
@@ -380,7 +389,7 @@ export default function ContractManagementPage() {
               variant="outline"
               className="w-full"
             >
-              Update price
+              {t("admin.updatePrice")}
             </Button>
           </CardContent>
         </Card>
@@ -390,15 +399,15 @@ export default function ContractManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TreePine className="size-5" />
-              Set Merkle root
+              {t("admin.setMerkleRoot")}
             </CardTitle>
             <CardDescription>
-              Enable whitelist minting with the root from Whitelist management
+              {t("admin.setMerkleRootDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="merkle-root">Merkle root (0x...)</Label>
+              <Label htmlFor="merkle-root">{t("admin.merkleRoot")}</Label>
               <Input
                 id="merkle-root"
                 type="text"
@@ -413,11 +422,11 @@ export default function ContractManagementPage() {
               onClick={() => {
                 if (!/^0x[0-9a-fA-F]{64}$/.test(newMerkleRoot)) {
                   setError(
-                    "Invalid Merkle root — must be 32 bytes (0x + 64 hex chars)"
+                    t("admin.invalidMerkleRoot")
                   )
                   return
                 }
-                void handleAction("setMerkleRoot", "Merkle root update", [
+                void handleAction("setMerkleRoot", t("admin.merkleRootUpdate"), [
                   newMerkleRoot,
                 ])
               }}
@@ -425,7 +434,7 @@ export default function ContractManagementPage() {
               variant="outline"
               className="w-full"
             >
-              Set Merkle root
+              {t("admin.setMerkleRoot")}
             </Button>
           </CardContent>
         </Card>
@@ -435,15 +444,15 @@ export default function ContractManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="size-5" />
-              Set base URI
+              {t("admin.setBaseUri")}
             </CardTitle>
             <CardDescription>
-              Update the IPFS base URI for metadata
+              {t("admin.setBaseUriDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="baseuri">New base URI</Label>
+              <Label htmlFor="baseuri">{t("admin.newBaseUri")}</Label>
               <Input
                 id="baseuri"
                 type="text"
@@ -455,13 +464,13 @@ export default function ContractManagementPage() {
             </div>
             <Button
               onClick={() =>
-                handleAction("setBaseURI", "Base URI update", [newBaseURI])
+                handleAction("setBaseURI", t("admin.baseUriUpdate"), [newBaseURI])
               }
               disabled={isBusy || !newBaseURI}
               variant="outline"
               className="w-full"
             >
-              Update base URI
+              {t("admin.updateBaseUri")}
             </Button>
           </CardContent>
         </Card>
@@ -475,19 +484,25 @@ export default function ContractManagementPage() {
         <CardContent>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between border-b border-border py-2">
-              <dt className="text-muted-foreground">Contract address</dt>
+              <dt className="text-muted-foreground">
+                {t("admin.contractAddress")}
+              </dt>
               <dd className="font-mono-tech text-xs">{CINA_NFT_CONTRACT}</dd>
             </div>
             <div className="flex justify-between border-b border-border py-2">
-              <dt className="text-muted-foreground">Network</dt>
+              <dt className="text-muted-foreground">{t("admin.network")}</dt>
               <dd className="font-medium">{PRIMARY_NETWORK_NAME}</dd>
             </div>
             <div className="flex justify-between border-b border-border py-2">
-              <dt className="text-muted-foreground">Token standard</dt>
+              <dt className="text-muted-foreground">
+                {t("admin.tokenStandard")}
+              </dt>
               <dd className="font-medium">ERC-721</dd>
             </div>
             <div className="flex justify-between py-2">
-              <dt className="text-muted-foreground">Contract status</dt>
+              <dt className="text-muted-foreground">
+                {t("admin.contractStatus")}
+              </dt>
               <dd
                 className={
                   isPaused
@@ -495,7 +510,7 @@ export default function ContractManagementPage() {
                     : "font-semibold text-green-500"
                 }
               >
-                {isPaused ? "Paused" : "Active"}
+                {isPaused ? t("admin.paused") : t("admin.active")}
               </dd>
             </div>
           </dl>
@@ -505,10 +520,10 @@ export default function ContractManagementPage() {
       <Alert className="mt-6">
         <AlertCircle className="size-4" />
         <AlertDescription className="text-sm">
-          <strong>Warning:</strong> These actions require the owner wallet to be
-          connected. The smart contract&apos;s{" "}
+          <strong>{t("admin.warning")}</strong>{" "}
+          {t("admin.ownerWalletRequiredBefore")} {" "}
           <code className="rounded bg-secondary px-1 text-xs">onlyOwner</code>{" "}
-          modifier is the authoritative access control.
+          {t("admin.ownerWalletRequiredAfter")}
         </AlertDescription>
       </Alert>
     </div>

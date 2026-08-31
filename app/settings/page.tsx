@@ -9,10 +9,10 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react"
-import { useI18n } from "@/lib/i18n"
 import { useAccount } from "wagmi"
 
 import { useApiKeys } from "@/lib/hooks/use-api-keys"
+import { useI18n } from "@/lib/i18n"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input"
 
 export default function SettingsPage() {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const { keys, isAuthenticated, signIn, signInError, createKey, revokeKey } =
     useApiKeys()
   const { address } = useAccount()
@@ -57,9 +57,9 @@ export default function SettingsPage() {
     try {
       const ok = await signIn()
       if (!ok)
-        setError(signInError ?? "Sign-in failed — connect a wallet first")
+        setError(signInError ?? t("settings.signInFailed"))
     } catch {
-      setError("Sign-in failed — connect a wallet first")
+      setError(t("settings.signInFailed"))
     } finally {
       setSigningIn(false)
     }
@@ -72,7 +72,7 @@ export default function SettingsPage() {
       const raw = await createKey()
       setNewKey(raw)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create API key")
+      setError(err instanceof Error ? err.message : t("settings.createFailed"))
     } finally {
       setCreating(false)
     }
@@ -95,14 +95,14 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Account
+            {t("settings.account")}
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            {t("settings.apiKeys")}<span className="text-foreground">.</span>
+            {t("settings.apiKeys")}
+            <span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            Create API keys bound to your wallet address for the billing
-            gateway.
+            {t("settings.description")}
           </p>
         </div>
 
@@ -111,10 +111,10 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="size-5" />
-                Sign in
+                {t("settings.signIn")}
               </CardTitle>
               <CardDescription>
-                Sign in with your wallet to manage API keys.
+                {t("settings.signInDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -126,12 +126,11 @@ export default function SettingsPage() {
                 {signingIn ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : null}
-                Sign in with Ethereum
+                {t("settings.signInWithEthereum")}
               </Button>
               {!address ? (
                 <p className="text-sm text-muted-foreground">
-                  Connect a wallet first, then sign in with Ethereum to manage
-                  API keys.
+                  {t("settings.connectFirst")}
                 </p>
               ) : null}
             </CardContent>
@@ -142,7 +141,7 @@ export default function SettingsPage() {
             {error ? (
               <Alert variant="destructive">
                 <AlertCircle className="size-4" />
-                <AlertTitle>Error</AlertTitle>
+                <AlertTitle>{t("settings.error")}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
@@ -151,9 +150,9 @@ export default function SettingsPage() {
             {newKey ? (
               <Alert variant="success">
                 <CheckCircle2 className="size-4" />
-                <AlertTitle>API key created</AlertTitle>
+                <AlertTitle>{t("settings.created")}</AlertTitle>
                 <AlertDescription>
-                  <p>Copy your key now — it won&apos;t be shown again.</p>
+                  <p>{t("settings.copyNow")}</p>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input
                       readOnly
@@ -172,7 +171,7 @@ export default function SettingsPage() {
                       ) : (
                         <Copy className="mr-2 size-4" />
                       )}
-                      {copied ? "Copied" : "Copy"}
+                      {copied ? t("settings.copied") : t("settings.copy")}
                     </Button>
                   </div>
                 </AlertDescription>
@@ -183,13 +182,12 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <KeyRound className="size-5" />
-                  API Keys
+                  {t("settings.apiKeys")}
                 </CardTitle>
                 <CardDescription>
-                  Keys are prefixed with{" "}
-                  <code className="rounded bg-secondary px-1">cina_</code> and
-                  bound to your wallet address. The billing worker only stores
-                  the SHA-256 hash of each key.
+                  {t("settings.keysPrefixBefore")} {" "}
+                  <code className="rounded bg-secondary px-1">cina_</code>{" "}
+                  {t("settings.keysPrefixAfter")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -199,11 +197,13 @@ export default function SettingsPage() {
                   ) : (
                     <KeyRound className="mr-2 size-4" />
                   )}
-                  Create API Key
+                  {t("settings.create")}
                 </Button>
 
                 {keys.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">尚未创建</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("settings.empty")}
+                  </p>
                 ) : (
                   <ul className="divide-y divide-border rounded-md border border-border">
                     {keys.map((key) => (
@@ -217,15 +217,27 @@ export default function SettingsPage() {
                             <span className="tracking-tight">••••••••</span>
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Created {new Date(key.createdAt).toLocaleString()}
+                            {t("settings.createdAt", {
+                              date: new Date(key.createdAt).toLocaleString(locale),
+                            })}
                           </p>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="size-8 shrink-0 text-destructive hover:text-destructive"
-                          aria-label={`Revoke API key ${key.prefix}`}
-                          onClick={() => revokeKey(key.id)}
+                          aria-label={t("settings.revokeAria", {
+                            prefix: key.prefix,
+                          })}
+                          onClick={() => {
+                            void revokeKey(key.id).catch((cause: unknown) => {
+                              setError(
+                                cause instanceof Error
+                                  ? cause.message
+                                  : t("settings.revokeFailed")
+                              )
+                            })
+                          }}
                         >
                           <Trash2 className="size-4" />
                         </Button>

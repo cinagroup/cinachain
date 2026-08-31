@@ -1,76 +1,50 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
-import { Loader2 } from "lucide-react"
+import { useEffect, useRef } from "react"
 
 import {
   completeCinaauthLogin,
   toCinaauthErrorMessage,
 } from "@/lib/auth/cinaauth"
-import { Button } from "@/components/ui/button"
-
+import {
+  CINAAUTH_POPUP_MARKER_KEY,
+  createCinaauthPopupMessage,
+  isCinaauthPopupContext,
+  publishCinaauthPopupMessage,
+} from "@/lib/auth/cinaauth-popup"
 /**
- * CinaAuth OIDC redirect target. The static export has no server runtime,
- * so the authorization code is exchanged for tokens entirely client-side
- * (public client + PKCE), after which the user is sent back to where the
- * sign-in started.
+ * Invisible CinaAuth OIDC callback endpoint. It exists only inside the popup,
+ * performs the client-side PKCE exchange, notifies the original CinaChain
+ * page without passing tokens, and closes itself.
  */
 export default function CinaauthCallbackPage() {
-  const [error, setError] = useState<string | null>(null)
   const started = useRef(false)
 
   useEffect(() => {
     if (started.current) return
     started.current = true
-    completeCinaauthLogin()
+    const attemptId = sessionStorage.getItem(CINAAUTH_POPUP_MARKER_KEY)
+    if (!isCinaauthPopupContext(attemptId)) {
+      window.close()
+      return
+    }
+
+    completeCinaauthLogin(attemptId)
       .then((result) => {
-        if ("restarted" in result) {
-          // The authorize step rejected a scope (offline_access not enabled
-          // for this client) and the login restarted without it; the browser
-          // is being redirected back to the provider — keep showing the
-          // progress state.
-          return
-        }
-        // Full navigation: already-mounted components (header sign-in
-        // state) re-read the session from localStorage on next mount.
-        window.location.replace(result.returnTo)
+        if (result.attemptId !== attemptId) return
+        publishCinaauthPopupMessage(
+          createCinaauthPopupMessage("success", attemptId)
+        )
+        window.close()
       })
       .catch((cause: unknown) => {
-        setError(toCinaauthErrorMessage(cause))
+        const message = toCinaauthErrorMessage(cause)
+        publishCinaauthPopupMessage(
+          createCinaauthPopupMessage("error", attemptId, message)
+        )
+        window.close()
       })
   }, [])
 
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
-      {error ? (
-        <>
-          <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Sign-in failed
-          </span>
-          <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground">
-            Could not complete sign-in<span className="text-foreground">.</span>
-          </h1>
-          <p className="mt-4 max-w-md text-base text-muted-foreground">
-            {error}
-          </p>
-          <div className="mt-8 flex gap-3">
-            <Button asChild variant="outline">
-              <Link href="/">Back to home</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/dashboard">Go to dashboard</Link>
-            </Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-          <p className="mt-4 text-base text-muted-foreground">
-            Completing sign-in…
-          </p>
-        </>
-      )}
-    </div>
-  )
+  return null
 }

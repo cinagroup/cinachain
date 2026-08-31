@@ -29,24 +29,25 @@ export default function ExplorePage() {
     <div className="min-h-screen bg-background">
       {/* Eyebrow */}
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-        Collection
+        {t("explore.eyebrow")}
       </span>
 
       {/* Heading */}
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-        CinaChain NFT gallery<span className="text-foreground">.</span>
+        {t("explore.heading")}<span className="text-foreground">.</span>
       </h1>
 
       <p className="mt-3 max-w-[560px] text-base leading-7 text-muted-foreground">
-        Browse the full collection. Each NFT is stored on IPFS with
-        multi-gateway fallback.
+        {t("explore.description")}
       </p>
 
       {/* Stats Bar */}
       {stats && (
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <div className="rounded-md border border-border bg-card px-4 py-2 shadow-vercel-sm">
-            <span className="text-xs text-muted-foreground">Total minted</span>
+            <span className="text-xs text-muted-foreground">
+              {t("dashboard.totalMinted")}
+            </span>
             <p className="font-display text-lg text-foreground">
               {stats.mintedCount.toLocaleString()}
             </p>
@@ -58,8 +59,7 @@ export default function ExplorePage() {
       {!hasNftContract && (
         <div className="mt-12 rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
           <p className="text-base text-muted-foreground">
-            NFT contract not configured. Set NEXT_PUBLIC_CINA_NFT_CONTRACT to
-            view the collection.
+            {t("explore.contractNotConfigured")}
           </p>
         </div>
       )}
@@ -77,7 +77,7 @@ export default function ExplorePage() {
       {hasNftContract && status === "error" && (
         <div className="mt-8">
           <ChainReadNotice
-            description="We could not read the collection from Base Sepolia. No NFT count or empty state is being inferred."
+            description={t("explore.readErrorDescription")}
             isRetrying={isRetrying}
             onRetry={() => void refetch()}
             state="error"
@@ -89,7 +89,7 @@ export default function ExplorePage() {
       {hasNftContract && status === "stale" && (
         <div className="mt-8">
           <ChainReadNotice
-            description="The latest refresh failed. The gallery below uses the last complete on-chain response."
+            description={t("explore.staleDescription")}
             isRetrying={isRetrying}
             onRetry={() => void refetch()}
             state="stale"
@@ -103,10 +103,10 @@ export default function ExplorePage() {
         <div className="mt-12 rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
           <PackageOpen className="mx-auto size-12 text-muted-foreground/40" />
           <p className="mt-4 text-base text-muted-foreground">
-            No NFTs minted yet.
+            {t("explore.emptyTitle")}
           </p>
           <p className="mt-1 text-sm text-muted-foreground/60">
-            Be the first to mint a CinaChain NFT!
+            {t("explore.emptyDescription")}
           </p>
         </div>
       )}
@@ -137,8 +137,9 @@ export default function ExplorePage() {
 
             {stats && stats.mintedCount > 100 && (
               <p className="mt-8 text-center text-sm text-muted-foreground">
-                Showing first 100 of {stats.mintedCount.toLocaleString()} minted
-                NFTs.
+                {t("explore.showingFirst", {
+                  count: stats.mintedCount.toLocaleString(),
+                })}
               </p>
             )}
           </>

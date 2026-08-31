@@ -48,13 +48,13 @@ export default function MyNftsPage() {
       <IsWalletConnected>
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Dashboard
+            {t("nav.dashboard")}
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            My NFTs<span className="text-foreground">.</span>
+            {t("nfts.yourNfts")}<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            Your CinaChain NFT collection.
+            {t("nfts.description")}
           </p>
         </div>
 
@@ -62,14 +62,14 @@ export default function MyNftsPage() {
         <Card className="mb-6 shadow-vercel-card">
           <CardHeader>
             <CardTitle>{t("nfts.collectionSummary")}</CardTitle>
-            <CardDescription>Total NFTs owned</CardDescription>
+            <CardDescription>{t("nfts.totalOwned")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="font-display text-4xl">
               {status === "loading"
                 ? "..."
                 : status === "error"
-                ? "Unavailable"
+                ? t("status.unavailable")
                 : count.toLocaleString()}
             </div>
           </CardContent>
@@ -78,11 +78,11 @@ export default function MyNftsPage() {
         {status === "error" && (
           <div className="mb-6">
             <ChainReadNotice
-              description="We could not read this wallet's NFT balance or ownership data. An empty collection is not being inferred."
+              description={t("nfts.readErrorDescription")}
               isRetrying={isRetrying}
               onRetry={() => void refetch()}
               state="error"
-              title="NFT ownership data unavailable"
+              title={t("nfts.readErrorTitle")}
             />
           </div>
         )}
@@ -90,11 +90,11 @@ export default function MyNftsPage() {
         {status === "stale" && (
           <div className="mb-6">
             <ChainReadNotice
-              description="The latest refresh failed. The balance and NFTs below are from the last complete on-chain response."
+              description={t("nfts.staleDescription")}
               isRetrying={isRetrying}
               onRetry={() => void refetch()}
               state="stale"
-              title="Showing last known ownership data"
+              title={t("nfts.staleTitle")}
             />
           </div>
         )}
@@ -131,13 +131,17 @@ export default function MyNftsPage() {
                   {isLoading ? (
                     <Loader2 className="mr-2 size-4 animate-spin" />
                   ) : null}
-                  Load more ({count - offset - tokenIds.length} more)
+                  {t("nfts.loadMore", {
+                    count: count - offset - tokenIds.length,
+                  })}
                 </Button>
               )}
               {!hasMore && (
                 <p className="text-sm text-muted-foreground">
-                  Showing {Math.min(offset + tokenIds.length, count)} of {count}{" "}
-                  owned NFTs.
+                  {t("nfts.showingOwned", {
+                    shown: Math.min(offset + tokenIds.length, count),
+                    count,
+                  })}
                 </p>
               )}
             </div>
@@ -149,10 +153,10 @@ export default function MyNftsPage() {
           <div className="rounded-lg border border-border bg-card p-12 text-center shadow-vercel-card">
             <PackageOpen className="mx-auto size-12 text-muted-foreground/40" />
             <p className="mt-4 text-base text-muted-foreground">
-              You don&apos;t own any CinaChain NFTs yet.
+              {t("nfts.emptyDescription")}
             </p>
             <Button asChild className="mt-4">
-              <Link href="/mint">Mint your first NFT</Link>
+              <Link href="/mint">{t("nfts.mintFirst")}</Link>
             </Button>
           </div>
         )}
@@ -162,7 +166,7 @@ export default function MyNftsPage() {
         <div className="py-12 text-center">
           <h2 className="font-display mb-2 text-xl">{t("nfts.connectWallet")}</h2>
           <p className="text-muted-foreground">
-            Connect your wallet to view your NFT collection.
+            {t("nfts.connectDescription")}
           </p>
         </div>
       </IsWalletDisconnected>

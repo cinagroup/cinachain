@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form"
-import { useDebounce } from "usehooks-ts"
+import { useDebounceValue } from "usehooks-ts"
 import { type Address, type BaseError } from "viem"
 import { useWaitForTransactionReceipt } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContractWriteButton } from "@/components/blockchain/contract-write-button"
@@ -18,11 +19,12 @@ interface Erc1155WriteApproveProps {
 }
 
 export function Erc1155WriteApprove({ address }: Erc1155WriteApproveProps) {
+  const { t } = useI18n()
   const { register, handleSubmit, watch } = useForm()
 
-  const debouncedToAddress = useDebounce(watch("toAddress"), 500)
-  const debouncedTokenId = useDebounce(watch("tokenId"), 500)
-  const debouncedTargetValue = useDebounce(watch("targetValue"), 500)
+  const [debouncedToAddress] = useDebounceValue(watch("toAddress"), 500)
+  const [debouncedTokenId] = useDebounceValue(watch("tokenId"), 500)
+  const [debouncedTargetValue] = useDebounceValue(watch("targetValue"), 500)
 
   const {
     data: config,
@@ -64,20 +66,20 @@ export function Erc1155WriteApprove({ address }: Erc1155WriteApproveProps) {
       <CardContent>
         {" "}
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-          <label>Contract Address</label>
+          <label>{t("integration.field.contractAddress")}</label>
           <input {...register("toAddress")} className="input" />
-          <label>Token Id</label>
+          <label>{t("integration.field.tokenId")}</label>
           <input {...register("tokenId")} className="input" />
-          <label>Target value</label>
+          <label>{t("integration.field.targetValue")}</label>
           <input {...register("targetValue")} className="input" />
           <ContractWriteButton
             isLoadingTx={isLoadingTx}
             isLoadingWrite={isLoadingWrite}
-            loadingTxText="Approving..."
+            loadingTxText={t("integration.action.approving")}
             type="submit"
             write={!!writeContract}
           >
-            Approve
+            {t("integration.action.approve")}
           </ContractWriteButton>
           <TransactionStatus
             error={error as BaseError}
@@ -95,9 +97,14 @@ export function Erc1155WriteApprove({ address }: Erc1155WriteApproveProps) {
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC1155 Approve</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-1155",
+            action: t("integration.action.approve"),
+          })}
+        </h3>
         <p className="text-center text-sm text-gray-500">
-          Approve any tokenId to any address
+          {t("integration.approveAnyDescription")}
         </p>
       </CardFooter>
     </Card>

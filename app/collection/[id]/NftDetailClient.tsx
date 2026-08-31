@@ -22,8 +22,10 @@ import {
 } from "@/components/ui/card"
 import CinaNftImage from "@/components/CinaNftImage"
 import { FavoriteButton } from "@/components/favorites/favorite-button"
+import { useI18n } from "@/lib/i18n"
 
 export default function NftDetailClient({ tokenId }: { tokenId: string }) {
+  const { t } = useI18n()
   const { address } = useAccount()
   const { metadata, image, name, description, attributes, isLoading } =
     useTokenMetadata(tokenId)
@@ -62,7 +64,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                 href="/explore"
                 className="text-muted-foreground transition-colors hover:text-foreground"
               >
-                Collection
+                {t("explore.eyebrow")}
               </Link>
             </li>
             <li className="text-muted-foreground">/</li>
@@ -72,14 +74,15 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
 
         <div className="mx-auto mt-16 max-w-md rounded-lg border border-border bg-card p-10 text-center shadow-vercel-card">
           <p className="font-display text-2xl tracking-tight text-foreground">
-            This NFT has not been minted yet
+            {t("nftDetail.notMintedTitle")}
           </p>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Token #{tokenId} doesn&apos;t exist on-chain yet. Be the first to
-            mint it and own it forever.
+            {t("nftDetail.notMintedDescription", { tokenId })}
           </p>
           <Button asChild className="mt-6">
-            <Link href="/mint">Mint NFT #{tokenId}</Link>
+            <Link href="/mint">
+              {t("nftDetail.mintToken", { tokenId })}
+            </Link>
           </Button>
         </div>
       </div>
@@ -96,7 +99,7 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
               href="/explore"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              Collection
+              {t("explore.eyebrow")}
             </Link>
           </li>
           <li className="text-muted-foreground">/</li>
@@ -154,10 +157,12 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
         <div className="space-y-6">
           <div>
             <p className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Token ID
+              {t("nftDetail.tokenId")}
             </p>
             <h1 className="font-display mt-2 text-3xl tracking-tight text-foreground">
-              {isLoading ? "Loading..." : name || `NFT #${tokenId}`}
+              {isLoading
+                ? t("action.loading")
+                : name || `NFT #${tokenId}`}
             </h1>
           </div>
 
@@ -165,10 +170,10 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
             <Card className="shadow-vercel-card">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between text-base">
-                  <span>Owner</span>
+                  <span>{t("nftDetail.owner")}</span>
                   {isOwner && (
                     <span className="bg-cyan/20 rounded-full px-2 py-0.5 text-xs text-cyan-deep">
-                      You
+                      {t("nftDetail.you")}
                     </span>
                   )}
                 </CardTitle>
@@ -189,7 +194,9 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
           {description && (
             <Card className="shadow-vercel-card">
               <CardHeader>
-                <CardTitle className="text-base">Description</CardTitle>
+                <CardTitle className="text-base">
+                  {t("nftDetail.description")}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm leading-6 text-muted-foreground">
@@ -202,8 +209,12 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
           {attributes.length > 0 && (
             <Card className="shadow-vercel-card">
               <CardHeader>
-                <CardTitle className="text-base">Attributes</CardTitle>
-                <CardDescription>{attributes.length} traits</CardDescription>
+                <CardTitle className="text-base">
+                  {t("nftDetail.attributes")}
+                </CardTitle>
+                <CardDescription>
+                  {t("nftDetail.traits", { count: attributes.length })}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -227,18 +238,24 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
 
           <Card className="shadow-vercel-card">
             <CardHeader>
-              <CardTitle className="text-base">Contract details</CardTitle>
+              <CardTitle className="text-base">
+                {t("nftDetail.contractDetails")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Collection</dt>
+                  <dt className="text-muted-foreground">
+                    {t("explore.eyebrow")}
+                  </dt>
                   <dd className="font-medium text-foreground">
                     {collectionName || "CinaChain NFT"}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Contract address</dt>
+                  <dt className="text-muted-foreground">
+                    {t("nftDetail.contractAddress")}
+                  </dt>
                   <dd>
                     <Link
                       href={getBlockExplorerUrl("address", CINA_NFT_CONTRACT)}
@@ -252,11 +269,15 @@ export default function NftDetailClient({ tokenId }: { tokenId: string }) {
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Token standard</dt>
+                  <dt className="text-muted-foreground">
+                    {t("nftDetail.tokenStandard")}
+                  </dt>
                   <dd className="font-medium text-foreground">ERC-721</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Blockchain</dt>
+                  <dt className="text-muted-foreground">
+                    {t("nftDetail.blockchain")}
+                  </dt>
                   <dd className="font-medium text-foreground">
                     {PRIMARY_NETWORK_NAME}
                   </dd>

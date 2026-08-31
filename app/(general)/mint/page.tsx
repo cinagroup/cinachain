@@ -153,8 +153,8 @@ export default function MintPage() {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQty) {
       setLocalError(
         limitReached
-          ? "You have reached your mint limit for this address."
-          : `Quantity must be between 1 and ${maxQty}`
+          ? t("mint.limitReachedDescription")
+          : t("mint.quantityRange", { max: maxQty })
       )
       return
     }
@@ -162,9 +162,7 @@ export default function MintPage() {
 
     if (mintPhase === "whitelist") {
       if (!whitelistData?.proof) {
-        setLocalError(
-          "No whitelist proof available for this address. Please contact the CinaChain team."
-        )
+        setLocalError(t("mint.noWhitelistProof"))
         return
       }
       await mintWhitelist(whitelistData.proof, quantity)
@@ -175,10 +173,10 @@ export default function MintPage() {
   }
 
   const buttonLabel = (() => {
-    if (status === "awaiting-wallet") return "Confirm in wallet..."
-    if (status === "submitted") return "Confirming..."
-    if (isPending) return "Minting..."
-    return `Mint ${quantity} NFT${quantity > 1 ? "s" : ""}`
+    if (status === "awaiting-wallet") return t("mint.confirmInWallet")
+    if (status === "submitted") return t("mint.confirming")
+    if (isPending) return t("mint.minting")
+    return t("mint.buttonLabel", { quantity })
   })()
 
   // Not connected state
@@ -188,17 +186,17 @@ export default function MintPage() {
         <div className="container max-w-screen-ultra px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Mint
+              {t("mint.title")}
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-              Mint CinaChain NFT<span className="text-foreground">.</span>
+              {t("mint.heading")}<span className="text-foreground">.</span>
             </h1>
           </div>
 
           <Card className="max-w-md shadow-vercel-card">
             <CardHeader>
               <CardTitle>{t("mint.connectWallet")}</CardTitle>
-              <CardDescription>Connect your wallet to mint</CardDescription>
+              <CardDescription>{t("mint.connectDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
               <AppKitConnectButton />
@@ -218,7 +216,7 @@ export default function MintPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
-                Checking mint status...
+                {t("mint.checkingStatus")}
               </div>
             </CardContent>
           </Card>
@@ -244,22 +242,20 @@ export default function MintPage() {
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Mint
+            {t("mint.title")}
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            Mint CinaChain NFT<span className="text-foreground">.</span>
+            {t("mint.heading")}<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            {mintPhase === "whitelist" &&
-              "Exclusive whitelist minting is now active."}
-            {mintPhase === "public" &&
-              "Public minting is now open to everyone."}
-            {mintPhase === "inactive" && "Minting is not currently active."}
+            {mintPhase === "whitelist" && t("mint.whitelistDescription")}
+            {mintPhase === "public" && t("mint.publicDescription")}
+            {mintPhase === "inactive" && t("mint.inactiveDescription")}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Looking to mint badges in bulk?{" "}
+            {t("mint.batchPrompt")} {" "}
             <Link href="/mint-batch" className="text-link hover:underline">
-              Batch mint ERC-1155 →
+              {t("mint.batchLink")} →
             </Link>
           </p>
         </div>
@@ -269,8 +265,7 @@ export default function MintPage() {
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="size-4" />
             <AlertDescription>
-              Whitelist service is temporarily unavailable. Showing public mint
-              status — whitelist minting may be affected.
+              {t("mint.whitelistServiceUnavailable")}
             </AlertDescription>
           </Alert>
         )}
@@ -280,8 +275,7 @@ export default function MintPage() {
           <Alert className="border-link/20 bg-link-bg-soft/40 mb-6">
             <Info className="size-4 text-link-deep" />
             <AlertDescription className="text-sm text-link-deep">
-              This address is not on the whitelist. Public minting is still open
-              — you can mint at the regular price.
+              {t("mint.notWhitelisted")}
             </AlertDescription>
           </Alert>
         )}
@@ -290,17 +284,17 @@ export default function MintPage() {
           <Card className="shadow-vercel-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Mint details
+                {t("mint.details")}
                 {isGasless && (
                   <span className="bg-cyan/20 rounded-full px-2 py-0.5 text-[10px] font-semibold text-cyan-deep">
-                    ⚡ Gasless
+                    {t("common.gasless")}
                   </span>
                 )}
               </CardTitle>
               <CardDescription>
-                {mintPhase === "whitelist" && "Whitelist mint active"}
-                {mintPhase === "public" && "Public mint active"}
-                {mintPhase === "inactive" && "Mint not active"}
+                {mintPhase === "whitelist" && t("mint.whitelistActive")}
+                {mintPhase === "public" && t("mint.publicActive")}
+                {mintPhase === "inactive" && t("mint.notActive")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -308,11 +302,9 @@ export default function MintPage() {
               {mintPhase === "whitelist" && whitelistData && (
                 <Alert variant="info">
                   <AlertDescription>
-                    You are on the whitelist! You can mint up to{" "}
-                    <span className="font-semibold">
-                      {whitelistData.mintLimit}
-                    </span>{" "}
-                    NFTs.
+                    {t("mint.whitelistEligible", {
+                      limit: whitelistData.mintLimit,
+                    })}
                   </AlertDescription>
                 </Alert>
               )}
@@ -320,9 +312,7 @@ export default function MintPage() {
               {mintPhase === "public" && (
                 <Alert className="bg-cyan-soft/40 border border-cyan-soft">
                   <AlertDescription className="text-cyan-deep">
-                    Public mint active. Price:{" "}
-                    <span className="font-semibold">{priceDisplay} ETH</span>{" "}
-                    per NFT.
+                    {t("mint.publicPrice", { price: priceDisplay })}
                   </AlertDescription>
                 </Alert>
               )}
@@ -330,7 +320,7 @@ export default function MintPage() {
               {mintPhase === "inactive" && (
                 <Alert variant="destructive">
                   <AlertDescription>
-                    Minting is not currently active. Please check back later.
+                    {t("mint.inactiveAlert")}
                   </AlertDescription>
                 </Alert>
               )}
@@ -349,14 +339,14 @@ export default function MintPage() {
                 <Alert variant="success">
                   <CheckCircle2 className="size-4" />
                   <AlertDescription>
-                    Mint successful!{" "}
+                    {t("mint.success")} {" "}
                     <a
                       href={getBlockExplorerUrl("tx", txHash)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 underline"
                     >
-                      View on {EXPLORER_NAME}{" "}
+                      {t("common.viewOn", { explorer: EXPLORER_NAME })}{" "}
                       <ExternalLink className="size-3" />
                     </a>
                   </AlertDescription>
@@ -371,7 +361,7 @@ export default function MintPage() {
                       htmlFor="quantity"
                       className="text-sm font-medium text-foreground"
                     >
-                      Quantity
+                      {t("mint.quantity")}
                     </Label>
                     <Input
                       id="quantity"
@@ -396,27 +386,31 @@ export default function MintPage() {
                   <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
-                        Price per NFT
+                        {t("mint.pricePerNft")}
                       </span>
                       <span className="font-medium text-foreground">
                         {priceDisplay} ETH
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Quantity</span>
+                      <span className="text-muted-foreground">
+                        {t("mint.quantity")}
+                      </span>
                       <span className="font-medium text-foreground">
                         {quantity}
                       </span>
                     </div>
                     <div className="flex justify-between border-t border-border pt-3">
-                      <span className="font-medium text-foreground">Total</span>
+                      <span className="font-medium text-foreground">
+                        {t("mint.total")}
+                      </span>
                       <span className="font-display text-lg text-foreground">
                         {totalDisplay} ETH
                       </span>
                     </div>
                     {mintPhase === "public" && mintedPublicCount > 0 && (
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Minted by you</span>
+                        <span>{t("mint.mintedByYou")}</span>
                         <span>
                           {mintedPublicCount} / {MAX_PUBLIC_PER_TX}
                         </span>
@@ -424,7 +418,7 @@ export default function MintPage() {
                     )}
                     {mintPhase === "whitelist" && mintedWhitelistCount > 0 && (
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Whitelist mints by you</span>
+                        <span>{t("mint.whitelistMintsByYou")}</span>
                         <span>
                           {mintedWhitelistCount} /{" "}
                           {whitelistData?.mintLimit ?? 3}
@@ -446,7 +440,7 @@ export default function MintPage() {
                     }
                   >
                     {limitReached ? (
-                      "Mint limit reached"
+                      t("mint.limitReached")
                     ) : isPending && status === "awaiting-wallet" ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />

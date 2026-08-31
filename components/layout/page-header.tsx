@@ -1,31 +1,23 @@
-"use client"
-
-import { motion, MotionProps } from "framer-motion"
+import type { ComponentPropsWithoutRef } from "react"
 import Balancer from "react-wrap-balancer"
 
 import { cn } from "@/lib/utils"
-import { fadeDownVariant, staggerContainer } from "@/lib/utils/motion"
 
-interface MotionHeaderProps extends MotionProps {
-  className?: string
-  children?: React.ReactNode
-}
-
-function PageHeader({ className, children, ...props }: MotionHeaderProps) {
+function PageHeader({
+  className,
+  children,
+  ...props
+}: ComponentPropsWithoutRef<"section">) {
   return (
-    <motion.section
-      variants={staggerContainer({ staggerChildren: 0.15 })}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.25 }}
+    <section
       className={cn(
-        "mx-auto flex max-w-4xl flex-col items-center gap-2 px-4 pt-8 md:pt-12",
+        "mx-auto flex max-w-4xl flex-col items-center gap-2 px-4 pt-8 motion-safe:duration-500 motion-safe:animate-in motion-safe:fade-in-0 md:pt-12",
         className
       )}
       {...props}
     >
       {children}
-    </motion.section>
+    </section>
   )
 }
 
@@ -33,18 +25,17 @@ function PageHeaderHeading({
   className,
   children,
   ...props
-}: MotionHeaderProps) {
+}: ComponentPropsWithoutRef<"h1">) {
   return (
-    <motion.h1
-      variants={fadeDownVariant()}
+    <h1
       className={cn(
-        "font-display bg-gradient-to-br from-black to-stone-500 bg-clip-text text-center text-4xl leading-tight tracking-tight text-transparent drop-shadow-sm dark:from-stone-100 dark:to-stone-400 md:text-8xl md:leading-[6rem] lg:leading-[1.1]",
+        "font-display bg-gradient-to-br from-black to-stone-500 bg-clip-text text-center text-4xl leading-tight tracking-tight text-transparent drop-shadow-sm motion-safe:duration-500 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 dark:from-stone-100 dark:to-stone-400 md:text-8xl md:leading-[6rem] lg:leading-[1.1]",
         className
       )}
       {...props}
     >
       {children}
-    </motion.h1>
+    </h1>
   )
 }
 
@@ -52,33 +43,35 @@ function PageHeaderDescription({
   className,
   children,
   ...props
-}: MotionHeaderProps) {
+}: ComponentPropsWithoutRef<"p">) {
   return (
-    <motion.p
-      variants={fadeDownVariant()}
+    <p
       className={cn(
-        "text-center text-lg text-muted-foreground md:text-xl",
+        "text-center text-lg text-muted-foreground motion-safe:duration-500 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 md:text-xl",
         className
       )}
       {...props}
     >
       {children}
-    </motion.p>
+    </p>
   )
 }
 
-function PageHeaderCTA({ className, children, ...props }: MotionHeaderProps) {
+function PageHeaderCTA({
+  className,
+  children,
+  ...props
+}: ComponentPropsWithoutRef<"div">) {
   return (
-    <motion.div
-      variants={fadeDownVariant()}
+    <div
       className={cn(
-        "mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-3",
+        "mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-3 motion-safe:duration-500 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2",
         className
       )}
       {...props}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }
 

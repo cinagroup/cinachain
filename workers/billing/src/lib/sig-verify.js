@@ -18,16 +18,18 @@ export const CHAIN_ID = 84532n // Base Sepolia
 export const BINDING_URI = "https://billing-api.cinachain.com"
 
 /** SIWE-style message the client must sign. */
-export function buildBindingMessage(address, nonce, issuedAt) {
+export function buildBindingMessage(address, nonce, issuedAt, apiKeyHash) {
   return [
     "cinachain.com wants you to sign in with your Ethereum account:",
     address,
     "",
-    "Bind this API key to the address above.",
+    "Bind this API key digest to the address above.",
     "",
     `URI: ${BINDING_URI}`,
     "Version: 1",
     `Chain ID: ${CHAIN_ID.toString()}`,
+    "Action: bind-api-key",
+    `API Key SHA-256: ${apiKeyHash}`,
     `Nonce: ${nonce}`,
     `Issued At: ${issuedAt}`,
   ].join("\n")
@@ -41,17 +43,31 @@ export function buildBindingMessage(address, nonce, issuedAt) {
 export function parseBindingMessage(message) {
   if (typeof message !== "string") return null
   const lines = message.split("\n")
-  if (lines.length < 10) return null
+  if (lines.length < 12 || message.length > 2048) return null
   if (!lines[0].startsWith("cinachain.com wants you to sign in")) return null
-  if (!message.includes("Bind this API key to the address above.")) return null
+  if (!message.includes("Bind this API key digest to the address above."))
+    return null
   const address = lines[1]?.trim()
   const uri = /^URI: (\S+)$/m.exec(message)?.[1]
   const chainId = /^Chain ID: (\d+)$/m.exec(message)?.[1]
+  const action = /^Action: (\S+)$/m.exec(message)?.[1]
+  const apiKeyHash = /^API Key SHA-256: ([a-f0-9]{64})$/m.exec(message)?.[1]
   const nonce = /^Nonce: (\S+)$/m.exec(message)?.[1]
   const issuedAt = /^Issued At: (.+)$/m.exec(message)?.[1]
   if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return null
-  if (!uri || !chainId || !nonce || !issuedAt) return null
-  return { address, nonce, issuedAt, uri, chainId }
+  if (
+    !uri ||
+    !chainId ||
+    action !== "bind-api-key" ||
+    !apiKeyHash ||
+    typeof nonce !== "string" ||
+    !/^[A-Za-z0-9_-]{1,128}$/.test(nonce) ||
+    typeof issuedAt !== "string" ||
+    !issuedAt
+  ) {
+    return null
+  }
+  return { address, nonce, issuedAt, uri, chainId, action, apiKeyHash }
 }
 
 /** EIP-191 personal_sign hash of a message. */
@@ -85,9 +101,11 @@ export function recoverEOAAddress(message, signature) {
     const sigInst = new secp256k1.Signature(
       BigInt(`0x${sig.slice(0, 64)}`),
       BigInt(`0x${sig.slice(64, 128)}`),
-      v - 27,
+      v - 27
     )
-    const pub = sigInst.recoverPublicKey(personalSignHash(message)).toBytes(false)
+    const pub = sigInst
+      .recoverPublicKey(personalSignHash(message))
+      .toBytes(false)
     const hash = keccak_256(pub.slice(1))
     return toChecksummed(`0x${Buffer.from(hash.slice(12)).toString("hex")}`)
   } catch {
@@ -134,6 +152,7 @@ export async function verify1271(rpc, address, message, signature) {
         "latest",
       ],
     }),
+    signal: AbortSignal.timeout(10_000),
   })
   if (!res.ok) return false
   const j = await res.json().catch(() => null)
@@ -150,8 +169,10 @@ export async function verifyOwnership(env, { address, message, signature }) {
   if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
     return { ok: false, error: "Invalid address" }
   }
-  if (typeof message !== "string" || !message.includes(address.toLowerCase()) &&
-      !message.includes(address)) {
+  if (
+    typeof message !== "string" ||
+    (!message.includes(address.toLowerCase()) && !message.includes(address))
+  ) {
     return { ok: false, error: "Message does not match address" }
   }
   if (typeof signature !== "string" || signature.length < 130) {

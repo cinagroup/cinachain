@@ -1,13 +1,29 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import {
+  AlertCircle,
+  CheckCircle,
+  Copy,
+  FileText,
+  KeyRound,
+  Link2,
+  Loader2,
+  Upload,
+} from "lucide-react"
+
+import { useI18n } from "@/lib/i18n"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Copy, KeyRound, Link2 } from "lucide-react"
-import { useI18n } from "@/lib/i18n"
 
 interface WhitelistEntry {
   address: string
@@ -21,8 +37,12 @@ export default function WhitelistManagementPage() {
   const [entries, setEntries] = useState<WhitelistEntry[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [isDeploying, setIsDeploying] = useState(false)
-  const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle")
-  const [deployStatus, setDeployStatus] = useState<"idle" | "success" | "error">("idle")
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle")
+  const [deployStatus, setDeployStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle")
   const [errorMessage, setErrorMessage] = useState("")
   const [merkleRoot, setMerkleRoot] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -43,7 +63,9 @@ export default function WhitelistManagementPage() {
     }
   }, [])
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -62,22 +84,33 @@ export default function WhitelistManagementPage() {
         const line = lines[i].trim()
 
         // Skip header row
-        if (i === 0 && (line.toLowerCase().includes("address") || line.toLowerCase().includes("limit"))) {
+        if (
+          i === 0 &&
+          (line.toLowerCase().includes("address") ||
+            line.toLowerCase().includes("limit"))
+        ) {
           continue
         }
 
-        // Parse CSV: address,limit or just address (default limit = 1)
+        // The deployed contract enforces a fixed per-address cap of 3. A
+        // lower CSV value would only be cosmetic and bypassable on-chain.
         const parts = line.split(",").map((p) => p.trim())
         const address = parts[0]
-        const limit = parts[1] ? parseInt(parts[1]) : 1
 
         // Validate address format
         if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-          throw new Error(`Invalid address format at line ${i + 1}: ${address}`)
+          throw new Error(
+            t("admin.whitelistInvalidAddress", {
+              line: i + 1,
+              address,
+            })
+          )
         }
 
-        if (isNaN(limit) || limit < 1 || limit > 3) {
-          throw new Error(`Invalid mint limit at line ${i + 1}: ${parts[1]} (must be 1-3, the contract&apos;s whitelist cap)`)
+        if (parts[1] && Number(parts[1]) !== 3) {
+          throw new Error(
+            t("admin.whitelistInvalidLimit", { line: i + 1 })
+          )
         }
 
         // Dedupe on lowercase address — first occurrence wins
@@ -85,14 +118,16 @@ export default function WhitelistManagementPage() {
         if (seen.has(key)) continue
         seen.add(key)
 
-        parsedEntries.push({ address: key, mintLimit: limit })
+        parsedEntries.push({ address: key, mintLimit: 3 })
       }
 
       setEntries(parsedEntries)
       setUploadStatus("success")
     } catch (error) {
       setUploadStatus("error")
-      setErrorMessage(error instanceof Error ? error.message : "Failed to parse CSV file")
+      setErrorMessage(
+        error instanceof Error ? error.message : t("admin.whitelistParseFailed")
+      )
       setEntries([])
     } finally {
       setIsProcessing(false)
@@ -105,7 +140,7 @@ export default function WhitelistManagementPage() {
     if (entries.length === 0) return
     if (!adminToken) {
       setDeployStatus("error")
-      setErrorMessage("Enter the admin token to deploy the whitelist")
+      setErrorMessage(t("admin.whitelistAdminTokenRequired"))
       return
     }
 
@@ -121,10 +156,6 @@ export default function WhitelistManagementPage() {
         process.env.NEXT_PUBLIC_WHITELIST_API_URL ||
         "https://whitelist-api.cinachain.com"
 
-      // Per-address mint limits (the worker stores them individually)
-      const limits: Record<string, number> = {}
-      for (const e of entries) limits[e.address] = e.mintLimit
-
       const response = await fetch(`${apiUrl}/admin/whitelist`, {
         method: "POST",
         headers: {
@@ -133,13 +164,16 @@ export default function WhitelistManagementPage() {
         },
         body: JSON.stringify({
           addresses: entries.map((e) => e.address),
-          limits,
+          mintLimit: 3,
         }),
       })
 
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        throw new Error(data.error || `Deploy failed: ${response.status}`)
+        throw new Error(
+          data.error ||
+            t("admin.whitelistDeployFailedStatus", { status: response.status })
+        )
       }
 
       // Persist token for this browser session (not localStorage)
@@ -155,7 +189,7 @@ export default function WhitelistManagementPage() {
     } catch (err) {
       setDeployStatus("error")
       setErrorMessage(
-        err instanceof Error ? err.message : "Failed to deploy whitelist"
+        err instanceof Error ? err.message : t("admin.whitelistDeployFailed")
       )
     } finally {
       setIsDeploying(false)
@@ -177,23 +211,23 @@ export default function WhitelistManagementPage() {
     <div className="min-h-screen bg-background">
       <div className="container max-w-screen-ultra px-6 py-12">
         <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-          Administration
+          {t("admin.title")}
         </span>
         <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-          Whitelist management<span className="text-foreground">.</span>
+          {t("admin.whitelistManagement")}<span className="text-foreground">.</span>
         </h1>
         <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-          Upload and manage whitelist addresses for the minting process.
+          {t("admin.whitelistManagementDescription")}
         </p>
 
         <Card className="mt-8 shadow-vercel-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="size-5" />
-              Upload whitelist CSV
+              {t("admin.whitelistUploadTitle")}
             </CardTitle>
             <CardDescription>
-              Upload a CSV file with addresses and mint limits
+              {t("admin.whitelistUploadDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -206,11 +240,15 @@ export default function WhitelistManagementPage() {
                 className="mx-auto max-w-xs"
               />
               <p className="mt-4 text-sm text-muted-foreground">
-                CSV format: <code className="rounded bg-muted px-2 py-1">address,limit</code>
+                {t("admin.whitelistCsvFormat")} {" "}
+                <code className="rounded bg-muted px-2 py-1">address</code>
                 <br />
-                Example: <code className="rounded bg-muted px-2 py-1">0x123...abc,3</code>
+                {t("admin.whitelistExample")} {" "}
+                <code className="rounded bg-muted px-2 py-1">0x123...abc</code>
                 <br />
-                    <span className="text-xs opacity-80">Limit must be 1-3 (the contract&apos;s whitelist cap). Duplicate addresses are ignored.</span>
+                <span className="text-xs opacity-80">
+                  {t("admin.whitelistLimitNote")}
+                </span>
               </p>
             </div>
 
@@ -218,7 +256,7 @@ export default function WhitelistManagementPage() {
               <Alert>
                 <CheckCircle className="size-4" />
                 <AlertDescription>
-                  Successfully parsed {entries.length} addresses from CSV file
+                  {t("admin.whitelistParsed", { count: entries.length })}
                 </AlertDescription>
               </Alert>
             )}
@@ -237,30 +275,33 @@ export default function WhitelistManagementPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="size-5" />
-                Preview ({entries.length} addresses)
+                {t("admin.whitelistPreview", { count: entries.length })}
               </CardTitle>
               <CardDescription>
-                Review the addresses before deploying to the whitelist
+                {t("admin.whitelistPreviewDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {/* Admin token input */}
               <div className="mb-4 space-y-2">
-                <Label htmlFor="admin-token" className="flex items-center gap-2 text-sm font-medium">
+                <Label
+                  htmlFor="admin-token"
+                  className="flex items-center gap-2 text-sm font-medium"
+                >
                   <KeyRound className="size-4 text-muted-foreground" />
-                  Admin token
+                  {t("admin.whitelistAdminToken")}
                 </Label>
                 <Input
                   id="admin-token"
                   type="password"
-                  placeholder="Enter the whitelist API admin token"
+                  placeholder={t("admin.whitelistAdminTokenPlaceholder")}
                   value={adminToken}
                   onChange={(e) => setAdminToken(e.target.value)}
                   className="max-w-md"
                   autoComplete="off"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Required to deploy. Stored in this browser session only — never in the public bundle.
+                  {t("admin.whitelistAdminTokenNote")}
                 </p>
               </div>
 
@@ -268,8 +309,10 @@ export default function WhitelistManagementPage() {
                 <Alert variant="success" className="mb-4">
                   <CheckCircle className="size-4" />
                   <AlertDescription>
-                    Whitelist deployed successfully!{" "}
-                    {activeCount !== null ? activeCount : entries.length} addresses are now active.
+                    {t("admin.whitelistDeployed", {
+                      count:
+                        activeCount !== null ? activeCount : entries.length,
+                    })}
                   </AlertDescription>
                 </Alert>
               )}
@@ -285,11 +328,15 @@ export default function WhitelistManagementPage() {
                 <Alert className="border-link/20 bg-link-bg-soft/40 mb-4">
                   <Link2 className="size-4 text-link-deep" />
                   <AlertDescription className="text-sm">
-                    <span className="font-medium text-link-deep">Merkle root generated.</span>{" "}
+                    <span className="font-medium text-link-deep">
+                      {t("admin.whitelistRootGenerated")}
+                    </span>{" "}
                     <span className="text-link-deep/80">
-                      Set it on the contract in{" "}
-                      <a href="/admin/contract" className="underline">Contract management → Set Merkle root</a>{" "}
-                      (owner wallet required) to enable whitelist minting.
+                      {t("admin.whitelistSetRootBefore")} {" "}
+                      <a href="/admin/contract" className="underline">
+                        {t("admin.whitelistContractRootLink")}
+                      </a>{" "}
+                      {t("admin.whitelistSetRootAfter")}
                     </span>
                     <div className="mt-2 flex items-center gap-2">
                       <code className="font-mono-tech flex-1 break-all rounded bg-muted px-2 py-1 text-xs">
@@ -302,7 +349,9 @@ export default function WhitelistManagementPage() {
                         className="shrink-0"
                       >
                         <Copy className="mr-1 size-3" />
-                        {copied ? "Copied!" : "Copy"}
+                        {copied
+                          ? t("admin.whitelistCopied")
+                          : t("admin.whitelistCopy")}
                       </Button>
                     </div>
                   </AlertDescription>
@@ -314,15 +363,23 @@ export default function WhitelistManagementPage() {
                   <thead className="sticky top-0 bg-muted">
                     <tr>
                       <th className="p-2 text-left font-medium">#</th>
-                      <th className="p-2 text-left font-medium">Address</th>
-                      <th className="p-2 text-left font-medium">Mint limit</th>
+                      <th className="p-2 text-left font-medium">
+                        {t("admin.whitelistAddress")}
+                      </th>
+                      <th className="p-2 text-left font-medium">
+                        {t("admin.whitelistMintLimit")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {entries.slice(0, 100).map((entry, index) => (
                       <tr key={entry.address} className="border-t">
-                        <td className="p-2 text-muted-foreground">{index + 1}</td>
-                        <td className="p-2 font-mono text-xs">{entry.address}</td>
+                        <td className="p-2 text-muted-foreground">
+                          {index + 1}
+                        </td>
+                        <td className="p-2 font-mono text-xs">
+                          {entry.address}
+                        </td>
                         <td className="p-2">{entry.mintLimit}</td>
                       </tr>
                     ))}
@@ -330,7 +387,7 @@ export default function WhitelistManagementPage() {
                 </table>
                 {entries.length > 100 && (
                   <div className="border-t p-4 text-center text-sm text-muted-foreground">
-                    Showing first 100 of {entries.length} addresses
+                    {t("admin.whitelistShowing", { count: entries.length })}
                   </div>
                 )}
               </div>
@@ -344,10 +401,10 @@ export default function WhitelistManagementPage() {
                   {isDeploying ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Deploying...
+                      {t("admin.whitelistDeploying")}
                     </>
                   ) : (
-                    `Deploy whitelist (${entries.length} addresses)`
+                    t("admin.whitelistDeploy", { count: entries.length })
                   )}
                 </Button>
                 <Button
@@ -358,7 +415,7 @@ export default function WhitelistManagementPage() {
                     setMerkleRoot(null)
                   }}
                 >
-                  Clear
+                  {t("admin.whitelistClear")}
                 </Button>
               </div>
             </CardContent>
@@ -371,32 +428,35 @@ export default function WhitelistManagementPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
-              <h3 className="mb-1 font-semibold">1. CSV format</h3>
+              <h3 className="mb-1 font-semibold">
+                {t("admin.whitelistStep1Title")}
+              </h3>
               <p className="text-muted-foreground">
-                Prepare a CSV file with Ethereum addresses and their mint limits.
-                One address per line, separated by comma.
+                {t("admin.whitelistStep1Description")}
               </p>
             </div>
             <div>
-              <h3 className="mb-1 font-semibold">2. Merkle tree generation</h3>
+              <h3 className="mb-1 font-semibold">
+                {t("admin.whitelistStep2Title")}
+              </h3>
               <p className="text-muted-foreground">
-                On deploy, the worker builds a Merkle tree (leaf = keccak256 of the
-                address, matching the contract) and computes the Merkle root.
-                Per-address proofs are stored in KV and served to minters.
+                {t("admin.whitelistStep2Description")}
               </p>
             </div>
             <div>
-              <h3 className="mb-1 font-semibold">3. Contract update</h3>
+              <h3 className="mb-1 font-semibold">
+                {t("admin.whitelistStep3Title")}
+              </h3>
               <p className="text-muted-foreground">
-                Copy the generated Merkle root into Contract management → Set Merkle root
-                (owner wallet). Whitelist minting is only enabled once the root is set on-chain.
+                {t("admin.whitelistStep3Description")}
               </p>
             </div>
             <div>
-              <h3 className="mb-1 font-semibold">4. KV storage</h3>
+              <h3 className="mb-1 font-semibold">
+                {t("admin.whitelistStep4Title")}
+              </h3>
               <p className="text-muted-foreground">
-                Address data, limits, and proofs are stored in Cloudflare Workers KV
-                and served to the mint page.
+                {t("admin.whitelistStep4Description")}
               </p>
             </div>
           </CardContent>

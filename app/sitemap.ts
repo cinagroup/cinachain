@@ -1,14 +1,16 @@
 import type { MetadataRoute } from "next"
 import { env } from "@/env.mjs"
+
 import { MAX_TOKENS } from "@/lib/static-params"
+
+export const dynamic = "force-static"
 
 // Static sitemap — generated at build time for static export.
 // Includes the 500 prerendered NFT detail pages.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = (env.NEXT_PUBLIC_SITE_URL || "https://nft.cinachain.com").replace(
-    /\/$/,
-    ""
-  )
+  const baseUrl = (
+    env.NEXT_PUBLIC_SITE_URL || "https://nft.cinachain.com"
+  ).replace(/\/$/, "")
 
   const staticRoutes = [
     "",

@@ -10,7 +10,7 @@ import {CinaBadge} from "../src/CinaBadge.sol";
 /// Usage:
 ///   forge script script/DeployCinaBadge.s.sol \
 ///     --rpc-url $BASE_SEPOLIA_RPC_URL \
-///     --private-key $PRIVATE_KEY \
+///     --account cinachain-deployer \
 ///     --broadcast --verify \
 ///     --etherscan-api-key $BASESCAN_API_KEY -vvv
 contract DeployCinaBadge is Script {
@@ -20,7 +20,7 @@ contract DeployCinaBadge is Script {
     string constant METADATA_URI = "ipfs://YOUR_BADGE_CID/";
 
     function run() external {
-        address owner = vm.envOr("OWNER", vm.addr(vm.envUint("PRIVATE_KEY")));
+        address owner = vm.envAddress("OWNER");
 
         vm.startBroadcast();
 

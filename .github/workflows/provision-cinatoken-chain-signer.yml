@@ -23,11 +23,11 @@ jobs:
           cache: npm
 
       - name: Install signer verification dependencies
-        run: npm ci --legacy-peer-deps --ignore-scripts
+        run: npm ci --ignore-scripts
 
       - name: Verify signer against receipt and live contract owners
         env:
-          DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+          CINATOKEN_MINTER_PRIVATE_KEY: ${{ secrets.CINATOKEN_MINTER_PRIVATE_KEY }}
         run: node scripts/verify-cinatoken-signer.mjs
 
       - name: Install pinned Wrangler
@@ -37,13 +37,13 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+          CINATOKEN_MINTER_PRIVATE_KEY: ${{ secrets.CINATOKEN_MINTER_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$CLOUDFLARE_API_TOKEN"
-          test -n "$DEPLOY_PRIVATE_KEY"
-          printf '%s' "$DEPLOY_PRIVATE_KEY" | ./workers/billing/node_modules/.bin/wrangler secret put CINACHAIN_MINTER_PRIVATE_KEY --config workers/billing/wrangler.toml --name cinatoken-chain-worker
+          test -n "$CINATOKEN_MINTER_PRIVATE_KEY"
+          printf '%s' "$CINATOKEN_MINTER_PRIVATE_KEY" | ./workers/billing/node_modules/.bin/wrangler secret put CINACHAIN_MINTER_PRIVATE_KEY --config workers/billing/wrangler.toml --name cinatoken-chain-worker
 
       - name: Verify remote secret name
         env:

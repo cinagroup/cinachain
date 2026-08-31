@@ -1,11 +1,14 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { cinaIntegrations } from "@/data/cina-integrations"
 import { LuBook } from "react-icons/lu"
 
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { IntegrationWorkbenchLoading } from "@/components/blockchain/integration-workbench-loading"
 import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import {
   PageHeader,
@@ -17,18 +20,17 @@ import { PageSection } from "@/components/layout/page-section"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { LightDarkImage } from "@/components/shared/light-dark-image"
-import {
-  ERC721Deploy,
-  Erc721Read,
-  Erc721WriteApprove,
-  Erc721WriteMint,
-  Erc721WriteTransfer,
-} from "@/integrations/erc721"
-import { Erc721SetTokenStorage } from "@/integrations/erc721/components/erc721-set-token-storage"
-import { useErc721TokenStorage } from "@/integrations/erc721/hooks/use-erc721-token-storage"
+
+const Erc721Workbench = dynamic(
+  () => import("./erc721-workbench").then((module) => module.Erc721Workbench),
+  {
+    ssr: false,
+    loading: () => <IntegrationWorkbenchLoading />,
+  }
+)
 
 export default function ERC721Page() {
-  const [token] = useErc721TokenStorage()
+  const { t } = useI18n()
 
   return (
     <div className="container relative mt-20">
@@ -36,13 +38,13 @@ export default function ERC721Page() {
         <LightDarkImage
           LightImage={cinaIntegrations.erc721.imgDark}
           DarkImage={cinaIntegrations.erc721.imgLight}
-          alt="ERC-721 Logo"
+          alt={t("integration.logoAlt", { standard: "ERC-721" })}
           width={100}
           height={100}
         />
         <PageHeaderHeading>ERC-721</PageHeaderHeading>
         <PageHeaderDescription>
-          ERC-721 is a standard for non-fungible tokens on EVM chains
+          {t("integration.erc721Description")}
         </PageHeaderDescription>
         <PageHeaderCTA>
           <Link
@@ -52,24 +54,13 @@ export default function ERC721Page() {
             className={cn(buttonVariants({ variant: "outline" }))}
           >
             <LuBook className="mr-2 size-4" />
-            Documentation
+            {t("integration.documentation")}
           </Link>
         </PageHeaderCTA>
       </PageHeader>
       <PageSection>
         <IsWalletConnected>
-          <div className="flex w-full max-w-screen-lg flex-col gap-y-8">
-            <ERC721Deploy />
-            <Erc721SetTokenStorage />
-            {token && (
-              <>
-                <Erc721Read address={token} />
-                <Erc721WriteMint address={token} />
-                <Erc721WriteApprove address={token} />
-                <Erc721WriteTransfer address={token} />
-              </>
-            )}
-          </div>
+          <Erc721Workbench />
         </IsWalletConnected>
         <IsWalletDisconnected>
           <WalletConnect />

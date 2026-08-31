@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import { Address, isAddress } from "viem"
 
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -8,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { useErc1155TokenStorage } from "../hooks/use-erc1155-token-storage"
 
 export function Erc1155SetTokenStorage() {
+  const { t } = useI18n()
   const [token, setToken] = useErc1155TokenStorage()
   const [tokenAddress, setTokenAddress] = useState<Address>()
 
@@ -29,22 +31,29 @@ export function Erc1155SetTokenStorage() {
     <Card>
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-          <label>Selected Contract Address</label>
+          <label>{t("integration.field.selectedContractAddress")}</label>
           <input
             className="input"
             value={tokenAddress}
             onChange={(e) => setTokenAddress(e.target.value as Address)}
           />
           <Button disabled={!isValidAddress} type="submit">
-            Select Contract Address
+            {t("integration.action.selectContractAddress")}
           </Button>
         </form>
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">Select ERC1155 Contract</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-1155",
+            action: t("integration.action.selectContract"),
+          })}
+        </h3>
         <p className="text-center text-sm text-gray-500">
-          Select which NFT contract to interact with
+          {t("integration.selectContractDescription", {
+            standard: "ERC-1155",
+          })}
         </p>
       </CardFooter>
     </Card>

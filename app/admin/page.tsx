@@ -23,28 +23,30 @@ export default function AdminOverviewPage() {
 
   const stats = [
     {
-      title: "Total minted",
+      title: t("admin.totalMinted"),
       value: isLoading ? "..." : mintedCount.toLocaleString(),
-      description: "NFTs minted so far",
+      description: t("admin.mintedSoFar"),
       icon: Package,
     },
     {
-      title: "Max supply",
+      title: t("admin.maxCount"),
       value: maxCount.toLocaleString(),
-      description: "Total collection size",
+      description: t("admin.collectionSize"),
       icon: TrendingUp,
     },
     {
-      title: "Mint price",
+      title: t("admin.mintPrice"),
       value: priceEth,
-      description: "Price per NFT",
+      description: t("admin.pricePerNft"),
       icon: DollarSign,
     },
     {
-      title: "Status",
-      value: paused.data === true ? "Paused" : "Active",
+      title: t("admin.status"),
+      value: paused.data === true ? t("admin.paused") : t("admin.active"),
       description:
-        paused.data === true ? "Minting is paused" : "Minting is active",
+        paused.data === true
+          ? t("admin.mintingPaused")
+          : t("admin.mintingActive"),
       icon: paused.data === true ? PauseCircle : PlayCircle,
     },
   ]
@@ -55,7 +57,7 @@ export default function AdminOverviewPage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            NFT contract address not configured. Set NEXT_PUBLIC_CINA_NFT_CONTRACT in environment variables.
+            {t("admin.nftContractNotConfigured")}
           </AlertDescription>
         </Alert>
       </div>
@@ -68,13 +70,13 @@ export default function AdminOverviewPage() {
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Administration
+            {t("admin.title")}
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            Admin dashboard<span className="text-foreground">.</span>
+            {t("admin.dashboard")}<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            Overview of your NFT collection and minting statistics.
+            {t("admin.dashboardDescription")}
           </p>
         </div>
 
@@ -82,7 +84,7 @@ export default function AdminOverviewPage() {
         {paused.data === true && (
           <Alert variant="destructive" className="mb-8 shadow-vercel-sm">
             <AlertDescription>
-              Minting is currently paused. Users cannot mint new NFTs.
+              {t("admin.mintingPausedWarning")}
             </AlertDescription>
           </Alert>
         )}
@@ -116,7 +118,7 @@ export default function AdminOverviewPage() {
         <Card className="mt-8 shadow-vercel-card">
           <CardHeader>
             <CardTitle>{t("admin.quickActions")}</CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
+            <CardDescription>{t("admin.commonTasks")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -124,31 +126,36 @@ export default function AdminOverviewPage() {
                 href="/admin/badges"
                 icon={<Award className="size-5" />}
                 title={t("admin.mintBadges")}
-                description="Award achievement badges to community members"
+                description={t("admin.badgesActionDescription")}
+                openLabel={t("admin.open")}
               />
               <QuickAction
                 href="/admin/whitelist"
                 icon={<FileText className="size-5" />}
                 title={t("admin.manageWhitelist")}
-                description="Upload CSV files and manage whitelist addresses"
+                description={t("admin.whitelistActionDescription")}
+                openLabel={t("admin.open")}
               />
               <QuickAction
                 href="/admin/stats"
                 icon={<BarChart3 className="size-5" />}
                 title={t("admin.viewStats")}
-                description="Detailed minting analytics and revenue tracking"
+                description={t("admin.statsActionDescription")}
+                openLabel={t("admin.open")}
               />
               <QuickAction
                 href="/admin/contract"
                 icon={<Settings className="size-5" />}
                 title={t("admin.contractSettings")}
-                description="Pause, update prices, withdraw funds"
+                description={t("admin.contractActionDescription")}
+                openLabel={t("admin.open")}
               />
               <QuickAction
                 href="/admin/billing"
                 icon={<Coins className="size-5" />}
                 title={t("admin.billingSettings")}
-                description="Exchange rate, credit issuance, ledger"
+                description={t("admin.billingActionDescription")}
+                openLabel={t("admin.open")}
               />
             </div>
           </CardContent>
@@ -163,11 +170,13 @@ function QuickAction({
   icon,
   title,
   description,
+  openLabel,
 }: {
   href: string
   icon: React.ReactNode
   title: string
   description: string
+  openLabel: string
 }) {
   return (
     <Link
@@ -180,7 +189,7 @@ function QuickAction({
       <h3 className="text-sm font-medium text-foreground">{title}</h3>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
       <span className="mt-2 inline-flex items-center gap-1 text-xs text-link">
-        Open
+        {openLabel}
         <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
       </span>
     </Link>

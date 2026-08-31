@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form"
-import { useDebounce } from "usehooks-ts"
+import { useDebounceValue } from "usehooks-ts"
 import { type Address, type BaseError } from "viem"
 import { useWaitForTransactionReceipt } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContractWriteButton } from "@/components/blockchain/contract-write-button"
@@ -25,16 +26,17 @@ interface FormSchema {
 }
 
 export function Erc1155WriteMint({ address }: Erc1155WriteMintProps) {
+  const { t } = useI18n()
   const { register, watch, handleSubmit } = useForm<FormSchema>()
 
   const watchToAddress = watch("toAddress")
   const watchTokenId = watch("tokenId")
   const watchTokenAmount = watch("tokenAmount")
   const watchUri = watch("uri")
-  const debouncedToAddress = useDebounce(watchToAddress, 500)
-  const debouncedTokenId = useDebounce(watchTokenId, 500)
-  const debouncedTokenAmount = useDebounce(watchTokenAmount, 500)
-  const debouncedUri = useDebounce(watchUri, 500)
+  const [debouncedToAddress] = useDebounceValue(watchToAddress, 500)
+  const [debouncedTokenId] = useDebounceValue(watchTokenId, 500)
+  const [debouncedTokenAmount] = useDebounceValue(watchTokenAmount, 500)
+  const [debouncedUri] = useDebounceValue(watchUri, 500)
 
   const {
     data: config,
@@ -82,13 +84,13 @@ export function Erc1155WriteMint({ address }: Erc1155WriteMintProps) {
     <Card>
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-          <label>Address</label>
+          <label>{t("integration.field.address")}</label>
           <input {...register("toAddress")} className="input" />
-          <label>Token ID</label>
+          <label>{t("integration.field.tokenId")}</label>
           <input {...register("tokenId")} className="input" type="number" />
-          <label>Token Amount</label>
+          <label>{t("integration.field.tokenAmount")}</label>
           <input {...register("tokenAmount")} className="input" />
-          <label>Uri</label>
+          <label>{t("integration.field.uri")}</label>
           <input
             {...register("uri")}
             className="input"
@@ -97,11 +99,11 @@ export function Erc1155WriteMint({ address }: Erc1155WriteMintProps) {
           <ContractWriteButton
             isLoadingTx={isLoadingTx}
             isLoadingWrite={isLoadingWrite}
-            loadingTxText="Minting..."
+            loadingTxText={t("integration.action.minting")}
             type="submit"
             write={!!writeContract}
           >
-            Mint
+            {t("integration.action.mint")}
           </ContractWriteButton>
           <TransactionStatus
             error={error as BaseError}
@@ -116,9 +118,14 @@ export function Erc1155WriteMint({ address }: Erc1155WriteMintProps) {
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC1155 Mint</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-1155",
+            action: t("integration.action.mint"),
+          })}
+        </h3>
         <p className="text-center text-sm text-gray-500">
-          Mint NFT/SFT to any address
+          {t("integration.mintAnyDescription", { standard: "NFT/SFT" })}
         </p>
       </CardFooter>
     </Card>

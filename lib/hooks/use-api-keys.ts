@@ -6,13 +6,13 @@ import { useAccount, useSignMessage } from "wagmi"
 import {
   buildBindingMessage,
   generateBindingNonce,
+  hashApiKeyForBinding,
 } from "@/lib/binding-message"
 import { useSiwe } from "@/lib/hooks/use-siwe"
 
 const KEYS_STORAGE = "cinachain-api-keys"
 const BILLING_API_URL =
-  process.env.NEXT_PUBLIC_BILLING_API_URL ||
-  "https://billing-api.cinachain.com"
+  process.env.NEXT_PUBLIC_BILLING_API_URL || "https://billing-api.cinachain.com"
 
 export interface ApiKeyRecord {
   id: string
@@ -83,7 +83,13 @@ export function useApiKeys() {
     // prove ownership — the worker rejects expired or replayed nonces.
     try {
       const issuedAt = new Date().toISOString()
-      const message = buildBindingMessage(address, generateBindingNonce(), issuedAt)
+      const apiKeyHash = await hashApiKeyForBinding(raw)
+      const message = buildBindingMessage(
+        address,
+        generateBindingNonce(),
+        issuedAt,
+        apiKeyHash
+      )
       const signature = await signMessageAsync({ message })
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 10_000)
@@ -114,7 +120,23 @@ export function useApiKeys() {
   }, [isAuthenticated, signIn, address, signMessageAsync, keys, persist])
 
   const revokeKey = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10_000)
+      try {
+        const response = await fetch(`${BILLING_API_URL}/v1/keys`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({ apiKey: id }),
+        })
+        if (!response.ok && response.status !== 404) {
+          const body = await response.json().catch(() => null)
+          throw new Error(body?.error || "Failed to revoke API key")
+        }
+      } finally {
+        clearTimeout(timeout)
+      }
       persist(keys.filter((k) => k.id !== id))
     },
     [keys, persist]

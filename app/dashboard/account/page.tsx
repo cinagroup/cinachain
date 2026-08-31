@@ -18,6 +18,7 @@ import {
   PRIMARY_NETWORK_LABEL,
 } from "@/config/deployment"
 import { useCinaauth } from "@/lib/hooks/use-cinaauth"
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -26,14 +27,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { WalletAddress } from "@/components/blockchain/wallet-address"
 import { WalletBalance } from "@/components/blockchain/wallet-balance"
+import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import { WalletEnsName } from "@/components/blockchain/wallet-ens-name"
 import { CopyButton } from "@/components/shared/copy-button"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
-import { useI18n } from "@/lib/i18n"
 
 export default function AccountPage() {
   const { t } = useI18n()
@@ -45,6 +45,7 @@ export default function AccountPage() {
     signIn,
     signOut,
     isLoading: authLoading,
+    isSigningIn: authSigningIn,
   } = useCinaauth()
 
   // ENS resolution (independent of CinaAuth sign-in)
@@ -54,8 +55,8 @@ export default function AccountPage() {
     chain?.id === PRIMARY_CHAIN_ID
       ? PRIMARY_NETWORK_LABEL
       : chain
-      ? `${chain.name} (unsupported)`
-      : "Unknown"
+      ? t("account.unsupportedNetwork", { network: chain.name })
+      : t("account.unknownNetwork")
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,13 +65,13 @@ export default function AccountPage() {
           {/* Header */}
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Dashboard
+              {t("nav.dashboard")}
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-              Account<span className="text-foreground">.</span>
+              {t("account.title")}<span className="text-foreground">.</span>
             </h1>
             <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-              Manage your wallet and authentication settings.
+              {t("account.description")}
             </p>
           </div>
 
@@ -80,13 +81,15 @@ export default function AccountPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Wallet className="size-5" />
-                  Wallet
+                  {t("identity.walletTitle")}
                 </CardTitle>
-                <CardDescription>Your connected wallet details</CardDescription>
+                <CardDescription>{t("account.walletDetails")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Address</p>
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    {t("account.address")}
+                  </p>
                   <div className="flex items-center gap-2">
                     <WalletAddress className="font-mono-tech text-sm" />
                     <CopyButton
@@ -97,7 +100,9 @@ export default function AccountPage() {
                 </div>
 
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">ENS name</p>
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    {t("account.ensName")}
+                  </p>
                   <div className="flex items-center gap-2">
                     {ensLoading ? (
                       <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -105,7 +110,9 @@ export default function AccountPage() {
                       <>
                         <WalletEnsName className="text-sm font-medium" />
                         <span className="text-xs text-muted-foreground">
-                          {ensName ? "(resolved)" : "(no ENS)"}
+                          {ensName
+                            ? t("account.ensResolved")
+                            : t("account.noEns")}
                         </span>
                       </>
                     )}
@@ -113,14 +120,18 @@ export default function AccountPage() {
                 </div>
 
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Network</p>
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    {t("account.network")}
+                  </p>
                   <p className="text-sm font-medium text-foreground">
                     {connectedNetwork}
                   </p>
                 </div>
 
                 <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Balance</p>
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    {t("account.balance")}
+                  </p>
                   <div className="font-display text-xl text-foreground">
                     <WalletBalance decimals={6} /> ETH
                   </div>
@@ -139,26 +150,28 @@ export default function AccountPage() {
                       rel="noopener noreferrer"
                     >
                       <ExternalLink className="mr-2 size-4" />
-                      View on {EXPLORER_NAME}
+                      {t("common.viewOn", { explorer: EXPLORER_NAME })}
                     </Link>
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Authentication */}
+            {/* CinaSeek account authentication */}
             <Card className="shadow-vercel-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <KeyRound className="size-5" />
-                  Authentication
+                  {t("account.authentication")}
                 </CardTitle>
-                <CardDescription>CinaAuth single sign-on</CardDescription>
+                <CardDescription>
+                  {t("account.cinaSeekSso")}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <p className="mb-1 text-xs text-muted-foreground">
-                    CinaAuth status
+                    {t("account.cinaSeekStatus")}
                   </p>
                   <div className="flex items-center gap-2">
                     <div
@@ -167,7 +180,9 @@ export default function AccountPage() {
                       }`}
                     />
                     <span className="text-sm font-medium">
-                      {isAuthenticated ? "Signed in" : "Not signed in"}
+                      {isAuthenticated
+                        ? t("identity.signedIn")
+                        : t("identity.signedOut")}
                     </span>
                   </div>
                 </div>
@@ -177,7 +192,7 @@ export default function AccountPage() {
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="size-4 text-success" />
                       <span className="text-sm text-success">
-                        Authenticated
+                        {t("account.authenticated")}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
@@ -187,16 +202,14 @@ export default function AccountPage() {
                       {user.email}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Session expires:{" "}
+                      {t("account.sessionExpires")} {" "}
                       {new Date(session.expiresAt).toLocaleString()}
                     </p>
                   </div>
                 )}
 
                 <p className="text-xs text-muted-foreground">
-                  Sign-in uses your CinaAuth account (accounts.cinaseek.ai) via
-                  OpenID Connect. Wallet connection stays separate and is only
-                  needed for on-chain actions.
+                  {t("account.cinaSeekDescription")}
                 </p>
 
                 <div className="border-t border-border pt-2">
@@ -207,19 +220,23 @@ export default function AccountPage() {
                       size="sm"
                       className="w-full"
                     >
-                      Sign out
+                      {t("action.signOut")}
                     </Button>
                   ) : (
                     <Button
-                      onClick={() => void signIn("/dashboard/account")}
+                      onClick={() => void signIn()}
                       size="sm"
                       className="w-full"
-                      disabled={authLoading}
+                      disabled={authLoading && !authSigningIn}
                     >
-                      {authLoading ? (
+                      {authLoading && !authSigningIn ? (
                         <Loader2 className="mr-2 size-4 animate-spin" />
                       ) : null}
-                      Sign in with CinaAuth
+                      {authSigningIn
+                        ? t("identity.returnToCinaSeek")
+                        : authLoading
+                        ? t("account.openingCinaSeek")
+                        : t("identity.continueWithCinaSeek")}
                     </Button>
                   )}
                 </div>
@@ -232,7 +249,7 @@ export default function AccountPage() {
             <CardHeader>
               <CardTitle>{t("account.quickLinks")}</CardTitle>
               <CardDescription>
-                Useful resources for your wallet
+                {t("account.quickLinksDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -250,13 +267,13 @@ export default function AccountPage() {
                 <Button asChild variant="outline" className="justify-start">
                   <Link href="/dashboard/nfts">
                     <Wallet className="mr-2 size-4" />
-                    My NFTs
+                    {t("sidebar.myNfts")}
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="justify-start">
                   <Link href="/mint">
                     <Shield className="mr-2 size-4" />
-                    Mint page
+                    {t("account.mintPage")}
                   </Link>
                 </Button>
               </div>
@@ -267,14 +284,14 @@ export default function AccountPage() {
         <IsWalletDisconnected>
           <div className="flex h-[60vh] flex-col items-center justify-center text-center">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Authentication required
+              {t("auth.required")}
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground">
-              Connect your wallet<span className="text-foreground">.</span>
+              {t("auth.connectWalletTitle")}
+              <span className="text-foreground">.</span>
             </h1>
             <p className="mt-4 max-w-md text-base text-muted-foreground">
-              Connect your wallet to view your account details, manage settings,
-              and access exclusive features.
+              {t("account.connectDescription")}
             </p>
             <div className="mt-8">
               <WalletConnect />

@@ -1,8 +1,5 @@
-import Link from "next/link"
-import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa"
-
-import { siteConfig } from "@/config/site"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { DashboardFooter } from "@/components/layout/dashboard-footer"
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar"
 import { SiteHeader } from "@/components/layout/site-header"
 
@@ -19,44 +16,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <ScrollArea className="flex-1 py-6 pr-6 lg:py-8">
             <DashboardSidebar />
           </ScrollArea>
-          <footer className="mt-auto flex flex-col border-t pb-6 pr-2 pt-4">
-            <h3 className="font-display text-sm">{siteConfig.title}</h3>
-            <Link
-              href="/"
-              className="w-fit py-2 text-xs text-muted-foreground underline-offset-4 hover:underline"
-            >
-              Built by cinagroup
-            </Link>
-            <div className="mt-2 flex items-center space-x-3">
-              <Link
-                href={siteConfig.links.github}
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="CinaChain on GitHub"
-                className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <FaGithub className="size-4" />
-              </Link>
-              <Link
-                href={siteConfig.links.twitter}
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="CinaChain on X"
-                className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <FaTwitter className="size-4" />
-              </Link>
-              <Link
-                href={siteConfig.links.discord}
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="CinaChain on Discord"
-                className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <FaDiscord className="size-4" />
-              </Link>
-            </div>
-          </footer>
+          <DashboardFooter />
         </aside>
         <main className="flex w-full flex-col overflow-hidden">{children}</main>
       </div>

@@ -1,35 +1,163 @@
-import { describe, it, expect } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+import worker from "./index.js"
 import {
-  parseCidMap,
-  extractCidPath,
-  decodeBytesReturn,
   buildFallbackMetadata,
-  encodeGetBackupSvg,
-  createRateLimiter,
   cacheControlFor,
+  createRateLimiter,
+  decodeBytesReturn,
+  encodeGetBackupSvg,
+  extractCidPath,
   GET_BACKUP_SVG_SELECTOR,
+  isAllowedMediaPath,
+  parseCidMap,
+  readResponseWithinLimit,
+  validateMediaBytes,
 } from "./lib/gateway-core.js"
+
+const UCINA_CID = "QmUZa75SwGeYPFrVTxCQApYcm8XgpBiAUdrsbh4EtJFYxU"
+const MCINA_CID = "Qme5t3gekoEcbBdVV2Vjz1ZktfeB6bsEBvGkwSR9SwSRz4"
+const CINA_CID = "QmbmVXuZkzEQRVRhtENhYcE4zzJXBUjdm1kBtfwGFF2Awi"
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe("parseCidMap", () => {
   it("parses cid:type pairs", () => {
-    expect(parseCidMap("QmU:1,QmM:2,QmC:3")).toEqual({ QmU: 1, QmM: 2, QmC: 3 })
+    expect(parseCidMap(`${UCINA_CID}:1,${MCINA_CID}:2,${CINA_CID}:3`)).toEqual({
+      [UCINA_CID]: 1,
+      [MCINA_CID]: 2,
+      [CINA_CID]: 3,
+    })
   })
   it("handles empty/whitespace", () => {
     expect(parseCidMap("")).toEqual({})
     expect(parseCidMap(undefined)).toEqual({})
-    expect(parseCidMap(" QmU : 1 ")).toEqual({ QmU: 1 })
+    expect(parseCidMap(` ${UCINA_CID} : 1 `)).toEqual({ [UCINA_CID]: 1 })
+    expect(parseCidMap("not-a-cid:1")).toEqual({})
   })
 })
 
 describe("extractCidPath", () => {
   it("parses /<cid>/<path>", () => {
-    expect(extractCidPath("/QmUcina/metadata.json")).toEqual({ cid: "QmUcina", path: "metadata.json" })
-    expect(extractCidPath("/QmUcina/ucina.svg")).toEqual({ cid: "QmUcina", path: "ucina.svg" })
+    expect(extractCidPath(`/${UCINA_CID}/metadata.json`)).toEqual({
+      cid: UCINA_CID,
+      path: "metadata.json",
+    })
+    expect(extractCidPath(`/${UCINA_CID}/ucina.svg`)).toEqual({
+      cid: UCINA_CID,
+      path: "ucina.svg",
+    })
   })
   it("rejects other shapes", () => {
     expect(extractCidPath("/")).toBeNull()
     expect(extractCidPath("/QmUcina")).toBeNull()
     expect(extractCidPath("/a/b/c")).toBeNull()
+  })
+})
+
+describe("media allowlist and payload validation", () => {
+  it("binds each configured CID type to its canonical filenames", () => {
+    expect(isAllowedMediaPath(1, "metadata.json")).toBe(true)
+    expect(isAllowedMediaPath(1, "ucina.svg")).toBe(true)
+    expect(isAllowedMediaPath(1, "cina.svg")).toBe(false)
+    expect(isAllowedMediaPath(1, "arbitrary.bin")).toBe(false)
+  })
+
+  it("rejects active SVG content and malformed metadata", () => {
+    expect(
+      validateMediaBytes(
+        "ucina.svg",
+        new TextEncoder().encode("<svg><path /></svg>")
+      )
+    ).toBe(true)
+    expect(
+      validateMediaBytes(
+        "ucina.svg",
+        new TextEncoder().encode("<svg><script>alert(1)</script></svg>")
+      )
+    ).toBe(false)
+    expect(
+      validateMediaBytes("metadata.json", new TextEncoder().encode("{}"))
+    ).toBe(false)
+  })
+
+  it("caps origin responses while streaming", async () => {
+    const response = new Response(new Uint8Array(1025), {
+      headers: { "Content-Length": "1025" },
+    })
+    await expect(
+      readResponseWithinLimit(response, 1024)
+    ).rejects.toBeInstanceOf(RangeError)
+  })
+})
+
+describe("media worker route enforcement", () => {
+  const env = {
+    MEGA_TYPE_CIDS: `${UCINA_CID}:1`,
+    CINA_MEGA_MEDIA: { get: vi.fn(), put: vi.fn() },
+  }
+
+  it("rejects unknown CIDs before reading R2", async () => {
+    const response = await worker.fetch(
+      new Request(`https://media.cinachain.com/${CINA_CID}/metadata.json`),
+      env
+    )
+    expect(response.status).toBe(404)
+    expect(env.CINA_MEGA_MEDIA.get).not.toHaveBeenCalled()
+  })
+
+  it("rejects non-canonical filenames before reading R2", async () => {
+    const response = await worker.fetch(
+      new Request(`https://media.cinachain.com/${UCINA_CID}/cina.svg`),
+      env
+    )
+    expect(response.status).toBe(404)
+    expect(env.CINA_MEGA_MEDIA.get).not.toHaveBeenCalled()
+  })
+
+  it("keeps browser-visible error status for allowed origins", async () => {
+    const response = await worker.fetch(
+      new Request("https://media.cinachain.com/invalid", {
+        headers: { Origin: "https://nft.cinachain.com" },
+      }),
+      env
+    )
+
+    expect(response.status).toBe(404)
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
+      "https://nft.cinachain.com"
+    )
+    expect(response.headers.get("Vary")).toBe("Origin")
+  })
+
+  it("handles allowed and rejected CORS preflights explicitly", async () => {
+    const allowed = await worker.fetch(
+      new Request("https://media.cinachain.com/health", {
+        method: "OPTIONS",
+        headers: { Origin: "https://nft.cinachain.com" },
+      }),
+      env
+    )
+    const rejected = await worker.fetch(
+      new Request("https://media.cinachain.com/health", {
+        method: "OPTIONS",
+        headers: { Origin: "https://attacker.example" },
+      }),
+      env
+    )
+
+    expect(allowed.status).toBe(204)
+    expect(allowed.headers.get("Access-Control-Allow-Origin")).toBe(
+      "https://nft.cinachain.com"
+    )
+    expect(allowed.headers.get("Access-Control-Allow-Methods")).toBe(
+      "GET, OPTIONS"
+    )
+    expect(rejected.status).toBe(403)
+    expect(rejected.headers.has("Access-Control-Allow-Origin")).toBe(false)
+    expect(rejected.headers.get("Vary")).toBe("Origin")
   })
 })
 
@@ -56,7 +184,9 @@ describe("decodeBytesReturn", () => {
 
 describe("buildFallbackMetadata", () => {
   it("assembles json with data-uri image", () => {
-    const meta = JSON.parse(buildFallbackMetadata(1, new Uint8Array([0x3c, 0x73, 0x76, 0x67])))
+    const meta = JSON.parse(
+      buildFallbackMetadata(1, new Uint8Array([0x3c, 0x73, 0x76, 0x67]))
+    )
     expect(meta.name).toBe("UCINA — CinaMega #1")
     expect(meta.image).toBe("data:image/svg+xml;base64,PHN2Zw==")
     expect(meta.attributes[1].value).toBe("1")
@@ -99,6 +229,8 @@ describe("createRateLimiter", () => {
 describe("cacheControlFor", () => {
   it("aligns with the _headers contract", () => {
     expect(cacheControlFor("metadata.json")).toBe("public, max-age=600")
-    expect(cacheControlFor("ucina.svg")).toBe("public, max-age=2592000, immutable")
+    expect(cacheControlFor("ucina.svg")).toBe(
+      "public, max-age=2592000, immutable"
+    )
   })
 })

@@ -4,10 +4,10 @@
 
 CinaChain DApp 当前运行在 **Base Sepolia Testnet**（Base L2 的测试网络）上，用于在主网上线前验证合约与交易流程。
 
-| 网络 | Chain ID | RPC | 浏览器 |
-|------|---------|-----|--------|
-| **Base Mainnet** | 8453 | `https://mainnet.base.org` | [basescan.org](https://basescan.org) |
-| **Base Sepolia** (测试网) | 84532 | `https://sepolia.base.org` | [sepolia.basescan.org](https://sepolia.basescan.org) |
+| 网络                      | Chain ID | RPC                        | 浏览器                                               |
+| ------------------------- | -------- | -------------------------- | ---------------------------------------------------- |
+| **Base Mainnet**          | 8453     | `https://mainnet.base.org` | [basescan.org](https://basescan.org)                 |
+| **Base Sepolia** (测试网) | 84532    | `https://sepolia.base.org` | [sepolia.basescan.org](https://sepolia.basescan.org) |
 
 ---
 
@@ -59,8 +59,10 @@ git submodule update --init --recursive   # 拉取 contracts/lib/forge-std
 
 ```bash
 cp .env.example .env
-# 编辑 .env：
-#   PRIVATE_KEY=0x你的私钥
+# 将部署密钥导入 Foundry 的加密 keystore（交互式输入，不进入命令行）：
+cast wallet import cinachain-deployer --interactive
+# 编辑 .env（仅公开配置）：
+#   OWNER=0x你的协议管理员或 Safe 地址
 #   BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
 #   BASESCAN_API_KEY=你的key
 ```
@@ -79,7 +81,7 @@ source .env
 
 forge script script/DeployCinaNFT.s.sol \
   --rpc-url $BASE_SEPOLIA_RPC_URL \
-  --private-key $PRIVATE_KEY \
+  --account cinachain-deployer \
   --broadcast \
   --verify \
   --etherscan-api-key $BASESCAN_API_KEY \
@@ -87,6 +89,7 @@ forge script script/DeployCinaNFT.s.sol \
 ```
 
 部署成功后输出：
+
 ```
 CinaNFT deployed at: 0x...
 
@@ -104,7 +107,7 @@ source .env
 
 forge script script/DeployCinaNFT.s.sol \
   --rpc-url $BASE_RPC_URL \
-  --private-key $PRIVATE_KEY \
+  --account cinachain-deployer \
   --broadcast \
   --verify \
   --etherscan-api-key $BASESCAN_API_KEY \
@@ -114,11 +117,13 @@ forge script script/DeployCinaNFT.s.sol \
 ### Step 6: 更新 DApp 配置
 
 将合约地址写入项目根目录的 `.env.local`：
+
 ```bash
 NEXT_PUBLIC_CINA_NFT_CONTRACT=0x你的合约地址
 ```
 
 重新构建并部署 DApp：
+
 ```bash
 npm run build
 CLOUDFLARE_API_TOKEN=your_token npx wrangler pages deploy out --project-name=cinachain-nft-dapp --commit-dirty=true
@@ -128,13 +133,14 @@ CLOUDFLARE_API_TOKEN=your_token npx wrangler pages deploy out --project-name=cin
 
 ## 合约功能
 
-| 功能 | 函数 | 费用 | 上限 |
-|------|------|------|------|
-| 公共铸造 | `mintPublic(quantity)` | 0.001 ETH/个 | 10 个/地址 |
-| 白名单铸造 | `mintWhitelist(proof, qty)` | **免费** | 3 个/地址 |
-| 最大供应 | — | — | 10,000 |
+| 功能       | 函数                        | 费用         | 上限       |
+| ---------- | --------------------------- | ------------ | ---------- |
+| 公共铸造   | `mintPublic(quantity)`      | 0.001 ETH/个 | 10 个/地址 |
+| 白名单铸造 | `mintWhitelist(proof, qty)` | **免费**     | 3 个/地址  |
+| 最大供应   | —                           | —            | 10,000     |
 
 ### 管理员功能（仅 Owner）
+
 - `pause()` / `unpause()` — 紧急暂停/恢复
 - `withdraw()` — 提取合约内所有 ETH
 - `setMintPrice(wei)` — 更新铸造价格
@@ -145,14 +151,14 @@ CLOUDFLARE_API_TOKEN=your_token npx wrangler pages deploy out --project-name=cin
 
 ## Base L2 优势
 
-| 对比项 | Ethereum 主网 | Base L2 |
-|--------|-------------|---------|
-| 单次铸造 Gas | $15-50 | **$0.01-0.10** |
-| 批量铸造 10 个 | $50-200 | **$0.05-0.50** |
-| 区块时间 | 12 秒 | **2 秒** |
-| 最终确认 | 即时 | ~7 天（提现到 L1） |
-| WalletConnect | ✅ | ✅ |
-| OpenSea 支持 | ✅ | ✅ |
+| 对比项         | Ethereum 主网 | Base L2            |
+| -------------- | ------------- | ------------------ |
+| 单次铸造 Gas   | $15-50        | **$0.01-0.10**     |
+| 批量铸造 10 个 | $50-200       | **$0.05-0.50**     |
+| 区块时间       | 12 秒         | **2 秒**           |
+| 最终确认       | 即时          | ~7 天（提现到 L1） |
+| WalletConnect  | ✅            | ✅                 |
+| OpenSea 支持   | ✅            | ✅                 |
 
 ---
 

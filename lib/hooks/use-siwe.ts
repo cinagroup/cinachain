@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useAccount, useChainId, usePublicClient, useSignMessage } from "wagmi"
 
+import { createCinaChainSiweMessage } from "@/lib/siwe-message"
 import { verifySiweSignature } from "@/lib/siwe-verify"
 
 const SESSION_KEY = "cinachain-siwe-session"
@@ -14,17 +15,6 @@ interface SiweSession {
   message: string
   signature: string
   expirationTime: string
-}
-
-/**
- * Generate a cryptographically-secure nonce (32 hex chars).
- */
-function generateNonce(): string {
-  const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
 }
 
 /**
@@ -102,25 +92,15 @@ export function useSiwe() {
 
     setLoading(true)
     try {
-      // Dynamic import: siwe + ethers@5 (~500 KB) only load when the user
-      // actually clicks "Sign in", not on every page load.
-      const { SiweMessage } = await import("siwe")
-      const nonce = generateNonce()
-      const message = new SiweMessage({
+      const { expirationTime, message, nonce } = createCinaChainSiweMessage({
         domain: window.location.host,
         address,
-        statement: "Sign in to CinaChain",
         uri: window.location.origin,
-        version: "1",
         chainId,
-        nonce,
-        expirationTime: new Date(
-          Date.now() + 24 * 60 * 60 * 1000
-        ).toISOString(),
       })
 
       const signature = await signMessageAsync({
-        message: message.prepareMessage(),
+        message,
       })
 
       // Verify the signature (EOA direct / EIP-1271 / EIP-6492 for Reown
@@ -128,7 +108,7 @@ export function useSiwe() {
       if (publicClient) {
         const valid = await verifySiweSignature(publicClient, {
           address,
-          message: message.prepareMessage(),
+          message,
           signature,
         })
         if (!valid) throw new Error("Signature verification failed")
@@ -144,9 +124,9 @@ export function useSiwe() {
         address,
         chainId,
         nonce,
-        message: message.prepareMessage(),
+        message,
         signature,
-        expirationTime: message.expirationTime ?? "",
+        expirationTime,
       }
 
       localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData))

@@ -1,10 +1,16 @@
 "use client"
 
-import { useEffect, useMemo, type ReactNode } from "react"
-import { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
-import { createAppKit } from "@reown/appkit/react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { env } from "@/env.mjs"
+import type { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
+import type { AppKit } from "@reown/appkit/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { createStorage, noopStorage } from "@wagmi/core"
+import {
+  createConfig,
+  createStorage,
+  noopStorage,
+  type Config,
+} from "@wagmi/core"
 import { useTheme } from "next-themes"
 import { WagmiProvider } from "wagmi"
 
@@ -17,59 +23,140 @@ const PROJECT_ID =
     ? process.env.NEXT_PUBLIC_REOWN_PROJECT_ID
     : ""
 
+const APP_URL =
+  env.NEXT_PUBLIC_SITE_URL ||
+  (typeof window !== "undefined"
+    ? window.location.origin
+    : "https://nft.cinachain.com")
+
+export const isAppKitConfigured = Boolean(PROJECT_ID)
+
 if (!PROJECT_ID && process.env.NODE_ENV === "development") {
-  console.warn(
+  console.info(
     "[cinachain] NEXT_PUBLIC_REOWN_PROJECT_ID is not set. WalletConnect (mobile wallets) and Reown smart accounts will not work."
   )
 }
 
-// Reown AppKit — single wallet provider. External EOAs (injected browser
-// wallets, WalletConnect, Coinbase) work out of the box; email/social
-// login enables ERC-4337 smart accounts (spec: reown-smart-account-design).
-//
-// WagmiAdapter accepts Partial<CreateConfigParameters>, so we keep the
-// custom fallback transports from config/networks (the adapter wraps them
-// in an additional Reown RPC fallback) and the same localStorage/noopStorage
-// split the RainbowKit provider used: wagmi's default IndexedDB storage
-// crashes during static prerendering (no indexedDB global on the server),
-// while AppKit's own storage is already SSR-safe (SafeLocalStorage guards
-// on typeof window/localStorage).
-export const wagmiAdapter = new WagmiAdapter({
-  projectId: PROJECT_ID,
-  networks: chains,
-  transports,
-  ssr: true,
-  storage: createStorage({
-    storage: typeof window !== "undefined" ? window.localStorage : noopStorage,
-  }),
+const wagmiStorage = createStorage({
+  storage: typeof window !== "undefined" ? window.localStorage : noopStorage,
 })
 
-// createAppKit initializes browser-only Coinbase/Base telemetry. Client
-// components are still prerendered during `next build`, so defer that side
-// effect until the client bundle evaluates with a real `window`.
-export const appKit =
-  typeof window !== "undefined"
-    ? createAppKit({
-        adapters: [wagmiAdapter],
-        projectId: PROJECT_ID,
-        networks: chains,
-        features: {
-          // Email + social login -> Reown smart accounts (ERC-4337), coexisting
-          // with external EOA connectors in the same modal.
-          email: true,
-          socials: ["google", "x", "github"],
-        },
-        metadata: {
-          name: siteConfig.title,
-          description: siteConfig.description,
-          url: window.location.href,
-          icons: [],
-        },
+// A side-effect-free config keeps every page renderable when Reown is not
+// configured. In particular, it cannot restore an old WalletConnect session
+// and surface AppKit's global "Project ID Missing" dialog.
+const fallbackWagmiConfig = createConfig({
+  chains,
+  transports,
+  ssr: true,
+  storage: wagmiStorage,
+})
+
+let wagmiAdapterPromise: Promise<WagmiAdapter | null> | null = null
+
+function getWagmiAdapter(): Promise<WagmiAdapter | null> {
+  if (typeof window === "undefined" || !isAppKitConfigured) {
+    return Promise.resolve(null)
+  }
+
+  if (!wagmiAdapterPromise) {
+    wagmiAdapterPromise = import("@reown/appkit-adapter-wagmi").then(
+      ({ WagmiAdapter }) =>
+        new WagmiAdapter({
+          projectId: PROJECT_ID,
+          networks: chains,
+          transports,
+          ssr: true,
+          storage: wagmiStorage,
+        })
+    )
+  }
+
+  return wagmiAdapterPromise
+}
+
+let appKitPromise: Promise<AppKit | null> | null = null
+
+// Loading AppKit registers custom elements and initializes browser-only
+// telemetry. Keep those side effects out of static prerendering and out of
+// deployments where the Reown project id is intentionally absent.
+export function getAppKit(): Promise<AppKit | null> {
+  if (typeof window === "undefined" || !isAppKitConfigured) {
+    return Promise.resolve(null)
+  }
+
+  if (!appKitPromise) {
+    appKitPromise = getWagmiAdapter()
+      .then(async (wagmiAdapter) => {
+        if (!wagmiAdapter) return null
+        const { createAppKit } = await import("@reown/appkit/react")
+        return createAppKit({
+          adapters: [wagmiAdapter],
+          projectId: PROJECT_ID,
+          networks: chains,
+          features: {
+            // Email + social login -> Reown smart accounts (ERC-4337),
+            // coexisting with external EOA connectors in the same modal.
+            email: true,
+            socials: ["google", "x", "github"],
+          },
+          metadata: {
+            name: siteConfig.title,
+            description: siteConfig.description,
+            url: APP_URL,
+            icons: [],
+          },
+        })
       })
-    : null
+      .catch((error) => {
+        appKitPromise = null
+        console.error("[cinachain] AppKit initialization failed.", error)
+        return null
+      })
+  }
+
+  return appKitPromise
+}
+
+export async function openAppKit(view: "Account" | "Connect") {
+  const instance = await getAppKit()
+  await instance?.open({ view })
+}
+
+export type EmbeddedWalletAccountType = "eoa" | "smartAccount" | null
+
+export async function subscribeEmbeddedWalletAccountType(
+  onChange: (accountType: EmbeddedWalletAccountType) => void
+): Promise<() => void> {
+  const instance = await getAppKit()
+  if (!instance) return () => undefined
+
+  const emitAccountType = (account?: {
+    embeddedWalletInfo?: { accountType?: string }
+  }) => {
+    const accountType = account?.embeddedWalletInfo?.accountType
+    onChange(
+      accountType === "smartAccount"
+        ? "smartAccount"
+        : accountType === "eoa"
+        ? "eoa"
+        : null
+    )
+  }
+
+  try {
+    emitAccountType(instance.getAccount())
+    return instance.subscribeAccount((account) => emitAccountType(account))
+  } catch {
+    onChange(null)
+    return () => undefined
+  }
+}
 
 export function AppKitProvider({ children }: { children: ReactNode }) {
   const { resolvedTheme } = useTheme()
+  const [walletConfig, setWalletConfig] = useState<Config>(
+    fallbackWagmiConfig as Config
+  )
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -83,22 +170,45 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
     []
   )
 
+  useEffect(() => {
+    if (!isAppKitConfigured) return
+
+    let cancelled = false
+    void getWagmiAdapter().then((adapter) => {
+      if (cancelled || !adapter) return
+      setWalletConfig(adapter.wagmiConfig)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   // Keep AppKit's modal theme in sync with next-themes (the themeMode
   // passed to createAppKit only sets the initial value). resolvedTheme
   // resolves "system" to dark/light at runtime, so the modal follows the
   // actually rendered theme. AppKitProvider sits inside next-themes'
   // ThemeProvider (root-provider.tsx), so useTheme() is available here.
   useEffect(() => {
-    try {
-      appKit?.setThemeMode?.(resolvedTheme === "dark" ? "dark" : "light")
-    } catch {
-      /* ignore */
+    if (!isAppKitConfigured) return
+
+    let cancelled = false
+    void getAppKit().then((instance) => {
+      if (cancelled) return
+      instance?.setThemeMode?.(resolvedTheme === "dark" ? "dark" : "light")
+    })
+
+    return () => {
+      cancelled = true
     }
   }, [resolvedTheme])
 
   return (
     <QueryClientProvider client={queryClient}>
-      <WagmiProvider config={wagmiAdapter.wagmiConfig} reconnectOnMount>
+      <WagmiProvider
+        config={walletConfig}
+        reconnectOnMount={isAppKitConfigured}
+      >
         {children}
       </WagmiProvider>
     </QueryClientProvider>

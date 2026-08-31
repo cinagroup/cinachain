@@ -6,13 +6,13 @@ import { env } from "@/env.mjs"
 
 import { siteConfig } from "@/config/site"
 import { fontMono, fontSans } from "@/lib/fonts"
+import { I18nProvider } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 import RootProvider from "@/components/providers/root-provider"
 import { PWARegister } from "@/components/pwa/pwa-register"
-import { I18nProvider } from "@/lib/i18n"
 
-const url = env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+const url = env.NEXT_PUBLIC_SITE_URL || "https://nft.cinachain.com"
 
 export const viewport: Viewport = {
   themeColor: [
@@ -30,9 +30,6 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
-  alternates: {
-    canonical: "/",
-  },
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",

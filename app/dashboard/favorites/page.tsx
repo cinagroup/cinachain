@@ -23,18 +23,18 @@ export default function FavoritesPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Dashboard
+            {t("nav.dashboard")}
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            Favorites<span className="text-foreground">.</span>
+            {t("favorites.title")}<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            NFTs you&apos;ve saved for later.
+            {t("favorites.description")}
           </p>
         </div>
         {favorites.length > 0 && (
           <Button variant="outline" onClick={clearFavorites}>
-            Clear all
+            {t("favorites.clearAll")}
           </Button>
         )}
       </div>
@@ -54,10 +54,10 @@ export default function FavoritesPage() {
             <Heart className="mb-4 size-12 text-muted-foreground" />
             <h2 className="mb-2 text-xl font-semibold">{t("favorites.noFavorites")}</h2>
             <p className="mb-4 text-center text-muted-foreground">
-              Start exploring and tap the heart icon to save NFTs you like.
+              {t("favorites.emptyDescription")}
             </p>
             <Button asChild>
-              <Link href="/explore">Explore NFTs</Link>
+              <Link href="/explore">{t("home.exploreNfts")}</Link>
             </Button>
           </CardContent>
         </Card>

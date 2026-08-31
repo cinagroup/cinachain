@@ -4,7 +4,24 @@ import { dirname, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const secretNames = ["ADMIN_KEY", "INGRESS_ENC_KEY"]
+const secretNames = [
+  "ADMIN_KEY",
+  "ADMIN_TOKEN",
+  "INGRESS_ENC_KEY",
+  "DEPLOY_PRIVATE_KEY",
+  "CINATOKEN_MINTER_PRIVATE_KEY",
+  "CUSTODIAL_POOL_PRIVATE_KEY",
+  "CINAAUTH_CLIENT_SECRET",
+  "NEXT_PUBLIC_CINAAUTH_CLIENT_SECRET",
+  "ALCHEMY_API_KEY",
+  "NEXT_PUBLIC_ALCHEMY_API_KEY",
+  "CDP_PAYMASTER_URL",
+  "CLOUDFLARE_API_TOKEN",
+  "WHITELIST_ADMIN_TOKEN",
+  "BASESCAN_API_KEY",
+  "ETHERSCAN_API_KEY",
+  "PRIVATE_KEY",
+]
 const secretAlternation = secretNames.join("|")
 
 const assignmentPatterns = [
@@ -88,6 +105,9 @@ function isEnvironmentReference(value, name) {
     new RegExp(`^process\\.env\\.${escapedName}!?$`, "i"),
     new RegExp(`^process\\.env\\[["']${escapedName}["']\\]!?$`, "i"),
     new RegExp(`^\\$\\{\\{\\s*secrets\\.${escapedName}\\s*\\}\\}$`, "i"),
+    /^\$\{\{\s*secrets\.[A-Z0-9_]+(?:\s*\|\|\s*secrets\.[A-Z0-9_]+)*\s*\}\}$/i,
+    /^\$\{?[A-Z][A-Z0-9_]*\}?$/,
+    /^[A-Za-z_$][A-Za-z0-9_$]*$/,
   ]
 
   return references.some((pattern) => pattern.test(value))
@@ -97,19 +117,24 @@ function isSafeAssignedValue(rawValue, name) {
   const value = normalizeAssignedValue(rawValue)
   if (value === "") return true
   if (safePlaceholders.has(value.toLowerCase())) return true
+  if (/^(?:0x)?(?:\.{3}|<[^>]+>|your[-_ ].+)$/i.test(value)) return true
   return isEnvironmentReference(value, name)
 }
 
 function isPathScopedLegacyTestFixture(rawValue, name, path) {
-  if (name !== "ADMIN_KEY") return false
-  if (normalizeAssignedValue(rawValue).toLowerCase() !== "test-admin") {
-    return false
-  }
-
   const normalizedPath = path.replaceAll("\\", "/")
-  return (
-    /^workers\/billing\/src\/.*\.test\.[cm]?[jt]s$/i.test(normalizedPath) ||
+  const isFixturePath =
+    /^workers\/[^/]+\/src\/.*\.test\.[cm]?[jt]s$/i.test(normalizedPath) ||
+    /^lib\/__tests__\/.*\.test\.[cm]?[jt]s$/i.test(normalizedPath) ||
+    /^scripts\/__tests__\/.*\.test\.[cm]?[jt]s$/i.test(normalizedPath) ||
     /^docs\/superpowers\/plans\/.*\.md$/i.test(normalizedPath)
+  if (!isFixturePath) return false
+  const value = normalizeAssignedValue(rawValue).toLowerCase()
+  return (
+    (name === "ADMIN_KEY" && value === "test-admin") ||
+    value.includes("fixture") ||
+    value.includes("test") ||
+    /^(?:0x)?(?:11|22|33|ab){16,}$/i.test(value)
   )
 }
 

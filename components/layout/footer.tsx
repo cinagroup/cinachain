@@ -6,8 +6,8 @@ import { FaDiscord, FaGithub, FaTwitter } from "react-icons/fa"
 
 import { DEPLOYMENT_STAGE, PRIMARY_NETWORK_LABEL } from "@/config/deployment"
 import { siteConfig } from "@/config/site"
-import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 import { BrandMark, BrandName } from "@/components/brand/brand-mark"
 
 export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
@@ -23,17 +23,17 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
         { label: t("nav.collections"), href: "/collections" },
         { label: t("nav.exchange"), href: "/exchange" },
         { label: t("nav.dashboard"), href: "/dashboard" },
-        { label: "API keys", href: "/settings" },
+        { label: t("footer.apiKeys"), href: "/settings" },
       ],
     },
     {
-      title: "Integrations",
+      title: t("footer.integrations"),
       links: [
         { label: "ERC-20", href: "/integration/erc20" },
         { label: "ERC-721", href: "/integration/erc721" },
         { label: "ERC-1155", href: "/integration/erc1155" },
         {
-          label: "Sign-In With Ethereum",
+          label: t("footer.signInWithEthereum"),
           href: "/integration/sign-in-with-ethereum",
         },
       ],
@@ -41,12 +41,12 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
     {
       title: t("footer.resources"),
       links: [
-        { label: "Documentation", href: siteConfig.links.docs },
+        { label: t("nav.documentation"), href: siteConfig.links.docs },
         { label: "GitHub", href: siteConfig.links.github },
       ],
     },
     {
-      title: "Community",
+      title: t("footer.community"),
       links: [
         { label: "Discord", href: siteConfig.links.discord },
         { label: "Twitter", href: siteConfig.links.twitter },
@@ -61,15 +61,17 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
           <div>
             <Link
               href="/"
-              aria-label="CinaChain home"
+              aria-label={t("nav.homeAria")}
               className="inline-flex items-center gap-2"
             >
               <BrandMark size={24} />
               <BrandName className="text-sm" />
             </Link>
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              NFT platform on {PRIMARY_NETWORK_LABEL} ({DEPLOYMENT_STAGE}) with
-              Cloudflare Web3 infrastructure.
+              {t("footer.tagline", {
+                network: PRIMARY_NETWORK_LABEL,
+                stage: t(`status.${DEPLOYMENT_STAGE.toLowerCase()}`),
+              })}
             </p>
           </div>
           {columns.map((col) => (
@@ -94,26 +96,27 @@ export function Footer({ className, ...props }: HTMLAttributes<HTMLElement>) {
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} cinagroup. All rights reserved.
+            &copy; {new Date().getFullYear()} cinagroup.{" "}
+            {t("footer.allRightsReserved")}
           </p>
           <div className="flex items-center gap-4">
             <Link
               href={siteConfig.links.github}
-              aria-label="CinaChain on GitHub"
+              aria-label={t("footer.githubAria")}
               className="flex size-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
             >
               <FaGithub className="size-4" />
             </Link>
             <Link
               href={siteConfig.links.twitter}
-              aria-label="CinaChain on X"
+              aria-label={t("footer.xAria")}
               className="flex size-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
             >
               <FaTwitter className="size-4" />
             </Link>
             <Link
               href={siteConfig.links.discord}
-              aria-label="CinaChain on Discord"
+              aria-label={t("footer.discordAria")}
               className="flex size-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
             >
               <FaDiscord className="size-4" />

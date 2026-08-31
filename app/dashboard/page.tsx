@@ -56,10 +56,15 @@ function StatCard({
 }
 
 function TierProgressCard({ address }: { address?: Address }) {
+  const { t } = useI18n()
   const { data, isLoading, isError } = useTierProgress(address)
   const TIER_LABEL: Record<string, string> = {
-    free: "Free", bronze: "Bronze", silver: "Silver",
-    gold: "Gold", diamond: "Diamond", whale: "Whale",
+    free: t("tier.free"),
+    bronze: t("tier.bronze"),
+    silver: t("tier.silver"),
+    gold: t("tier.gold"),
+    diamond: t("tier.diamond"),
+    whale: t("tier.whale"),
   }
   const spendCredits = data
     ? (Number(data.cumulativeSpend) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 2 })
@@ -68,12 +73,14 @@ function TierProgressCard({ address }: { address?: Address }) {
     <Card className="shadow-vercel-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          Membership tier
+          {t("dashboard.membershipTier")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isError ? (
-          <p className="text-xs text-muted-foreground">Tier data unavailable</p>
+          <p className="text-xs text-muted-foreground">
+            {t("dashboard.tierUnavailable")}
+          </p>
         ) : isLoading || !data ? (
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
         ) : (
@@ -83,7 +90,7 @@ function TierProgressCard({ address }: { address?: Address }) {
                 {TIER_LABEL[data.tier] ?? data.tier}
               </span>
               <span className="text-xs text-muted-foreground">
-                {spendCredits} credit spent
+                {t("dashboard.creditSpentValue", { value: spendCredits })}
               </span>
             </div>
             {data.nextTier ? (
@@ -95,17 +102,27 @@ function TierProgressCard({ address }: { address?: Address }) {
                   />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {((Number(data.nextThreshold ?? 0) - Number(data.cumulativeSpend)) / 1e18).toLocaleString()} credit to{" "}
-                  {TIER_LABEL[data.nextTier] ?? data.nextTier}
+                  {t("dashboard.creditToTier", {
+                    value: (
+                      (Number(data.nextThreshold ?? 0) -
+                        Number(data.cumulativeSpend)) /
+                      1e18
+                    ).toLocaleString(),
+                    tier: TIER_LABEL[data.nextTier] ?? data.nextTier,
+                  })}
                 </p>
               </>
             ) : (
-              <p className="mt-2 text-xs text-muted-foreground">Top tier reached</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("dashboard.topTierReached")}
+              </p>
             )}
             {data.pendingBadges.length > 0 && (
               <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-violet">
                 <Award aria-hidden="true" className="size-3.5" />
-                Badge pending: {data.pendingBadges.join(", ")}
+                {t("dashboard.badgePending", {
+                  badges: data.pendingBadges.join(", "),
+                })}
               </p>
             )}
           </>
@@ -136,11 +153,11 @@ export default function PageDashboard() {
     ? null
     : whitelistData?.eligible
       ? whitelistData.phase === "whitelist"
-        ? { text: "Eligible", sub: "Whitelist mint active" }
-        : { text: "Public", sub: "Public mint active" }
+        ? { text: t("dashboard.eligible"), sub: t("mint.whitelistActive") }
+        : { text: t("dashboard.public"), sub: t("mint.publicActive") }
       : whitelistData?.phase === "whitelist"
-        ? { text: "Not listed", sub: "Check back later" }
-        : { text: "Public", sub: "Public mint active" }
+        ? { text: t("dashboard.notListed"), sub: t("dashboard.checkBackLater") }
+        : { text: t("dashboard.public"), sub: t("mint.publicActive") }
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,7 +166,7 @@ export default function PageDashboard() {
           {/* Header */}
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Dashboard
+              {t("nav.dashboard")}
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
               {t("dashboard.welcomeBack")} <WalletEnsName /><span className="text-foreground">.</span>
@@ -181,12 +198,12 @@ export default function PageDashboard() {
               value={
                 contractStats
                   ? `${contractStats.mintedCount.toLocaleString()} / ${contractStats.maxCount.toLocaleString()}`
-                  : "Unavailable"
+                  : t("status.unavailable")
               }
               sublabel={
                 contractStatsStatus === "stale"
-                  ? "Last complete on-chain response"
-                  : "Total minted"
+                  ? t("dashboard.lastCompleteResponse")
+                  : t("dashboard.totalMinted")
               }
               isLoading={contractStatsStatus === "loading"}
             />
@@ -198,16 +215,16 @@ export default function PageDashboard() {
               <ChainReadNotice
                 description={
                   contractStatsStatus === "stale"
-                    ? "The latest refresh failed. Collection progress uses the last complete on-chain response."
-                    : "Collection progress is unavailable because the contract reads did not return a complete response."
+                    ? t("dashboard.progressStaleDescription")
+                    : t("dashboard.progressUnavailableDescription")
                 }
                 isRetrying={isRetryingContractStats}
                 onRetry={() => void refetchContractStats()}
                 state={contractStatsStatus}
                 title={
                   contractStatsStatus === "stale"
-                    ? "Showing last known collection progress"
-                    : "Collection progress unavailable"
+                    ? t("dashboard.showingLastProgress")
+                    : t("dashboard.progressUnavailable")
                 }
               />
             </div>
@@ -220,16 +237,18 @@ export default function PageDashboard() {
 
           {/* Quick Actions */}
           <div className="mt-8">
-            <h2 className="font-display mb-4 text-lg text-foreground">Quick actions</h2>
+            <h2 className="font-display mb-4 text-lg text-foreground">
+              {t("dashboard.quickActions")}
+            </h2>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="flex-1">
-                <Link href="/mint">Mint NFT</Link>
+                <Link href="/mint">{t("home.mintNft")}</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="flex-1">
-                <Link href="/explore">Explore collection</Link>
+                <Link href="/explore">{t("home.exploreCollection")}</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="flex-1">
-                <Link href="/dashboard/nfts">View my NFTs</Link>
+                <Link href="/dashboard/nfts">{t("dashboard.viewMyNfts")}</Link>
               </Button>
             </div>
           </div>
@@ -243,13 +262,14 @@ export default function PageDashboard() {
         <IsWalletDisconnected>
           <div className="flex h-[60vh] flex-col items-center justify-center text-center">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Authentication required
+              {t("auth.required")}
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground">
-              Connect your wallet<span className="text-foreground">.</span>
+              {t("auth.connectWalletTitle")}
+              <span className="text-foreground">.</span>
             </h1>
             <p className="mt-4 max-w-md text-base text-muted-foreground">
-              Connect your wallet to view your personalized dashboard, manage your NFTs, and access exclusive features.
+              {t("dashboard.connectDescription")}
             </p>
             <div className="mt-8">
               <WalletConnect />

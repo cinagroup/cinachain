@@ -1,48 +1,40 @@
-"use client"
-
-import { motion, MotionProps } from "framer-motion"
+import type { ComponentPropsWithoutRef } from "react"
 
 import { cn } from "@/lib/utils"
-import { staggerContainer } from "@/lib/utils/motion"
 
-interface MotionSectionProps extends MotionProps {
-  className?: string
-  children?: React.ReactNode
-}
-
-function PageSection({ className, children, ...props }: MotionSectionProps) {
+function PageSection({
+  className,
+  children,
+  ...props
+}: ComponentPropsWithoutRef<"section">) {
   return (
-    <motion.section
-      variants={staggerContainer({ staggerChildren: 0.15 })}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.25 }}
+    <section
       className={cn(
-        "mx-auto flex w-full flex-col items-center gap-2 py-8 sm:px-4 md:py-12",
+        "mx-auto flex w-full flex-col items-center gap-2 py-8 motion-safe:duration-500 motion-safe:animate-in motion-safe:fade-in-0 sm:px-4 md:py-12",
         className
       )}
       {...props}
     >
       {children}
-    </motion.section>
+    </section>
   )
 }
 
-function PageSectionGrid({ className, children, ...prop }: MotionSectionProps) {
+function PageSectionGrid({
+  className,
+  children,
+  ...props
+}: ComponentPropsWithoutRef<"section">) {
   return (
-    <motion.section
-      variants={staggerContainer({ staggerChildren: 0.15, delayChildren: 0.5 })}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true }}
+    <section
       className={cn(
-        "my-10 grid w-full max-w-screen-xl grid-cols-1 gap-5 px-5 md:grid-cols-3 xl:px-0",
+        "my-10 grid w-full max-w-screen-xl grid-cols-1 gap-5 px-5 motion-safe:duration-500 motion-safe:animate-in motion-safe:fade-in-0 md:grid-cols-3 xl:px-0",
         className
       )}
-      {...prop}
+      {...props}
     >
       {children}
-    </motion.section>
+    </section>
   )
 }
 

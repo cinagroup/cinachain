@@ -9,10 +9,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-# All deploy jobs run in parallel. The DApp static build is fragile on the
-# runner (a webpack module-resolution quirk in the Reown/wagmi chain), so the
-# portal/docs/workers are decoupled into their own jobs — a DApp build failure
-# must not block shipping the brand portal, docs site, or edge workers.
+# Deployable application and edge artifacts require both application and
+# contract quality gates. Portal/docs remain independently buildable.
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -29,7 +27,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --ignore-scripts
+        run: npm ci --ignore-scripts
 
       - name: Install billing Worker dependencies
         working-directory: workers/billing
@@ -74,7 +72,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies (@openzeppelin/contracts)
-        run: npm ci --legacy-peer-deps --ignore-scripts
+        run: npm ci --ignore-scripts
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
@@ -107,14 +105,14 @@ jobs:
 
       - name: Install docs dependencies
         working-directory: docs-site
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Build docs
         working-directory: docs-site
         run: npm run build
 
   dapp:
-    needs: quality
+    needs: [quality, contracts]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -129,7 +127,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --ignore-scripts
+        run: npm ci --ignore-scripts
 
       - name: Install locked deployment CLI
         working-directory: workers/billing
@@ -174,9 +172,7 @@ jobs:
           ./workers/billing/node_modules/.bin/wrangler pages deploy out --project-name=cinachain-dapp-v2 --branch=main --commit-hash="$GITHUB_SHA"
 
   workers:
-    needs: quality
-    # Edge workers depend only on their own wrangler + the committed source —
-    # independent of the Next.js build.
+    needs: [quality, contracts]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -275,6 +271,35 @@ jobs:
             echo "::warning::Neither CINAAUTH_CLIENT_SECRET nor NEXT_PUBLIC_CINAAUTH_CLIENT_SECRET is set — running the proxy in public-client passthrough mode."
           fi
 
+      # Whitelist API. Dynamic per-address limits are intentionally disabled;
+      # the Worker advertises only the deployed contract's fixed cap.
+      - name: Deploy whitelist worker
+        working-directory: workers/whitelist
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: ../billing/node_modules/.bin/wrangler deploy
+
+      - name: Provision whitelist admin token
+        working-directory: workers/whitelist
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WHITELIST_ADMIN_TOKEN: ${{ secrets.WHITELIST_ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$WHITELIST_ADMIN_TOKEN"
+          printf '%s' "$WHITELIST_ADMIN_TOKEN" | ../billing/node_modules/.bin/wrangler secret put ADMIN_TOKEN
+
+      # Deploy the Paymaster edge route in fail-closed mode. Sponsorship stays
+      # disabled until its CDP dashboard policy and explicit vars are reviewed.
+      - name: Deploy disabled paymaster worker
+        working-directory: workers/paymaster
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: ../billing/node_modules/.bin/wrangler deploy
+
   portal:
     needs: quality
     # Brand portal (cinachain.com). The reviewed 1200x630 social card is tracked
@@ -348,7 +373,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          npm ci --legacy-peer-deps
+          npm ci
           npm run build
           projects="$(../workers/billing/node_modules/.bin/wrangler pages project list)"
           if ! grep -q "cinachain-docs" <<< "$projects"; then

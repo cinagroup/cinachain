@@ -1,11 +1,14 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { cinaIntegrations } from "@/data/cina-integrations"
 import { LuBook } from "react-icons/lu"
 
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { IntegrationWorkbenchLoading } from "@/components/blockchain/integration-workbench-loading"
 import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import {
   PageHeader,
@@ -17,22 +20,19 @@ import { PageSection } from "@/components/layout/page-section"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { LightDarkImage } from "@/components/shared/light-dark-image"
-import {
-  Erc1155Deploy,
-  Erc1155DeployTest,
-  Erc1155Read,
-  Erc1155WriteApprove,
-  Erc1155WriteBatchTransfer,
-  Erc1155WriteMint,
-  Erc1155WriteTransfer,
-} from "@/integrations/erc1155"
-import { Erc1155SetTokenStorage } from "@/integrations/erc1155/components/erc1155-set-token-storage"
-import { useErc1155TokenStorage } from "@/integrations/erc1155/hooks/use-erc1155-token-storage"
+
+const Erc1155Workbench = dynamic(
+  () => import("./erc1155-workbench").then((module) => module.Erc1155Workbench),
+  {
+    ssr: false,
+    loading: () => <IntegrationWorkbenchLoading />,
+  }
+)
 
 const integrationData = cinaIntegrations.erc1155
 
 export default function PageIntegration() {
-  const [token] = useErc1155TokenStorage()
+  const { t } = useI18n()
 
   return (
     <div className="container relative mt-20">
@@ -40,13 +40,13 @@ export default function PageIntegration() {
         <LightDarkImage
           LightImage={integrationData.imgDark}
           DarkImage={integrationData.imgLight}
-          alt={`${integrationData.name} Logo`}
+          alt={t("integration.logoAlt", { standard: integrationData.name })}
           width={100}
           height={100}
         />
         <PageHeaderHeading>{integrationData.name}</PageHeaderHeading>
         <PageHeaderDescription>
-          {integrationData.description}
+          {t("integration.erc1155Description")}
         </PageHeaderDescription>
         <PageHeaderCTA>
           <Link
@@ -56,26 +56,13 @@ export default function PageIntegration() {
             className={cn(buttonVariants({ variant: "outline" }))}
           >
             <LuBook className="mr-2 size-4" />
-            Documentation
+            {t("integration.documentation")}
           </Link>
         </PageHeaderCTA>
       </PageHeader>
       <PageSection>
         <IsWalletConnected>
-          <div className="flex w-full max-w-screen-lg flex-col gap-y-8">
-            <Erc1155Deploy />
-            <Erc1155DeployTest />
-            <Erc1155SetTokenStorage />
-            {token && (
-              <>
-                <Erc1155Read address={token} />
-                <Erc1155WriteMint address={token} />
-                <Erc1155WriteApprove address={token} />
-                <Erc1155WriteTransfer address={token} />
-                <Erc1155WriteBatchTransfer address={token} />
-              </>
-            )}
-          </div>
+          <Erc1155Workbench />
         </IsWalletConnected>
         <IsWalletDisconnected>
           <WalletConnect />

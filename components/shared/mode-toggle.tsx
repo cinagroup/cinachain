@@ -3,6 +3,7 @@
 import { useTheme } from "next-themes"
 import { LuLaptop, LuMoon, LuSun } from "react-icons/lu"
 
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -13,27 +14,28 @@ import {
 
 export function ModeToggle() {
   const { setTheme } = useTheme()
+  const { t } = useI18n()
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="w-9 px-0">
           <LuSun className="size-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <LuMoon className="absolute size-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
+          <span className="sr-only">{t("theme.toggle")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <LuSun className="mr-2 size-4" />
-          Light
+          {t("theme.light")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <LuMoon className="mr-2 size-4" />
-          Dark
+          {t("theme.dark")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <LuLaptop className="mr-2 size-4" />
-          System
+          {t("theme.system")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

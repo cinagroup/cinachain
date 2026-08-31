@@ -6,6 +6,7 @@ import "../design-tokens.css"
 import "./styles.css"
 
 import { App } from "./App"
+import { I18nProvider } from "./lib/i18n"
 
 const container = document.getElementById("root")
 if (!container) {
@@ -14,6 +15,8 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <I18nProvider>
+      <App />
+    </I18nProvider>
   </StrictMode>
 )

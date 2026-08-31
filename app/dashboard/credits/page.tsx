@@ -60,7 +60,7 @@ export default function CreditsPage() {
         <div className="container max-w-screen-ultra px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Billing
+              {t("sidebar.billing")}
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
               {t("credits.title")}<span className="text-foreground">.</span>
@@ -69,8 +69,7 @@ export default function CreditsPage() {
           <Alert variant="destructive" className="max-w-md">
             <AlertCircle className="size-4" />
             <AlertDescription>
-              The credit contract is not configured. Please contact the
-              CinaChain team.
+              {t("credits.contractNotConfigured")}
             </AlertDescription>
           </Alert>
         </div>
@@ -85,14 +84,13 @@ export default function CreditsPage() {
         <div className="container max-w-screen-ultra px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Billing
+              {t("sidebar.billing")}
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
               {t("credits.title")}<span className="text-foreground">.</span>
             </h1>
             <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-              CinaCredit powers API billing and settles marketplace earnings —
-              connect your wallet to view your balance.
+              {t("credits.connectIntro")}
             </p>
           </div>
 
@@ -100,7 +98,7 @@ export default function CreditsPage() {
             <CardHeader>
               <CardTitle>{t("action.connectWallet")}</CardTitle>
               <CardDescription>
-                Connect your wallet to view your credit balance and usage
+                {t("credits.connectDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -119,7 +117,7 @@ export default function CreditsPage() {
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Billing
+            {t("sidebar.billing")}
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
             {t("credits.title")}<span className="text-foreground">.</span>
@@ -134,8 +132,7 @@ export default function CreditsPage() {
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="size-4" />
             <AlertDescription>
-              Credit operations are currently paused (all transfers, mints and
-              burns are frozen). Please check back later.
+              {t("credits.pausedDescription")}
             </AlertDescription>
           </Alert>
         )}
@@ -146,7 +143,7 @@ export default function CreditsPage() {
             <CardHeader>
               <CardTitle>{t("credits.yourBalance")}</CardTitle>
               <CardDescription>
-                On-chain CinaCredit (CINA-C) held by your wallet
+                {t("credits.balanceDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -154,7 +151,9 @@ export default function CreditsPage() {
                 <div className="font-display text-5xl tracking-tight text-foreground">
                   {isLoading ? "…" : formatBalance(creditBalance)}
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">credit</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {t("credits.creditUnit")}
+                </p>
               </div>
               {totalSupply !== undefined && (
                 <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
@@ -170,7 +169,7 @@ export default function CreditsPage() {
                     rel="noopener noreferrer"
                     className="text-xs text-muted-foreground underline"
                   >
-                    View contract on the explorer
+                    {t("credits.viewContract")}
                   </a>
                 </div>
               )}
@@ -193,24 +192,19 @@ export default function CreditsPage() {
                 <span className="font-medium text-foreground">
                   {t("credits.opsIssued")}
                 </span>{" "}
-                Top-ups are granted by the team to your wallet address — contact
-                the CinaChain team to add credit for API usage.
+                {t("credits.opsIssuedDescription")}
               </p>
               <p>
                 <span className="font-medium text-foreground">
                   {t("credits.oneTokenTwoRoles")}
                 </span>{" "}
-                Your balance is the ceiling for API billing (usage is metered
-                server-side and consumes it), and it is also the token in which
-                marketplace earnings settle on-chain.
+                {t("credits.twoRolesDescription")}
               </p>
               <p>
                 <span className="font-medium text-foreground">
                   {t("credits.keepAnEyeOnUsage")}
                 </span>{" "}
-                API calls reduce the credit available to your address — the
-                ledger below shows how much of your on-chain balance is still
-                usable.
+                {t("credits.usageDescription")}
               </p>
             </CardContent>
           </Card>
@@ -223,7 +217,7 @@ export default function CreditsPage() {
                 {t("credits.billingLedger")}
               </CardTitle>
               <CardDescription>
-                Server-side metering for your address (billing worker)
+                {t("credits.ledgerDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -231,8 +225,7 @@ export default function CreditsPage() {
                 <Alert variant="destructive">
                   <AlertCircle className="size-4" />
                   <AlertDescription className="text-sm">
-                    Ledger unavailable — the billing service could not be
-                    reached.
+                    {t("credits.ledgerUnavailable")}
                   </AlertDescription>
                 </Alert>
               ) : (

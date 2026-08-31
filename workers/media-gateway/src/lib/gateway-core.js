@@ -15,16 +15,100 @@ export function parseCidMap(envMap) {
   if (!envMap) return map
   for (const pair of envMap.split(",")) {
     const [cid, type] = pair.split(":")
-    if (cid && type) map[cid.trim()] = Number(type.trim())
+    const normalizedCid = cid?.trim()
+    const normalizedType = Number(type?.trim())
+    if (
+      normalizedCid &&
+      /^(?:Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{20,})$/.test(normalizedCid) &&
+      Number.isInteger(normalizedType) &&
+      normalizedType >= 1 &&
+      normalizedType <= 3
+    ) {
+      map[normalizedCid] = normalizedType
+    }
   }
   return map
 }
 
 // Parse /<cid>/<path> from the URL pathname.
 export function extractCidPath(pathname) {
-  const m = /^\/([^/]+)\/([^/]+)$/.exec(pathname)
+  const m = /^\/([A-Za-z0-9]+)\/([a-z]+(?:\.[a-z]+)?)$/.exec(pathname)
   if (!m) return null
   return { cid: m[1], path: m[2] }
+}
+
+const SVG_FILE_BY_TYPE = Object.freeze({
+  1: "ucina.svg",
+  2: "mcina.svg",
+  3: "cina.svg",
+})
+
+export function isAllowedMediaPath(type, path) {
+  return path === "metadata.json" || SVG_FILE_BY_TYPE[type] === path
+}
+
+export function maxMediaBytes(path) {
+  return path === "metadata.json" ? 256 * 1024 : 1024 * 1024
+}
+
+export async function readResponseWithinLimit(response, maxBytes) {
+  const declared = Number(response.headers.get("Content-Length"))
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new RangeError("Media response too large")
+  }
+  if (!response.body) return new Uint8Array()
+  const reader = response.body.getReader()
+  const chunks = []
+  let total = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel()
+        throw new RangeError("Media response too large")
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+  const result = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    result.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return result
+}
+
+export function validateMediaBytes(path, bytes) {
+  if (!bytes.length || bytes.length > maxMediaBytes(path)) return false
+  const text = new TextDecoder().decode(bytes)
+  if (path === "metadata.json") {
+    try {
+      const metadata = JSON.parse(text)
+      return (
+        metadata &&
+        typeof metadata === "object" &&
+        typeof metadata.name === "string" &&
+        metadata.name.length <= 200 &&
+        typeof metadata.image === "string" &&
+        metadata.image.startsWith("ipfs://") &&
+        metadata.image.length <= 512 &&
+        Array.isArray(metadata.attributes)
+      )
+    } catch {
+      return false
+    }
+  }
+  const normalized = text.replace(/^\uFEFF?\s*/, "")
+  if (!normalized.startsWith("<svg") && !normalized.startsWith("<?xml"))
+    return false
+  return !/(?:<script\b|<foreignObject\b|<iframe\b|\son\w+\s*=|(?:href|src)\s*=\s*["']https?:)/i.test(
+    normalized
+  )
 }
 
 // Decode a solc/viem ABI bytes return value: 0x<offset(32)><length(32)><data>
@@ -34,10 +118,12 @@ export function decodeBytesReturn(hex) {
   if (raw.length < 128) return new Uint8Array(0)
   const lengthHex = raw.slice(64, 128)
   const length = parseInt(lengthHex, 16)
-  if (!Number.isFinite(length) || length * 2 > raw.length - 128) return new Uint8Array(0)
+  if (!Number.isFinite(length) || length * 2 > raw.length - 128)
+    return new Uint8Array(0)
   const body = raw.slice(128, 128 + length * 2)
   const out = new Uint8Array(body.length / 2)
-  for (let i = 0; i < out.length; i++) out[i] = parseInt(body.slice(i * 2, i * 2 + 2), 16)
+  for (let i = 0; i < out.length; i++)
+    out[i] = parseInt(body.slice(i * 2, i * 2 + 2), 16)
   return out
 }
 
@@ -98,7 +184,13 @@ export async function ethCallRaw(rpc, to, data) {
   const res = await fetch(rpc, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }),
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "eth_call",
+      params: [{ to, data }, "latest"],
+    }),
+    signal: AbortSignal.timeout(8_000),
   })
   if (!res.ok) return null
   const j = await res.json().catch(() => null)
@@ -129,7 +221,9 @@ export function createRateLimiter(maxPerSec = 5) {
 // Cache-Control contract aligned with public/_headers:
 //   images (svg): 30 days immutable; json: 10 minutes.
 export function cacheControlFor(path) {
-  return path.endsWith(".json") ? "public, max-age=600" : "public, max-age=2592000, immutable"
+  return path.endsWith(".json")
+    ? "public, max-age=600"
+    : "public, max-age=2592000, immutable"
 }
 
 export function contentTypeFor(path) {

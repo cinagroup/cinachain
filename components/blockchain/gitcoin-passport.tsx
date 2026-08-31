@@ -1,6 +1,7 @@
 "use client"
 
 import { useGitcoinPassport } from "@/lib/hooks/use-gitcoin-passport"
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +21,7 @@ export function GitcoinPassport({
   threshold = 20,
   onEligibilityChange,
 }: GitcoinPassportProps) {
+  const { t } = useI18n()
   const { isConnected } = useAccount()
   const { score, isEligible, isLoading, error, refreshScore, submitPassport } =
     useGitcoinPassport({
@@ -41,14 +43,14 @@ export function GitcoinPassport({
           Gitcoin Passport
         </CardTitle>
         <CardDescription>
-          Verify your identity to prevent sybil attacks
+          {t("passport.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Checking passport score...
+            {t("passport.checking")}
           </div>
         )}
 
@@ -62,7 +64,9 @@ export function GitcoinPassport({
         {!isLoading && !error && score && (
           <>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Score</span>
+              <span className="text-sm text-muted-foreground">
+                {t("passport.score")}
+              </span>
               <div className="flex items-center gap-2">
                 <span className="font-display text-2xl">
                   {score.score !== null ? score.score.toFixed(1) : "N/A"}
@@ -75,12 +79,12 @@ export function GitcoinPassport({
                     {isEligible ? (
                       <>
                         <CheckCircle className="mr-1 size-3" />
-                        Eligible
+                        {t("passport.eligible")}
                       </>
                     ) : (
                       <>
                         <AlertCircle className="mr-1 size-3" />
-                        Below threshold
+                        {t("passport.belowThreshold")}
                       </>
                     )}
                   </Badge>
@@ -90,13 +94,13 @@ export function GitcoinPassport({
 
             {score.score === null && score.status === "DONE" && (
               <div className="text-sm text-muted-foreground">
-                No passport submitted. Click below to submit your passport.
+                {t("passport.notSubmitted")}
               </div>
             )}
 
             {score.score !== null && !isEligible && (
               <div className="text-sm text-muted-foreground">
-                Your score is below the threshold of {threshold}. Add more stamps to increase your score.
+                {t("passport.lowScore", { threshold })}
               </div>
             )}
 
@@ -107,7 +111,7 @@ export function GitcoinPassport({
                 size="sm"
                 disabled={isLoading}
               >
-                Refresh
+                {t("passport.refresh")}
               </Button>
               {score.score === null && (
                 <Button
@@ -115,7 +119,7 @@ export function GitcoinPassport({
                   size="sm"
                   disabled={isLoading}
                 >
-                  Submit Passport
+                  {t("passport.submit")}
                 </Button>
               )}
             </div>

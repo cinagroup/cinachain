@@ -8,12 +8,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, Shield } from "lucide-react"
 import Link from "next/link"
 import { WalletConnect } from "@/components/blockchain/wallet-connect"
+import { useI18n } from "@/lib/i18n"
 
 interface AdminGuardProps {
   children: React.ReactNode
 }
 
 export default function AdminGuard({ children }: AdminGuardProps) {
+  const { t } = useI18n()
   const { isConnected } = useAccount()
   const { isAdmin, isLoading } = useAdminCheck()
 
@@ -22,7 +24,9 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       <div className="container mx-auto px-4 py-12">
         <Card className="mx-auto max-w-md">
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Loading admin status...</p>
+            <p className="text-center text-muted-foreground">
+              {t("admin.loadingStatus")}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -36,10 +40,10 @@ export default function AdminGuard({ children }: AdminGuardProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="size-5" />
-              Admin access required
+              {t("admin.accessRequired")}
             </CardTitle>
             <CardDescription>
-              Connect your wallet to access the admin panel
+              {t("admin.connectToAccess")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -55,12 +59,12 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       <div className="container mx-auto px-4 py-12">
         <Alert variant="destructive" className="mx-auto max-w-md">
           <AlertCircle className="size-4" />
-          <AlertTitle>Access denied</AlertTitle>
+          <AlertTitle>{t("admin.accessDenied")}</AlertTitle>
           <AlertDescription className="mb-4">
-            Your wallet address is not authorized to access the admin panel.
+            {t("admin.notAuthorized")}
           </AlertDescription>
           <Button asChild variant="outline" className="w-full">
-            <Link href="/">Return to home</Link>
+            <Link href="/">{t("admin.returnHome")}</Link>
           </Button>
         </Alert>
       </div>

@@ -1,3 +1,5 @@
+import { useI18n } from "@/lib/i18n"
+
 /**
  * Static hero stats bar for the brand portal.
  *
@@ -17,11 +19,13 @@ function HeroStat({ label, value }: { label: string; value: string }) {
 }
 
 export function HeroStats() {
+  const { t } = useI18n()
+
   return (
     <dl className="mx-auto mt-12 flex max-w-screen-sm items-center justify-center divide-x divide-border rounded-lg border border-border bg-card px-2 py-4 shadow-vercel-sm">
-      <HeroStat label="Max supply" value="10,000" />
-      <HeroStat label="Network" value="Base Sepolia" />
-      <HeroStat label="Stage" value="Beta" />
+      <HeroStat label={t("stats.maxSupply")} value="10,000" />
+      <HeroStat label={t("stats.network")} value="Base Sepolia" />
+      <HeroStat label={t("stats.stage")} value={t("status.beta")} />
     </dl>
   )
 }

@@ -1,17 +1,20 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import {
-  type CinaauthSession,
-  beginCinaauthLogin,
-  clearCinaauthSession,
+  beginCinaauthPopupLogin,
+  CINAAUTH_SESSION_KEY,
   endCinaauthSession,
   isCinaauthConfigured,
   loadCinaauthSession,
-  refreshCinaauthSession,
   toCinaauthErrorMessage,
+  type CinaauthSession,
 } from "@/lib/auth/cinaauth"
+import {
+  CINAAUTH_POPUP_CHANNEL,
+  isCinaauthPopupMessage,
+} from "@/lib/auth/cinaauth-popup"
 
 /**
  * CinaAuth sign-in state for the app shell (header button, account page).
@@ -25,68 +28,133 @@ export function useCinaauth() {
     undefined
   )
   const [error, setError] = useState<string | null>(null)
+  const [isSigningIn, setIsSigningIn] = useState(false)
+  const popupRef = useRef<Window | null>(null)
+  const popupAttemptRef = useRef<string | null>(null)
+  const popupPollRef = useRef<number | null>(null)
+
+  const stopPopupPoll = useCallback(() => {
+    if (popupPollRef.current !== null) {
+      window.clearInterval(popupPollRef.current)
+      popupPollRef.current = null
+    }
+  }, [])
+
+  const closePopup = useCallback(() => {
+    popupRef.current?.close()
+    popupRef.current = null
+    popupAttemptRef.current = null
+  }, [])
+
+  const syncStoredSession = useCallback(() => {
+    const stored = loadCinaauthSession()
+    setSession(stored)
+    return stored
+  }, [])
 
   useEffect(() => {
-    let cancelled = false
-    async function load() {
-      const stored = loadCinaauthSession()
-      if (!stored) {
-        setSession(null)
-        return
-      }
-      // Refresh proactively once the access token is within a minute of
-      // expiry; drop the session when the grant is rejected.
-      if (stored.expiresAt > Date.now() + 60_000) {
-        setSession(stored)
-        return
-      }
-      try {
-        const refreshed = await refreshCinaauthSession(stored)
-        if (cancelled) return
-        if (refreshed) {
-          setSession(refreshed)
-        } else {
-          clearCinaauthSession()
-          setSession(null)
-        }
-      } catch (cause: unknown) {
-        if (cancelled) return
-        console.warn(
-          "[cinachain] CinaAuth session refresh failed:",
-          toCinaauthErrorMessage(cause)
-        )
-        clearCinaauthSession()
-        setSession(null)
-      }
-    }
-    void load()
-    return () => {
-      cancelled = true
-    }
+    setSession(loadCinaauthSession())
   }, [])
 
-  const signIn = useCallback(async (returnTo?: string) => {
-    setError(null)
-    try {
-      await beginCinaauthLogin(returnTo ?? "/dashboard")
-    } catch (cause: unknown) {
-      const message = toCinaauthErrorMessage(cause)
-      console.error("[cinachain] CinaAuth sign-in failed:", message)
-      setError(message)
+  useEffect(() => {
+    function finishFromStorage() {
+      const stored = syncStoredSession()
+      if (stored) setError(null)
+      setIsSigningIn(false)
+      stopPopupPoll()
+      closePopup()
     }
-  }, [])
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === CINAAUTH_SESSION_KEY) finishFromStorage()
+    }
+
+    const channel =
+      typeof BroadcastChannel === "undefined"
+        ? null
+        : new BroadcastChannel(CINAAUTH_POPUP_CHANNEL)
+    if (channel) {
+      channel.onmessage = (event: MessageEvent<unknown>) => {
+        if (!isCinaauthPopupMessage(event.data)) return
+        if (event.data.attemptId !== popupAttemptRef.current) return
+        if (event.data.status === "error") {
+          setError(event.data.message)
+          setIsSigningIn(false)
+          stopPopupPoll()
+          closePopup()
+          return
+        }
+        finishFromStorage()
+      }
+    }
+
+    window.addEventListener("storage", handleStorage)
+    return () => {
+      window.removeEventListener("storage", handleStorage)
+      channel?.close()
+      stopPopupPoll()
+      closePopup()
+    }
+  }, [closePopup, stopPopupPoll, syncStoredSession])
+
+  const signIn = useCallback(
+    async () => {
+      const existingPopup = popupRef.current
+      if (existingPopup && !existingPopup.closed) {
+        existingPopup.focus()
+        return true
+      }
+
+      setError(null)
+      setIsSigningIn(true)
+      try {
+        const launch = await beginCinaauthPopupLogin()
+
+        popupRef.current = launch.popup
+        popupAttemptRef.current = launch.attemptId
+        stopPopupPoll()
+        popupPollRef.current = window.setInterval(() => {
+          if (!launch.popup.closed) return
+          stopPopupPoll()
+          popupRef.current = null
+          const stored = syncStoredSession()
+          setIsSigningIn(false)
+          if (stored) {
+            setError(null)
+          } else {
+            setError(
+              (current) =>
+                current ??
+                "The CinaSeek sign-in window was closed before sign-in completed."
+            )
+          }
+        }, 400)
+        return true
+      } catch (cause: unknown) {
+        const message = toCinaauthErrorMessage(cause)
+        console.error("[cinachain] CinaAuth sign-in failed:", message)
+        setIsSigningIn(false)
+        setError(message)
+        return false
+      }
+    },
+    [stopPopupPoll, syncStoredSession]
+  )
 
   const signOut = useCallback(() => {
-    const current = session ?? loadCinaauthSession() ?? null
+    stopPopupPoll()
+    closePopup()
+    setIsSigningIn(false)
     setSession(null)
-    void endCinaauthSession(current)
-  }, [session])
+    void endCinaauthSession()
+  }, [closePopup, stopPopupPoll])
 
   return {
     session: session ?? null,
     user: session?.user ?? null,
     isAuthenticated: session != null,
-    isLoading: session === undefined,
+    isLoading: session === undefined || isSigningIn,
+    isSigningIn,
     isConfigured: isCinaauthConfigured(),
     error,
     signIn,

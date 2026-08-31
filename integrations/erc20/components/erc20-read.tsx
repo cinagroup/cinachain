@@ -1,13 +1,14 @@
 "use client"
 
 import { HTMLAttributes } from "react"
-import { AppKitButton } from "@reown/appkit/react"
 import { formatUnits, type Address } from "viem"
 import { useAccount } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 
@@ -154,6 +155,8 @@ export function ERC20Read({
   showTotalSupply,
   ...props
 }: ERC20ReadProps) {
+  const { t } = useI18n()
+
   return (
     <>
       <IsWalletConnected>
@@ -181,14 +184,18 @@ export function ERC20Read({
               </span>
               <div className="my-4 flex items-center justify-center gap-4">
                 <span>
-                  <span className="font-medium">Decimals</span>{" "}
+                  <span className="font-medium">
+                    {t("integration.field.decimals")}
+                  </span>{" "}
                   <ERC20Decimals address={address} chainId={chainId} />
                 </span>
                 {showTotalSupply && (
                   <>
                     <span>|</span>
                     <span>
-                      <span className="font-medium">Total Supply</span>{" "}
+                      <span className="font-medium">
+                        {t("integration.field.totalSupply")}
+                      </span>{" "}
                       <ERC20TotalSupply address={address} chainId={chainId} />
                     </span>
                   </>
@@ -197,7 +204,9 @@ export function ERC20Read({
                   <>
                     <span>|</span>
                     <span>
-                      <span className="font-medium">Balance</span>
+                      <span className="font-medium">
+                        {t("integration.field.balance")}
+                      </span>
                       <ERC20Balance address={address} />
                     </span>
                   </>
@@ -207,16 +216,21 @@ export function ERC20Read({
           </CardContent>
           <Separator className="my-4" />
           <CardFooter className="justify-between">
-            <h3 className="text-center">ERC20 Read</h3>
+            <h3 className="text-center">
+              {t("integration.cardTitle", {
+                standard: "ERC-20",
+                action: t("integration.action.read"),
+              })}
+            </h3>
             <p className="text-center text-sm text-muted-foreground">
-              Read core ERC20 token storage values
+              {t("integration.readCoreDescription", { standard: "ERC-20" })}
             </p>
           </CardFooter>
         </Card>
       </IsWalletConnected>
       <IsWalletDisconnected>
         <div className="flex items-center justify-center gap-10">
-          <AppKitButton balance="hide" />
+          <AppKitConnectButton />
         </div>
       </IsWalletDisconnected>
     </>

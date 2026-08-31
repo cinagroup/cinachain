@@ -3,6 +3,7 @@
 import { type HTMLAttributes } from "react"
 
 import { useSiwe } from "@/lib/hooks/use-siwe"
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 
 interface ButtonSIWELogoutProps extends HTMLAttributes<HTMLButtonElement> {
@@ -11,11 +12,12 @@ interface ButtonSIWELogoutProps extends HTMLAttributes<HTMLButtonElement> {
 
 export const ButtonSIWELogout = ({
   className,
-  label = "Logout",
+  label,
   children,
   ...props
 }: ButtonSIWELogoutProps) => {
   const { signOut } = useSiwe()
+  const { t } = useI18n()
 
   return (
     <Button
@@ -25,7 +27,7 @@ export const ButtonSIWELogout = ({
       onClick={() => signOut()}
       {...props}
     >
-      {children || label}
+      {children || label || t("integration.signOut")}
     </Button>
   )
 }

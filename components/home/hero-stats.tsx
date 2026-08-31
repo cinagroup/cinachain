@@ -2,30 +2,29 @@
 
 import { PRIMARY_NETWORK_NAME } from "@/config/deployment"
 import { useContractStats } from "@/lib/hooks/use-contract-stats"
+import { useI18n } from "@/lib/i18n"
 
 export function HeroStats() {
+  const { locale, t } = useI18n()
   const { data: stats, status } = useContractStats()
-  const unavailableValue = status === "loading" ? "..." : "Unavailable"
+  const unavailableValue =
+    status === "loading" ? "..." : t("status.unavailable")
 
   return (
     <dl
       aria-busy={status === "loading"}
-      aria-label={
-        status === "stale"
-          ? "Collection statistics, last known values"
-          : undefined
-      }
+      aria-label={status === "stale" ? t("home.statsLastKnown") : undefined}
       className="mx-auto mt-12 flex max-w-screen-sm items-center justify-center divide-x divide-border rounded-lg border border-border bg-card px-2 py-4 shadow-vercel-sm"
     >
       <HeroStat
-        label="NFTs minted"
-        value={stats?.mintedCount.toLocaleString() ?? unavailableValue}
+        label={t("home.statsTotalMinted")}
+        value={stats?.mintedCount.toLocaleString(locale) ?? unavailableValue}
       />
       <HeroStat
-        label="Max supply"
-        value={stats?.maxCount.toLocaleString() ?? unavailableValue}
+        label={t("home.statsMaxSupply")}
+        value={stats?.maxCount.toLocaleString(locale) ?? unavailableValue}
       />
-      <HeroStat label="Network" value={PRIMARY_NETWORK_NAME} />
+      <HeroStat label={t("home.statsNetwork")} value={PRIMARY_NETWORK_NAME} />
     </dl>
   )
 }

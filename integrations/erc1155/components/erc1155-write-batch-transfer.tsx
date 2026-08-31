@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { useDebounce } from "usehooks-ts"
+import { useDebounceValue } from "usehooks-ts"
 import { type Address, type BaseError } from "viem"
 import { useAccount, useWaitForTransactionReceipt } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContractWriteButton } from "@/components/blockchain/contract-write-button"
@@ -21,6 +22,7 @@ interface Erc1155WriteTransferProps {
 export function Erc1155WriteBatchTransfer({
   address,
 }: Erc1155WriteTransferProps) {
+  const { t } = useI18n()
   const { register, watch, handleSubmit } = useForm()
   const [batchNumber, setBatchNumber] = useState<number>(2)
 
@@ -30,13 +32,19 @@ export function Erc1155WriteBatchTransfer({
   for (let i = 1; i <= batchNumber; i++) {
     batchFields.push(
       <>
-        <label>Token Id (batch: {i}) </label>
+        <label>
+          {t("integration.field.tokenId")} ({t("integration.field.batchNumber")}
+          : {i}){" "}
+        </label>
         <input
           type="number"
           {...register("tokenId" + i.toString())}
           className="input"
         />
-        <label>Amount (batch: {i})</label>
+        <label>
+          {t("integration.field.amount")} ({t("integration.field.batchNumber")}:{" "}
+          {i})
+        </label>
         <input
           type="number"
           {...register("amount" + i.toString())}
@@ -55,10 +63,10 @@ export function Erc1155WriteBatchTransfer({
   const watchFromAddress: Address = watch("fromAddress")
   const watchToAddress: Address = watch("toAddress")
 
-  const debouncedFromAddress = useDebounce(watchFromAddress, 500)
-  const debouncedToAddress = useDebounce(watchToAddress, 500)
-  const debouncedTokenIdArr = useDebounce(tokenIdArr, 500)
-  const debouncedAmountArr = useDebounce(amountArr, 500)
+  const [debouncedFromAddress] = useDebounceValue(watchFromAddress, 500)
+  const [debouncedToAddress] = useDebounceValue(watchToAddress, 500)
+  const [debouncedTokenIdArr] = useDebounceValue(tokenIdArr, 500)
+  const [debouncedAmountArr] = useDebounceValue(amountArr, 500)
 
   const { address: accountAddress } = useAccount()
 
@@ -123,7 +131,7 @@ export function Erc1155WriteBatchTransfer({
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="flex items-center justify-between text-sm">
-            <label>Use different from address</label>
+            <label>{t("integration.field.useDifferentFrom")}</label>
             <div className="size-6">
               <input
                 {...register("differentFromAddress")}
@@ -134,13 +142,13 @@ export function Erc1155WriteBatchTransfer({
           </div>
           {watchDifferentFromAddress && (
             <>
-              <label>From Address</label>
+              <label>{t("integration.field.fromAddress")}</label>
               <input {...register("fromAddress")} className="input" />
             </>
           )}
-          <label>To Address</label>
+          <label>{t("integration.field.toAddress")}</label>
           <input {...register("toAddress")} className="input" />
-          <label>Batch Number</label>
+          <label>{t("integration.field.batchNumber")}</label>
           <input
             className="input"
             type="number"
@@ -151,11 +159,11 @@ export function Erc1155WriteBatchTransfer({
           <ContractWriteButton
             isLoadingTx={isLoadingTx}
             isLoadingWrite={isLoadingWrite}
-            loadingTxText="Transferring..."
+            loadingTxText={t("integration.action.transferring")}
             type="submit"
             write={!!writeContract}
           >
-            Batch Transfer
+            {t("integration.action.batchTransfer")}
           </ContractWriteButton>
           <TransactionStatus
             error={error as BaseError}
@@ -168,9 +176,14 @@ export function Erc1155WriteBatchTransfer({
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC1155 Batch Transfer</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-1155",
+            action: t("integration.action.batchTransfer"),
+          })}
+        </h3>
         <p className="text-center text-sm text-gray-500">
-          Batch Transfer ERC1155 to any address
+          {t("integration.batchTransferDescription", { standard: "ERC-1155" })}
         </p>
       </CardFooter>
     </Card>

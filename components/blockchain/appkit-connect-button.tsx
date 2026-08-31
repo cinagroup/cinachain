@@ -1,23 +1,42 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { AppKitButton } from "@reown/appkit/react"
+import dynamic from "next/dynamic"
+
+import { useI18n } from "@/lib/i18n"
+import { Button } from "@/components/ui/button"
+import { isAppKitConfigured } from "@/components/providers/appkit-provider"
+
+const AppKitConnectTrigger = dynamic(
+  () =>
+    import("./appkit-connect-trigger").then(
+      (module) => module.AppKitConnectTrigger
+    ),
+  { ssr: false }
+)
 
 /**
- * AppKit's connect button, rendered client-side only.
+ * Localized trigger for AppKit's connect view, rendered client-side only.
  *
- * The @lit/react wrapper around <appkit-button> calls React hooks (useRef)
- * inside its component body. The Next.js server bundle resolves `react`
- * through an interop that lacks hooks, so rendering it during static
- * generation crashes with `e.useRef is not a function`. Rendering after
- * mount (classic useIsMounted gate) keeps the exported HTML clean and the
- * button hydrates on the client, where the full react build is available.
+ * Using the product's own button keeps its visible label synchronized with
+ * CinaChain's locale. The Reown web component falls back to its English
+ * label after locale changes in the current static-export setup.
  */
 export function AppKitConnectButton({ className }: { className?: string }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-  if (!mounted) return null
-  return <AppKitButton balance="hide" className={className} />
+  const { t } = useI18n()
+
+  if (!isAppKitConfigured) {
+    return (
+      <Button type="button" variant="blue" className={className} disabled>
+        {t("action.connectWallet")} · {t("status.unavailable")}
+      </Button>
+    )
+  }
+
+  return (
+    <AppKitConnectTrigger
+      className={className}
+      label={t("action.connectWallet")}
+      loadingLabel={t("action.loading")}
+    />
+  )
 }

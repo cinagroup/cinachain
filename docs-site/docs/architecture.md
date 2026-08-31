@@ -23,18 +23,18 @@ nft.cinachain.com  (Cloudflare Pages — Next.js static export)
 2026-08-22 contract set (OpenZeppelin 5.6.0, owner `0xa1fBED…6060`; sources
 verified on Basescan):
 
-| Contract | Standard | Address | Purpose |
-|---|---|---|---|
-| CinaNFT | ERC-721 | `0xbd0557a0...` | Main NFT collection |
-| CinaBadge | ERC-1155 | `0x0a32fc13...` | Badges: spend tiers 100-104, contributor tiers 105-108 |
-| CinaCredit | ERC-20 | `0x03a5637a...` | Billing credits (see semantics below) |
-| CinaMega | ERC-1155 | `0x335e9569...` | Mega-collections + exchange |
+| Contract   | Standard | Address         | Purpose                                                |
+| ---------- | -------- | --------------- | ------------------------------------------------------ |
+| CinaNFT    | ERC-721  | `0xbd0557a0...` | Main NFT collection                                    |
+| CinaBadge  | ERC-1155 | `0x0a32fc13...` | Badges: spend tiers 100-104, contributor tiers 105-108 |
+| CinaCredit | ERC-20   | `0x03a5637a...` | Billing credits (see semantics below)                  |
+| CinaMega   | ERC-1155 | `0x335e9569...` | Mega-collections + exchange                            |
 
 ## CinaCredit Semantics (single-token circular economy)
 
 CinaCredit is **one token serving both sides of the cina economy**:
 
-- **Prepaid metering (cinachain)** — the on-chain balance is the *ceiling*
+- **Prepaid metering (cinachain)** — the on-chain balance is the _ceiling_
   for API billing: usage is metered server-side by the billing worker and
   burns down the on-chain balance; top-ups (`mintWithEth`) mint directly.
 - **Earnings settlement (cinatoken)** — marketplace withdrawals mint
@@ -64,7 +64,8 @@ Authorization Code + PKCE against `auth.cinaseek.ai`, with the browser-side
 OIDC calls forwarded through a same-origin Cloudflare Worker at
 `nft.cinachain.com/api/auth/*` (the provider only allows first-party CORS
 origins). The session (tokens + userinfo) is persisted client-side and
-refreshed via refresh tokens. Wallet connection is independent of sign-in
+expires with the short-lived access-token window; bearer and refresh tokens
+are never persisted. Wallet connection is independent of sign-in
 and is only required for on-chain actions; SIWE signatures remain in two
 places: the `/integration/sign-in-with-ethereum` demo and the `/settings`
 API key binding verified server-side by the billing worker.

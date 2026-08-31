@@ -13,12 +13,21 @@
 //
 // Requires contracts/out/deployment.<network>.json (the deploy receipt) —
 // download it from the deploy-contracts run artifact if missing.
-import { readFileSync, existsSync } from "fs"
-import { resolve } from "path"
+import { existsSync, readFileSync } from "fs"
 import { createRequire } from "module"
-import { createPublicClient, encodeAbiParameters, parseAbiParameters } from "viem"
+import { resolve } from "path"
+import {
+  createPublicClient,
+  encodeAbiParameters,
+  parseAbiParameters,
+} from "viem"
 import { base, baseSepolia } from "viem/chains"
-import { ROOT, buildCompileInput, etherscanCompilerVersion } from "./lib/compile-input.mjs"
+
+import {
+  buildCompileInput,
+  etherscanCompilerVersion,
+  ROOT,
+} from "./lib/compile-input.mjs"
 import { rpcTransport } from "./lib/rpc.mjs"
 
 const require = createRequire(import.meta.url)
@@ -26,14 +35,19 @@ const solc = require("solc")
 
 const API_KEY = process.env.ETHERSCAN_API_KEY ?? process.env.BASESCAN_API_KEY
 const DRY_RUN = process.env.DRY_RUN === "1"
-const NETWORK = process.env.DEPLOY_NETWORK === "base-mainnet" ? "base-mainnet" : "base-sepolia"
+const NETWORK =
+  process.env.DEPLOY_NETWORK === "base-mainnet"
+    ? "base-mainnet"
+    : "base-sepolia"
 const CHAIN = NETWORK === "base-mainnet" ? base : baseSepolia
 const CHAINID = CHAIN.id // Etherscan V2 chainid (8453 / 84532)
 const EXPLORER = CHAIN.blockExplorers?.default?.url
 
 const RECEIPT = resolve(ROOT, `contracts/out/deployment.${NETWORK}.json`)
 if (!existsSync(RECEIPT)) {
-  throw new Error(`${RECEIPT} not found — download it from the deploy-contracts run artifact first`)
+  throw new Error(
+    `${RECEIPT} not found — download it from the deploy-contracts run artifact first`
+  )
 }
 const receipt = JSON.parse(readFileSync(RECEIPT, "utf8"))
 if (!receipt.contracts || Object.keys(receipt.contracts).length === 0) {
@@ -44,15 +58,31 @@ const DEPLOYER = receipt.deployer
 const MINT_PRICE_WEI = 10n ** 15n // 0.001 ETH
 // Constructor args must mirror the deploy scripts exactly.
 const argSpec = {
-  CinaNFT: (deployer) => ["CinaChain NFT", "CINA", 10000n, MINT_PRICE_WEI, deployer],
+  CinaNFT: (deployer) => [
+    "CinaChain NFT",
+    "CINA",
+    10000n,
+    MINT_PRICE_WEI,
+    deployer,
+  ],
   CinaBadge: (deployer) => ["ipfs://QmBadges/{id}.json", deployer],
   CinaCredit: (deployer) => [deployer, 1000000n, deployer, 200n],
   CinaMega: (deployer) => [deployer, 1000000n],
-  // EOA-first (deploy-credit-v2.mjs): deployer holds admin/minter/pauser
-  CinaCreditV2: (deployer) => [deployer, deployer, deployer],
+  CinaCreditV2: () => {
+    const roles = receipt.roleAssignments?.CinaCreditV2
+    if (!roles?.admin || !roles?.minter || !roles?.pauser) {
+      throw new Error(
+        "CinaCreditV2 role assignments are missing from the receipt"
+      )
+    }
+    return [roles.admin, roles.minter, roles.pauser]
+  },
 }
 
-const pc = createPublicClient({ chain: CHAIN, transport: rpcTransport(NETWORK) })
+const pc = createPublicClient({
+  chain: CHAIN,
+  transport: rpcTransport(NETWORK),
+})
 
 // Zero out the immutable slots (owner/maxSupply/... embedded by the
 // constructor) so recompiled runtime code compares equal to on-chain code.
@@ -67,21 +97,32 @@ function maskImmutables(runtimeHex, immutableReferences) {
 }
 
 async function main() {
-  console.log(`🔍 Verifying contracts on Basescan — ${NETWORK} (chainid ${CHAINID})`)
-  console.log(`   Receipt: ${Object.keys(receipt.contracts).length} contracts, deployer ${DEPLOYER}`)
-  if (!API_KEY && !DRY_RUN) throw new Error("ETHERSCAN_API_KEY required (or set DRY_RUN=1)")
+  console.log(
+    `🔍 Verifying contracts on Basescan — ${NETWORK} (chainid ${CHAINID})`
+  )
+  console.log(
+    `   Receipt: ${
+      Object.keys(receipt.contracts).length
+    } contracts, deployer ${DEPLOYER}`
+  )
+  if (!API_KEY && !DRY_RUN)
+    throw new Error("ETHERSCAN_API_KEY required (or set DRY_RUN=1)")
 
   // ── Recompile with the exact deployment input (plus runtime output for
   //    the local pre-flight; outputSelection does not affect codegen) ──
   const input = buildCompileInput()
   const checkInput = structuredClone(input)
   for (const key of Object.keys(checkInput.settings.outputSelection)) {
-    checkInput.settings.outputSelection[key]["*"].push("evm.deployedBytecode.object", "evm.deployedBytecode.immutableReferences")
+    checkInput.settings.outputSelection[key]["*"].push(
+      "evm.deployedBytecode.object",
+      "evm.deployedBytecode.immutableReferences"
+    )
   }
   console.log("\n⚙️  Recompiling with the deployment standard-json input...")
   const output = JSON.parse(solc.compile(JSON.stringify(checkInput)))
   const errors = (output.errors || []).filter((e) => e.severity === "error")
-  if (errors.length) throw new Error("recompilation failed: " + errors[0].message)
+  if (errors.length)
+    throw new Error("recompilation failed: " + errors[0].message)
   const compilerVersion = etherscanCompilerVersion(solc.version())
   console.log(`   solc ${compilerVersion}, optimizer on, 200 runs`)
 
@@ -94,14 +135,19 @@ async function main() {
     // ── Pre-flight: masked runtime bytecode must equal on-chain code ──
     const localRuntime = file.evm.deployedBytecode.object
     const onChain = (await pc.getCode({ address })).slice(2)
-    const masked = maskImmutables(onChain, file.evm.deployedBytecode.immutableReferences)
+    const masked = maskImmutables(
+      onChain,
+      file.evm.deployedBytecode.immutableReferences
+    )
     if (masked !== localRuntime) {
       throw new Error(
         `${name}: on-chain bytecode differs from local recompilation — verification would fail. ` +
           `Compiler/OZ version drift?`
       )
     }
-    console.log("   ✓ runtime bytecode matches recompilation (immutables masked)")
+    console.log(
+      "   ✓ runtime bytecode matches recompilation (immutables masked)"
+    )
 
     if (DRY_RUN) {
       console.log("   ⏭️  DRY_RUN — skipping API submission")
@@ -114,7 +160,10 @@ async function main() {
     let ctorArgsHex = ""
     if (ctor && ctor.inputs?.length) {
       const types = ctor.inputs.map((i) => i.type).join(",")
-      ctorArgsHex = encodeAbiParameters(parseAbiParameters(types), argSpec[name](DEPLOYER)).slice(2)
+      ctorArgsHex = encodeAbiParameters(
+        parseAbiParameters(types),
+        argSpec[name](DEPLOYER)
+      ).slice(2)
     }
 
     // ── Submit verifysourcecode (standard-json) via Etherscan V2 ──
@@ -142,19 +191,30 @@ async function main() {
         body,
       })
     ).json()
-    if (String(submit.result ?? "").toLowerCase().includes("already verified")) {
+    if (
+      String(submit.result ?? "")
+        .toLowerCase()
+        .includes("already verified")
+    ) {
       // Etherscan reports re-submission of a verified contract as status=0
       // with this message — it means the contract IS verified.
-      console.log(`   ✅ already verified — ${EXPLORER}/address/${address}#code`)
+      console.log(
+        `   ✅ already verified — ${EXPLORER}/address/${address}#code`
+      )
       results.push({ name, address, status: "verified" })
       continue
     }
-    if (submit.status !== "1") throw new Error(`${name}: submit failed — ${submit.result}`)
+    if (submit.status !== "1")
+      throw new Error(`${name}: submit failed — ${submit.result}`)
     console.log(`   ↗ submitted (guid ${submit.result}), polling status...`)
 
     // ── Poll checkverifystatus (queue states: "Pending in queue" etc.) ──
     let status = ""
-    for (let i = 0; i < 30 && (status === "" || status.startsWith("Pending")); i++) {
+    for (
+      let i = 0;
+      i < 30 && (status === "" || status.startsWith("Pending"));
+      i++
+    ) {
       await new Promise((r) => setTimeout(r, 5000))
       const check = await (
         await fetch(
@@ -173,8 +233,14 @@ async function main() {
   }
 
   console.log("\n═══════════════════════════════════════")
-  for (const r of results) console.log(`  ${r.status === "verified" ? "✅" : "⏭️ "} ${r.name.padEnd(12)} ${r.address}`)
-  if (results.some((r) => r.status !== "verified" && r.status !== "dry-run")) process.exit(1)
+  for (const r of results)
+    console.log(
+      `  ${r.status === "verified" ? "✅" : "⏭️ "} ${r.name.padEnd(12)} ${
+        r.address
+      }`
+    )
+  if (results.some((r) => r.status !== "verified" && r.status !== "dry-run"))
+    process.exit(1)
 }
 
 main().catch((e) => {

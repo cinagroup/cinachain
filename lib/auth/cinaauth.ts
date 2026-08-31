@@ -1,11 +1,13 @@
+import { env } from "@/env.mjs"
 import * as oauth from "oauth4webapi"
 
+import { rewriteProxiedEndpoints } from "@/lib/auth/cinaauth-endpoints"
 import {
-  rewriteProxiedEndpoints,
-  shouldFallbackScope,
-  stripOfflineAccess,
-} from "@/lib/auth/cinaauth-endpoints"
-import { env } from "@/env.mjs"
+  CINAAUTH_POPUP_MARKER_KEY,
+  CINAAUTH_POPUP_NAME_PREFIX,
+  launchCinaauthPopup,
+  type CinaauthLoginLaunch,
+} from "@/lib/auth/cinaauth-popup"
 
 /**
  * CinaAuth OIDC client (public client, Authorization Code + PKCE).
@@ -13,9 +15,11 @@ import { env } from "@/env.mjs"
  * CinaChain is statically exported (no Next.js server runtime), so sign-in
  * follows the public-client flow from the official cinaauth OIDC demo:
  * discovery → authorize redirect (PKCE S256 + state + nonce) → token
- * exchange on /auth/callback → userinfo. The session (ID/access/refresh
- * tokens + userinfo) is persisted in localStorage; the authorization
- * transaction lives in sessionStorage and expires after 10 minutes.
+ * exchange on /auth/callback → userinfo. Issued tokens are used only while
+ * processing the callback and are never persisted; localStorage contains a
+ * non-sensitive profile snapshot and its short access-token expiry. The
+ * authorization transaction lives in sessionStorage and expires after 10
+ * minutes.
  *
  * The CinaAuth worker only emits CORS headers for its first-party origins,
  * so browser-side fetches (discovery, token, userinfo, JWKS) are routed
@@ -32,7 +36,7 @@ export const CINAAUTH_TRANSACTION_KEY = "cinachain-oidc-transaction"
 export const CINAAUTH_CALLBACK_PATH = "/auth/callback"
 
 const TRANSACTION_MAX_AGE_MS = 10 * 60 * 1000
-const CINAAUTH_SCOPE = "openid profile email offline_access"
+const CINAAUTH_SCOPE = "openid profile email"
 
 export interface CinaauthUser {
   sub: string
@@ -44,10 +48,6 @@ export interface CinaauthUser {
 
 export interface CinaauthSession {
   user: CinaauthUser
-  accessToken: string
-  idToken: string
-  refreshToken?: string
-  tokenType: string
   expiresAt: number
   issuedAt: number
 }
@@ -57,11 +57,8 @@ interface CinaauthTransaction {
   state: string
   nonce: string
   redirectUri: string
-  returnTo: string
-  /** Space-separated scope actually requested on this attempt. */
-  scope: string
-  /** True when the request already dropped server-rejected scopes. */
-  scopeFallback: boolean
+  /** High-entropy correlation id for this popup launch. */
+  attemptId: string
   createdAt: number
 }
 
@@ -89,8 +86,7 @@ export function getCinaauthConfig(): CinaauthConfig {
     redirectUri: `${base}${CINAAUTH_CALLBACK_PATH}`,
     postLogoutRedirectUri: base,
     scope: CINAAUTH_SCOPE,
-    apiBaseUrl:
-      env.NEXT_PUBLIC_CINAAUTH_API_BASE_URL || `${base}/api/auth`,
+    apiBaseUrl: env.NEXT_PUBLIC_CINAAUTH_API_BASE_URL || `${base}/api/auth`,
   }
 }
 
@@ -119,9 +115,7 @@ export async function discoverCinaauth(): Promise<oauth.AuthorizationServer> {
       if (!metadata.authorization_endpoint || !metadata.token_endpoint) {
         throw new Error("CinaAuth OIDC discovery is missing endpoints")
       }
-      if (
-        !metadata.token_endpoint_auth_methods_supported?.includes("none")
-      ) {
+      if (!metadata.token_endpoint_auth_methods_supported?.includes("none")) {
         throw new Error("CinaAuth does not advertise public client support")
       }
       rewriteProxiedEndpoints(
@@ -152,17 +146,11 @@ function toErrorMessage(error: unknown): string {
 
 export { toErrorMessage as toCinaauthErrorMessage }
 
-function sanitizeReturnTo(value: string): string {
-  // Only same-site relative paths — never protocol-relative or absolute URLs.
-  if (!value.startsWith("/") || value.startsWith("//")) return "/dashboard"
-  return value
-}
-
-function saveTransaction(transaction: CinaauthTransaction) {
-  sessionStorage.setItem(
-    CINAAUTH_TRANSACTION_KEY,
-    JSON.stringify(transaction)
-  )
+function saveTransaction(
+  transaction: CinaauthTransaction,
+  storage: Pick<Storage, "setItem"> = sessionStorage
+) {
+  storage.setItem(CINAAUTH_TRANSACTION_KEY, JSON.stringify(transaction))
 }
 
 function takeTransaction(): CinaauthTransaction | null {
@@ -184,7 +172,11 @@ export function loadCinaauthSession(): CinaauthSession | null {
     const raw = localStorage.getItem(CINAAUTH_SESSION_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as CinaauthSession
-    if (!parsed?.user?.sub || !parsed.accessToken) {
+    if (!parsed?.user?.sub || !Number.isFinite(parsed.expiresAt)) {
+      localStorage.removeItem(CINAAUTH_SESSION_KEY)
+      return null
+    }
+    if (parsed.expiresAt <= Date.now()) {
       localStorage.removeItem(CINAAUTH_SESSION_KEY)
       return null
     }
@@ -222,25 +214,13 @@ function userinfoClaimsToUser(
   }
 }
 
-/**
- * Redirects the browser to the CinaAuth authorization endpoint. The browser
- * leaves the app; the response is handled on /auth/callback.
- *
- * `scope` defaults to the configured scope; the callback path passes a
- * reduced scope when the server rejected `offline_access` (the developer
- * console does not check it by default when registering a client).
- */
-export async function beginCinaauthLogin(
-  returnTo = "/dashboard",
-  scope?: string
-) {
+async function createCinaauthAuthorization(attemptId: string) {
   const config = getCinaauthConfig()
   if (!config.clientId) {
     throw new Error(
       "CinaAuth sign-in is not configured. Set NEXT_PUBLIC_CINAAUTH_CLIENT_ID."
     )
   }
-  const requestedScope = scope ?? config.scope
   const authorizationServer = await discoverCinaauth()
   const codeVerifier = oauth.generateRandomCodeVerifier()
   const codeChallenge = await oauth.calculatePKCECodeChallenge(codeVerifier)
@@ -253,64 +233,108 @@ export async function beginCinaauthLogin(
   authorizeUrl.searchParams.set("client_id", config.clientId)
   authorizeUrl.searchParams.set("redirect_uri", config.redirectUri)
   authorizeUrl.searchParams.set("response_type", "code")
-  authorizeUrl.searchParams.set("scope", requestedScope)
+  authorizeUrl.searchParams.set("scope", config.scope)
   authorizeUrl.searchParams.set("code_challenge", codeChallenge)
   authorizeUrl.searchParams.set("code_challenge_method", "S256")
   authorizeUrl.searchParams.set("state", state)
   authorizeUrl.searchParams.set("nonce", nonce)
 
-  saveTransaction({
+  const transaction: CinaauthTransaction = {
     codeVerifier,
     state,
     nonce,
     redirectUri: config.redirectUri,
-    returnTo: sanitizeReturnTo(returnTo),
-    scope: requestedScope,
-    scopeFallback: requestedScope !== config.scope,
+    attemptId,
     createdAt: Date.now(),
-  })
-  window.location.assign(authorizeUrl.href)
+  }
+
+  return { authorizeUrl, transaction }
+}
+
+function popupFeatures() {
+  const width = 480
+  const height = 720
+  const left = Math.max(
+    0,
+    Math.round(window.screenX + (window.outerWidth - width) / 2)
+  )
+  const top = Math.max(
+    0,
+    Math.round(window.screenY + (window.outerHeight - height) / 2)
+  )
+  return [
+    "popup=yes",
+    `width=${width}`,
+    `height=${height}`,
+    `left=${left}`,
+    `top=${top}`,
+    "resizable=yes",
+    "scrollbars=yes",
+  ].join(",")
 }
 
 /**
- * Exchanges the authorization code on the callback page for tokens and
- * userinfo, persists the session, and returns where to send the user back.
- *
- * When the server rejects `offline_access` (the developer console does not
- * check it by default), the login automatically restarts once without the
- * rejected scopes and `{ restarted: true }` is returned — the caller should
- * keep waiting, the browser is being redirected again.
+ * Opens CinaAuth in a dedicated window. The blank window is created before
+ * the first await so browsers treat it as a direct user gesture. Its OIDC
+ * transaction is copied into that window's same-origin sessionStorage before
+ * navigation; tokens are never sent through window messaging.
  */
-export async function completeCinaauthLogin(): Promise<
-  | { session: CinaauthSession; returnTo: string }
-  | { restarted: true }
-> {
+export async function beginCinaauthPopupLogin(): Promise<CinaauthLoginLaunch> {
+  const popupName = `${CINAAUTH_POPUP_NAME_PREFIX}${crypto.randomUUID()}`
+  const attemptId = popupName.slice(CINAAUTH_POPUP_NAME_PREFIX.length)
+  return launchCinaauthPopup({
+    attemptId,
+    openPopup: () => window.open("about:blank", popupName, popupFeatures()),
+    configurePopup: async (popup) => {
+      popup.document.title = "CinaSeek Accounts"
+      const { authorizeUrl, transaction } =
+        await createCinaauthAuthorization(attemptId)
+      if (popup.closed) {
+        throw new Error(
+          "The CinaSeek sign-in window was closed before sign-in started."
+        )
+      }
+
+      saveTransaction(transaction, popup.sessionStorage)
+      popup.sessionStorage.setItem(CINAAUTH_POPUP_MARKER_KEY, attemptId)
+      // The callback uses BroadcastChannel/storage events instead of opener,
+      // preventing the cross-origin provider from navigating the parent tab.
+      popup.opener = null
+      popup.location.replace(authorizeUrl.href)
+      popup.focus()
+    },
+  })
+}
+
+/**
+ * Exchanges the authorization code inside the popup callback, fetches
+ * userinfo, and persists only the non-sensitive profile snapshot. The
+ * per-attempt marker must match before any network request or session write.
+ */
+export async function completeCinaauthLogin(
+  expectedAttemptId: string
+): Promise<{
+  session: CinaauthSession
+  attemptId: string
+}> {
   const config = getCinaauthConfig()
   const transaction = takeTransaction()
-  if (!transaction || transaction.redirectUri !== config.redirectUri) {
+  if (
+    !transaction ||
+    transaction.redirectUri !== config.redirectUri ||
+    transaction.attemptId !== expectedAttemptId
+  ) {
     throw new Error("The sign-in attempt is missing or expired. Try again.")
   }
 
   const authorizationServer = await discoverCinaauth()
   const client = getClient(config)
-  let parameters: URLSearchParams
-  try {
-    parameters = oauth.validateAuthResponse(
-      authorizationServer,
-      client,
-      new URL(window.location.href),
-      transaction.state
-    )
-  } catch (cause) {
-    if (shouldFallbackScope(cause, transaction)) {
-      await beginCinaauthLogin(
-        transaction.returnTo,
-        stripOfflineAccess(transaction.scope)
-      )
-      return { restarted: true }
-    }
-    throw cause
-  }
+  const parameters: URLSearchParams = oauth.validateAuthResponse(
+    authorizationServer,
+    client,
+    new URL(window.location.href),
+    transaction.state
+  )
   const tokenResponse = await oauth.authorizationCodeGrantRequest(
     authorizationServer,
     client,
@@ -342,88 +366,21 @@ export async function completeCinaauthLogin(): Promise<
     userInfoResponse
   )
 
-  if (!tokens.refresh_token) {
-    // Without offline_access no refresh token is minted; sessions then last
-    // only as long as the access token (~1h). Enable offline_access for the
-    // client in the CinaAuth developer console to restore renewal.
-    console.info(
-      "[cinachain] CinaAuth issued no refresh token — sessions will expire with the access token. Enable the offline_access scope for this OAuth client in the developer console."
-    )
-  }
-
   const session: CinaauthSession = {
     user: userinfoClaimsToUser(userinfo),
-    accessToken: tokens.access_token,
-    idToken: tokens.id_token,
-    refreshToken: tokens.refresh_token,
-    tokenType: tokens.token_type,
     expiresAt: Date.now() + (tokens.expires_in ?? 3600) * 1000,
     issuedAt: Date.now(),
   }
   saveCinaauthSession(session)
-  return { session, returnTo: sanitizeReturnTo(transaction.returnTo) }
-}
-
-/**
- * Uses the refresh token to obtain fresh access tokens. Returns null when
- * no refresh token is available; throws when the grant is rejected (the
- * caller should then drop the session).
- */
-export async function refreshCinaauthSession(
-  session: CinaauthSession
-): Promise<CinaauthSession | null> {
-  if (!session.refreshToken) return null
-  const config = getCinaauthConfig()
-  const authorizationServer = await discoverCinaauth()
-  const client = getClient(config)
-  const response = await oauth.refreshTokenGrantRequest(
-    authorizationServer,
-    client,
-    oauth.None(),
-    session.refreshToken
-  )
-  const tokens = await oauth.processRefreshTokenResponse(
-    authorizationServer,
-    client,
-    response
-  )
-  const refreshed: CinaauthSession = {
-    ...session,
-    accessToken: tokens.access_token,
-    idToken: tokens.id_token ?? session.idToken,
-    refreshToken: tokens.refresh_token ?? session.refreshToken,
-    tokenType: tokens.token_type,
-    expiresAt: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-    issuedAt: Date.now(),
+  return {
+    session,
+    attemptId: transaction.attemptId,
   }
-  saveCinaauthSession(refreshed)
-  return refreshed
 }
 
-/**
- * Clears the local session and redirects through the CinaAuth end-session
- * endpoint (single sign-out). Falls back to a local navigation when the
- * end-session endpoint is unavailable.
- */
-export async function endCinaauthSession(session: CinaauthSession | null) {
+/** Clears the local profile snapshot without retaining an ID token for RP logout. */
+export function endCinaauthSession() {
   const config = getCinaauthConfig()
   clearCinaauthSession()
-  let endSessionEndpoint: string | undefined
-  try {
-    const authorizationServer = await discoverCinaauth()
-    endSessionEndpoint = authorizationServer.end_session_endpoint
-  } catch {
-    endSessionEndpoint = undefined
-  }
-  if (endSessionEndpoint && session?.idToken) {
-    const endSessionUrl = new URL(endSessionEndpoint)
-    endSessionUrl.searchParams.set("id_token_hint", session.idToken)
-    endSessionUrl.searchParams.set(
-      "post_logout_redirect_uri",
-      config.postLogoutRedirectUri
-    )
-    window.location.assign(endSessionUrl.href)
-    return
-  }
-  window.location.assign("/")
+  window.location.assign(config.postLogoutRedirectUri)
 }

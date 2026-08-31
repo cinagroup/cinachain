@@ -1,8 +1,12 @@
 name = "cinachain-billing"
 main = "src/index.js"
-compatibility_date = "2026-06-01"
+compatibility_date = "2026-08-29"
 workers_dev = false
 preview_urls = false
+
+[observability]
+enabled = true
+head_sampling_rate = 0.1
 
 [[routes]]
 pattern = "billing.cinachain.com"
@@ -18,6 +22,12 @@ id = "b7aaab94dc9f438c919ec40c53112d68"
 
 [vars]
 API_VERSION = "v1"
+ENABLE_BILLING_USAGE = "false"
+ENABLE_KEY_REGISTRATION = "false"
+ENABLE_CUSTODIAL = "false"
+ENABLE_INGRESS = "false"
+ENABLE_PUBLIC_LEDGER_READS = "false"
+ENABLE_INDEXER = "false"
 # CinaCredit the ledger treats as the on-chain ceiling (balanceOf + Transfer
 # indexing). 2026-08-22 contract set; the request path re-reads balanceOf so
 # existing ledger rows self-correct to the new contract on next use.

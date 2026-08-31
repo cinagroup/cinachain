@@ -59,7 +59,7 @@ export function useTokensOfOwner(
   )
   const successfulTokenIds = (contractsQuery.data ?? [])
     .filter((r) => r.status === "success" && r.result !== undefined)
-    .map((r) => (r.result as bigint).toString())
+    .map((r) => r.result.toString())
   const hasCompletePage =
     pageLength === 0 ||
     (successfulTokenIds.length === pageLength && failedRead === undefined)

@@ -1,6 +1,32 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react"
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
+
+import {
+  HTML_LANG_BY_LOCALE,
+  resolveLocale,
+  SUPPORTED_LOCALES,
+  type Dictionary,
+  type Locale,
+} from "./config"
+import { getDefaultDictionary, loadDictionary } from "./load-dictionary"
+
+export {
+  LOCALE_LABELS,
+  LOCALE_OPTIONS,
+  resolveLocale,
+  SUPPORTED_LOCALES,
+  type Dictionary,
+  type Locale,
+  type LocaleOption,
+} from "./config"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // Lightweight i18n for a statically exported Next.js app — no server
@@ -8,17 +34,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 // localStorage persistence.
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-export type Locale = "en" | "zh"
-
 const STORAGE_KEY = "cinachain.locale"
-
-/** Type-safe dictionary shape: flat keys → strings. */
-export type Dictionary = Record<string, string>
-
-export const LOCALE_LABELS: Record<Locale, string> = {
-  en: "EN",
-  zh: "中文",
-}
 
 // ─── Context ────────────────────────────────────────────────────────────────
 
@@ -30,19 +46,15 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null)
 
-// ─── Dictionary loading (static import, no async) ──────────────────────────
-
-import { en } from "./locales/en"
-import { zh } from "./locales/zh"
-
-const dictionaries: Record<Locale, Dictionary> = { en, zh }
-
 // ─── Interpolation ──────────────────────────────────────────────────────────
 
-function interpolate(template: string, params?: Record<string, string | number>): string {
+function interpolate(
+  template: string,
+  params?: Record<string, string | number>
+): string {
   if (!params) return template
   return template.replace(/\{(\w+)\}/g, (match, key) =>
-    key in params ? String(params[key]) : match,
+    key in params ? String(params[key]) : match
   )
 }
 
@@ -50,39 +62,61 @@ function interpolate(template: string, params?: Record<string, string | number>)
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en")
+  const [dictionary, setDictionary] = useState<Dictionary>(getDefaultDictionary)
+  const localeRequestRef = useRef(0)
+
+  const activateLocale = useCallback((next: Locale, persist: boolean) => {
+    const requestId = ++localeRequestRef.current
+
+    void loadDictionary(next)
+      .then((nextDictionary) => {
+        if (requestId !== localeRequestRef.current) return
+
+        setDictionary(nextDictionary)
+        setLocaleState(next)
+        if (!persist) return
+
+        try {
+          localStorage.setItem(STORAGE_KEY, next)
+        } catch {
+          // non-persistent (private mode)
+        }
+      })
+      .catch((error) => {
+        if (requestId !== localeRequestRef.current) return
+        console.warn(`[i18n] Failed to load the ${next} dictionary.`, error)
+      })
+  }, [])
 
   // Restore from localStorage on mount (client-only)
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored === "en" || stored === "zh") {
-        setLocaleState(stored)
+      if (SUPPORTED_LOCALES.includes(stored as Locale)) {
+        activateLocale(stored as Locale, false)
       } else if (typeof navigator !== "undefined") {
-        // Fall back to browser language
-        const lang = navigator.language?.toLowerCase() ?? ""
-        if (lang.startsWith("zh")) setLocaleState("zh")
+        activateLocale(resolveLocale(navigator.language), false)
       }
     } catch {
       // localStorage unavailable (SSR/preview) — default en
     }
-  }, [])
+  }, [activateLocale])
 
-  const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next)
-    try {
-      localStorage.setItem(STORAGE_KEY, next)
-    } catch {
-      // non-persistent (private mode)
-    }
-  }, [])
+  useEffect(() => {
+    document.documentElement.lang = HTML_LANG_BY_LOCALE[locale]
+  }, [locale])
+
+  const setLocale = useCallback(
+    (next: Locale) => activateLocale(next, true),
+    [activateLocale]
+  )
 
   const t = useCallback(
     (key: string, params?: Record<string, string | number>) => {
-      const dict = dictionaries[locale] ?? dictionaries.en
-      const value = dict[key] ?? dictionaries.en[key] ?? key
+      const value = dictionary[key] ?? getDefaultDictionary()[key] ?? key
       return interpolate(value, params)
     },
-    [locale],
+    [dictionary]
   )
 
   return (

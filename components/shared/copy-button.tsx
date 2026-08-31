@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { LuCheck, LuCopy } from "react-icons/lu"
 
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
@@ -23,6 +24,7 @@ export function CopyButton({
   src,
   ...props
 }: CopyButtonProps) {
+  const { t } = useI18n()
   const [hasCopied, setHasCopied] = useState(false)
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function CopyButton({
       {...props}
     >
       {children}
-      <span className="sr-only">Copy</span>
+      <span className="sr-only">{t("common.copy")}</span>
       {hasCopied ? (
         <LuCheck className="size-4" />
       ) : (

@@ -1,7 +1,12 @@
 name = "cinachain-whitelist-api"
 main = "src/index.js"
-compatibility_date = "2026-06-01"
+compatibility_date = "2026-08-29"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+preview_urls = false
+routes = [
+  { pattern = "whitelist-api.cinachain.com/*", zone_name = "cinachain.com" }
+]
 
 # KV 命名空间（白名单 + Merkle proofs + 管理端限流）
 [[kv_namespaces]]
@@ -9,4 +14,13 @@ binding = "CINA_WHITELIST_KV"
 id = "fd4979f6c1d74dd391c4d6a650c7e199"
 
 [vars]
-API_VERSION = "v2"
+API_VERSION = "v3"
+
+[[ratelimits]]
+name = "WHITELIST_RATE_LIMITER"
+namespace_id = "1004"
+simple = { limit = 120, period = 60 }
+
+[observability]
+enabled = true
+head_sampling_rate = 0.1

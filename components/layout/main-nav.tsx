@@ -4,8 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { siteConfig } from "@/config/site"
-import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 
 const primaryLinks = [
   { href: "/explore", key: "nav.explore", fallback: "Explore" },
@@ -24,7 +24,10 @@ export function MainNav() {
   const { t } = useI18n()
 
   return (
-    <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
+    <nav
+      aria-label={t("nav.primary")}
+      className="hidden items-center gap-1 lg:flex"
+    >
       {primaryLinks.map(({ href, key, fallback }) => {
         const isActive = isActivePath(pathname, href)
         const label = t(key) !== key ? t(key) : fallback
@@ -47,7 +50,7 @@ export function MainNav() {
         href={siteConfig.links.docs}
         className="rounded-sm px-3 py-2 text-sm font-medium text-body transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        Documentation
+        {t("nav.documentation")}
       </Link>
     </nav>
   )

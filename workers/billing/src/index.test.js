@@ -78,15 +78,23 @@ function signBindingMessage(message) {
   return `0x${rHex}${sHex}${(27 + recovery).toString(16)}`
 }
 
-function bindingProof(
+async function bindingProof(
   env,
   {
     address = SIGNER_ADDR,
     nonce = "n1",
     issuedAt = new Date().toISOString(),
+    apiKey = "012345678901234567890123",
   } = {}
 ) {
-  const message = buildBindingMessage(address, nonce, issuedAt)
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(apiKey)
+  )
+  const apiKeyHash = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+  const message = buildBindingMessage(address, nonce, issuedAt, apiKeyHash)
   const signature = signBindingMessage(message)
   env.bindingMessage = message
   return { message, signature }
@@ -177,6 +185,22 @@ describe("billing worker", () => {
 
     expect(res.status).toBe(200)
     expect(env.ADMIN_KEY.get).not.toHaveBeenCalled()
+  })
+
+  it("defaults unsafe billing capabilities to disabled", async () => {
+    const env = makeEnv()
+    delete env.ENABLE_BILLING_USAGE
+    const getSpy = vi.spyOn(env.CINA_BILLING_KV, "get")
+    const res = await callWorker(
+      env,
+      new Request("https://billing.test/v1/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: "keyvalue", model: "demo", tokens: 1 }),
+      })
+    )
+    expect(res.status).toBe(503)
+    expect(getSpy).not.toHaveBeenCalled()
   })
 
   it("returns 503 when the admin Secrets Store binding is missing", async () => {
@@ -295,6 +319,12 @@ describe("M2 pending tier badges", () => {
 function makeEnv() {
   const store = new Map()
   return {
+    ENABLE_BILLING_USAGE: "true",
+    ENABLE_KEY_REGISTRATION: "true",
+    ENABLE_CUSTODIAL: "true",
+    ENABLE_INGRESS: "true",
+    ENABLE_PUBLIC_LEDGER_READS: "true",
+    ENABLE_INDEXER: "true",
     [ADMIN_BINDING]: secretBinding(TEST_ADMIN_KEY),
     CINA_BILLING_KV: {
       async get(k) {
@@ -302,6 +332,9 @@ function makeEnv() {
       },
       async put(k, v) {
         store.set(k, v)
+      },
+      async delete(k) {
+        store.delete(k)
       },
       async list({ prefix } = {}) {
         return {
@@ -611,8 +644,9 @@ describe("M2 custodial accounts", () => {
 
   it("GET /v1/custodial/:id returns account state", async () => {
     const env = makeEnv()
+    const custId = "cust_1111111111111111"
     env.store.set(
-      "cust:c1",
+      `cust:${custId}`,
       JSON.stringify({
         owner: "0xaaa",
         balanceWei: (10n * 10n ** 18n).toString(),
@@ -624,11 +658,11 @@ describe("M2 custodial accounts", () => {
     )
     const res = await callWorker(
       env,
-      new Request("https://billing.test/v1/custodial/c1")
+      new Request(`https://billing.test/v1/custodial/${custId}`)
     )
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.id).toBe("c1")
+    expect(body.id).toBe(custId)
     expect(body.usableCredit).toBe(8)
     expect(body.tier).toBe("free")
     expect(body.pendingBadges).toEqual([])
@@ -675,7 +709,7 @@ describe("M2 custodial accounts", () => {
     expect(res.status).toBe(400)
   })
 
-  it("/v1/keys with unknown custId returns 404", async () => {
+  it("/v1/keys refuses unauthenticated custodial binding", async () => {
     const env = makeEnv()
     const res = await callWorker(
       env,
@@ -688,7 +722,7 @@ describe("M2 custodial accounts", () => {
         }),
       })
     )
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(403)
   })
 
   it("/v1/keys self-managed requires a signed binding message", async () => {
@@ -704,7 +738,9 @@ describe("M2 custodial accounts", () => {
 
   it("/v1/keys self-managed binds after signature verification", async () => {
     const env = makeEnv()
-    const { message, signature } = bindingProof(env, { nonce: "nonce-abc" })
+    const { message, signature } = await bindingProof(env, {
+      nonce: "nonce-abc",
+    })
     const res = await callWorker(
       env,
       keysRequest({
@@ -728,7 +764,9 @@ describe("M2 custodial accounts", () => {
 
   it("/v1/keys rejects a replayed nonce", async () => {
     const env = makeEnv()
-    const { message, signature } = bindingProof(env, { nonce: "nonce-replay" })
+    const { message, signature } = await bindingProof(env, {
+      nonce: "nonce-replay",
+    })
     const body = {
       apiKey: "012345678901234567890123",
       address: SIGNER_ADDR,
@@ -746,7 +784,7 @@ describe("M2 custodial accounts", () => {
 
   it("/v1/keys rejects an expired binding message", async () => {
     const env = makeEnv()
-    const { message, signature } = bindingProof(env, {
+    const { message, signature } = await bindingProof(env, {
       nonce: "nonce-old",
       issuedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
     })
@@ -768,7 +806,7 @@ describe("M2 custodial accounts", () => {
     const env = makeEnv()
     // Message addresses a different wallet than the one that signed.
     const other = "0x" + "3".repeat(40)
-    const { message, signature } = bindingProof(env, {
+    const { message, signature } = await bindingProof(env, {
       address: other,
       nonce: "nonce-other",
     })
@@ -783,6 +821,52 @@ describe("M2 custodial accounts", () => {
     )
     // Signature doesn't match the address in the body -> verification fails.
     expect(res.status).toBe(403)
+  })
+
+  it("/v1/keys rejects a signature bound to a different API key", async () => {
+    const env = makeEnv()
+    const { message, signature } = await bindingProof(env, {
+      nonce: "nonce-key-mismatch",
+      apiKey: "aaaaaaaaaaaaaaaaaaaaaaaa",
+    })
+    const res = await callWorker(
+      env,
+      keysRequest({
+        apiKey: "bbbbbbbbbbbbbbbbbbbbbbbb",
+        address: SIGNER_ADDR,
+        message,
+        signature,
+      })
+    )
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/API key hash/)
+  })
+
+  it("DELETE /v1/keys revokes the server-side key row", async () => {
+    const env = makeEnv()
+    const apiKey = "012345678901234567890123"
+    const { message, signature } = await bindingProof(env, {
+      nonce: "nonce-revoke",
+      apiKey,
+    })
+    const created = await callWorker(
+      env,
+      keysRequest({ apiKey, address: SIGNER_ADDR, message, signature })
+    )
+    expect(created.status).toBe(200)
+
+    const revoked = await callWorker(
+      env,
+      new Request("https://billing.test/v1/keys", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey }),
+      })
+    )
+    expect(revoked.status).toBe(200)
+    expect(
+      [...env.store.keys()].filter((key) => key.startsWith("key:"))
+    ).toEqual([])
   })
 
   it("admin debits a custodial account", async () => {

@@ -4,6 +4,7 @@ import { type HTMLAttributes } from "react"
 import { useAccount } from "wagmi"
 
 import { useSiwe } from "@/lib/hooks/use-siwe"
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
@@ -22,12 +23,13 @@ interface ButtonSIWELoginProps extends HTMLAttributes<HTMLButtonElement> {
  */
 export const ButtonSIWELogin = ({
   className,
-  label = "Sign-In With Ethereum",
+  label,
   disabled,
   children,
   ...props
 }: ButtonSIWELoginProps) => {
   const { address } = useAccount()
+  const { t } = useI18n()
   const { signIn, isLoading } = useSiwe()
 
   const classes = cn("relative", className)
@@ -43,7 +45,7 @@ export const ButtonSIWELogin = ({
       {...props}
     >
       {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
-      {children || label}
+      {children || label || t("integration.signInWithEthereum")}
     </Button>
   )
 }

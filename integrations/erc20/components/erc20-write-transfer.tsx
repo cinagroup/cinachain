@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form"
-import { useDebounce } from "usehooks-ts"
+import { useDebounceValue } from "usehooks-ts"
 import { parseEther, type Address, type BaseError } from "viem"
 import { useWaitForTransactionReceipt } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContractWriteButton } from "@/components/blockchain/contract-write-button"
@@ -24,12 +25,13 @@ interface ERC20WriteTransferProps {
 export function ERC20ContractTransferTokens({
   address,
 }: ERC20WriteTransferProps) {
+  const { t } = useI18n()
   const { register, watch, handleSubmit } = useForm()
 
   const watchAmount: string = watch("amount")
   const watchTo = watch("to")
-  const debouncedAmount = useDebounce(watchAmount, 500)
-  const debouncedTo = useDebounce(watchTo, 500)
+  const [debouncedAmount] = useDebounceValue(watchAmount, 500)
+  const [debouncedTo] = useDebounceValue(watchTo, 500)
 
   const isValidAmount = Boolean(
     debouncedAmount && !isNaN(Number(debouncedAmount))
@@ -66,18 +68,18 @@ export function ERC20ContractTransferTokens({
 
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-      <label>Amount</label>
+      <label>{t("integration.field.amount")}</label>
       <input placeholder="10" {...register("amount")} className="input" />
-      <label>To</label>
+      <label>{t("integration.field.to")}</label>
       <input placeholder="0x..." {...register("to")} className="input" />
       <ContractWriteButton
         isLoadingTx={isLoadingTx}
         isLoadingWrite={isLoadingWrite}
-        loadingTxText="Transferring..."
+        loadingTxText={t("integration.action.transferring")}
         type="submit"
         write={!!writeContract}
       >
-        Transfer
+        {t("integration.action.transfer")}
       </ContractWriteButton>
       <TransactionStatus
         error={error as BaseError}
@@ -91,6 +93,8 @@ export function ERC20ContractTransferTokens({
 }
 
 export function ERC20WriteTransfer({ address }: ERC20WriteTransferProps) {
+  const { t } = useI18n()
+
   return (
     <>
       <IsWalletConnected>
@@ -101,9 +105,14 @@ export function ERC20WriteTransfer({ address }: ERC20WriteTransferProps) {
           </CardContent>
           <Separator className="my-4" />
           <CardFooter className="justify-between">
-            <h3 className="text-center">ERC20 Transfer</h3>
+            <h3 className="text-center">
+              {t("integration.cardTitle", {
+                standard: "ERC-20",
+                action: t("integration.action.transfer"),
+              })}
+            </h3>
             <p className="text-center text-sm text-muted-foreground">
-              Transer tokens to a friend... or enemy.
+              {t("integration.transferPeerDescription")}
             </p>
           </CardFooter>
         </Card>

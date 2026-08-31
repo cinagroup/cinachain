@@ -12,14 +12,14 @@
 | 计费 API | Cloudflare Worker 路由                           | Worker `cinachain-billing`    | `workers/billing/`       |
 | 媒体网关 | Cloudflare Worker 路由                           | Worker `cinachain-mega-media` | `workers/media-gateway/` |
 
-根工作流会发布上表的三个 Pages 项目以及计费、媒体两个 Worker。`workers/whitelist/`、`workers/paymaster/` 和 `workers/rpc-proxy/` 是独立发布单元，目前不在根工作流的自动发布步骤中。自定义域名、路由和实际版本必须在 Cloudflare Dashboard 中复核。
+根工作流会发布上表的三个 Pages 项目，以及 billing、media、RPC、CinaAuth、whitelist 和默认关闭的 paymaster Worker。所有应用/Worker 发布均依赖前端与合约质量门禁；自定义域名、路由和实际版本仍需在 Cloudflare Dashboard 中复核。
 
 ## 2. 本地开发与配置
 
 ### 安装和启动
 
 ```powershell
-npm ci --legacy-peer-deps
+npm ci
 Copy-Item .env.example .env.local
 npm run dev
 ```
@@ -44,7 +44,7 @@ DApp 的登录使用 CinaAuth 统一认证（`https://auth.cinaseek.ai`，登录
 
 一次性接入配置：
 
-1. 登录 `https://accounts.cinaseek.ai/dashboard/developer` 创建 OAuth 客户端（**Web server application** 类型），并在 Allowed scopes 中**勾选 offline_access**（默认不勾选；不勾选时登录会自动降级为无刷新令牌的约 1 小时会话，控制台补勾后下次登录自动恢复 30 天续期）。回调地址登记精确匹配值：生产 `https://nft.cinachain.com/auth/callback`；本地调试可另加 `http://localhost:3000/auth/callback`（回环地址允许 HTTP）。登出回调登记 `https://nft.cinachain.com`。
+1. 登录 `https://accounts.cinaseek.ai/dashboard/developer` 创建 OAuth 客户端（**Web server application** 类型）。Allowed scopes 仅启用 `openid profile email`，不要启用 `offline_access`。回调地址登记精确匹配值：生产 `https://nft.cinachain.com/auth/callback`；本地调试可另加 `http://localhost:3000/auth/callback`（回环地址允许 HTTP）。登出回调登记 `https://nft.cinachain.com`。
 2. 在 GitHub 仓库 Secrets 中配置 `NEXT_PUBLIC_CINAAUTH_CLIENT_ID`（client id，公开值）与 client secret（名字为 `CINAAUTH_CLIENT_SECRET` 或 `NEXT_PUBLIC_CINAAUTH_CLIENT_SECRET` 均可，工作流两者兼容；secret 只下发到 auth-proxy Worker）。CI 构建 DApp 时注入 client id，推送 main 时把两者写入 Worker secret；client secret 缺失时 CI 会告警并按公共客户端直通模式运行，client id 缺失时 CI 直接失败（登录按钮会整体禁用）。
 3. 确保 `workers/auth-proxy` 已部署且路由生效（根工作流随 billing/media-gateway 一起发布；部署令牌需含 cinachain.com zone 的 Workers 路由权限）。
 
@@ -61,7 +61,7 @@ Set-Location ..\..
 
 并在 `.env.local` 中设置 `NEXT_PUBLIC_CINAAUTH_CLIENT_ID=<client id>` 与 `NEXT_PUBLIC_CINAAUTH_API_BASE_URL=http://localhost:8787/api/auth`（`.dev.vars` 已被 gitignore 覆盖，不会提交）。
 
-会话保存在浏览器 `localStorage`（key `cinachain-auth-session`），access token 过期时用 refresh token 自动续期，续期失败则要求重新登录。管理员入口（`/admin`）仍基于连接钱包地址与 `NEXT_PUBLIC_APP_ADMINS` 白名单，与 CinaAuth 登录无关。
+授权码通过 PKCE 在弹窗回调中交换；access/ID token 仅在回调内存中使用，不写入浏览器存储，也不申请 refresh token。`localStorage`（key `cinachain-auth-session`）只保存非敏感用户资料快照与短期过期时间，过期后需重新登录。管理员入口（`/admin`）仍基于连接钱包地址与 `NEXT_PUBLIC_APP_ADMINS` 白名单，与 CinaAuth 登录无关。
 
 ## 3. 发布前质量门禁
 
@@ -81,10 +81,12 @@ npm run build
 
 ```powershell
 Set-Location docs-site
-npm ci --legacy-peer-deps
+npm ci
 npm run build
 Set-Location ..
 ```
+
+文档站的 `prebuild` 会自动运行 `check:images`。在 Docusaurus 上游修复 `image-size` 前，构建门禁会拒绝 ICNS、JPEG XL、HEIF/HEIC/AVIF，以及使用普通扩展名伪装这些格式的文件；不要绕过该检查。当前文档图片应使用受信任来源的 PNG、JPEG、GIF、WebP 或 SVG。
 
 任一步失败都应停止发布。不要通过跳过检查、忽略类型错误或删除锁文件来制造“成功”结果。
 
@@ -186,7 +188,7 @@ Set-Location ..
 
 ```powershell
 Set-Location docs-site
-npm ci --legacy-peer-deps
+npm ci
 npm run build
 & $Wrangler pages deploy build --project-name=cinachain-docs --branch=main --commit-hash=$Commit
 Set-Location ..
@@ -264,7 +266,7 @@ Set-Location ../..
 
 **依赖安装失败**
 
-确认 Node.js 22 与 npm 可用，然后重试 `npm ci --legacy-peer-deps`。不要删除 `package-lock.json`；锁文件是可复现构建的一部分。
+确认 Node.js 22 与 npm 可用，然后重试 `npm ci`。不要删除 `package-lock.json`；锁文件是可复现构建的一部分。
 
 **TypeScript 或构建失败**
 

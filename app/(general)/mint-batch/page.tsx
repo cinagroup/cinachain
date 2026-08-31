@@ -76,7 +76,7 @@ export default function BatchMintPage() {
 
   const handleBatchMint = async () => {
     if (!address) {
-      setError("Wallet not connected")
+      setError(t("keys.connectWalletFirst"))
       return
     }
 
@@ -84,14 +84,14 @@ export default function BatchMintPage() {
       !CINA_ERC1155_CONTRACT ||
       CINA_ERC1155_CONTRACT === "0x0000000000000000000000000000000000000000"
     ) {
-      setError("ERC-1155 contract address not configured")
+      setError(t("batchMint.contractNotConfigured"))
       return
     }
 
     // 验证输入
     const validItems = items.filter((item) => item.id && item.amount)
     if (validItems.length === 0) {
-      setError("Please add at least one item")
+      setError(t("batchMint.addOneItem"))
       return
     }
 
@@ -99,11 +99,11 @@ export default function BatchMintPage() {
       const id = Number(item.id)
       const amount = Number(item.amount)
       if (!Number.isInteger(id) || id < 0) {
-        setError(`Token ID "${item.id}" is invalid`)
+        setError(t("batchMint.invalidTokenId", { id: item.id }))
         return
       }
       if (!Number.isInteger(amount) || amount < 1) {
-        setError(`Amount "${item.amount}" must be a positive integer`)
+        setError(t("batchMint.invalidAmount", { amount: item.amount }))
         return
       }
     }
@@ -128,7 +128,7 @@ export default function BatchMintPage() {
         shortMessage?: string
         message?: string
       }
-      setError(anyErr.shortMessage ?? anyErr.message ?? "Failed to mint batch")
+      setError(anyErr.shortMessage ?? anyErr.message ?? t("batchMint.failed"))
     }
   }
 
@@ -138,10 +138,10 @@ export default function BatchMintPage() {
         <div className="container max-w-screen-ultra px-6 py-12">
           <div className="mb-8">
             <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-              Batch Mint
+              {t("nav.mintBatch")}
             </span>
             <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-              Batch mint ERC-1155<span className="text-foreground">.</span>
+              {t("batchMint.heading")}<span className="text-foreground">.</span>
             </h1>
           </div>
 
@@ -149,7 +149,7 @@ export default function BatchMintPage() {
             <CardHeader>
               <CardTitle>{t("mint.connectWallet")}</CardTitle>
               <CardDescription>
-                Connect your wallet to batch mint
+                {t("batchMint.connectDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -167,22 +167,21 @@ export default function BatchMintPage() {
         {/* Header */}
         <div className="mb-8">
           <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-            Batch Mint
+            {t("nav.mintBatch")}
           </span>
           <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-            Batch mint ERC-1155<span className="text-foreground">.</span>
+            {t("batchMint.heading")}<span className="text-foreground">.</span>
           </h1>
           <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-            Mint multiple badge types to your address in a single transaction.
-            Perfect for collections with multiple variants.
+            {t("batchMint.description")}
           </p>
           <p className="mt-2 max-w-[560px] text-sm text-muted-foreground">
-            <span className="font-medium">Note:</span> the underlying contract
-            function is
+            <span className="font-medium">{t("batchMint.note")}</span>{" "}
+            {t("batchMint.ownerOnlyPrefix")}
             <code className="mx-1 rounded bg-secondary px-1.5 py-0.5 text-xs">
               onlyOwner
             </code>
-            — only the contract owner&apos;s wallet can execute this.
+            — {t("batchMint.ownerOnlySuffix")}
           </p>
         </div>
 
@@ -199,14 +198,15 @@ export default function BatchMintPage() {
             <Alert variant="success" className="border">
               <CheckCircle2 className="size-4" />
               <AlertDescription>
-                Batch mint confirmed!{" "}
+                {t("batchMint.success")} {" "}
                 <a
                   href={getBlockExplorerUrl("tx", txHash)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 underline"
                 >
-                  View on {EXPLORER_NAME} <ExternalLink className="size-3" />
+                  {t("common.viewOn", { explorer: EXPLORER_NAME })}{" "}
+                  <ExternalLink className="size-3" />
                 </a>
               </AlertDescription>
             </Alert>
@@ -217,7 +217,7 @@ export default function BatchMintPage() {
             <Alert className="border-link/20 bg-link-bg-soft">
               <Loader2 className="size-4 animate-spin text-link-deep" />
               <AlertDescription className="text-sm text-link-deep">
-                Transaction submitted. Waiting for confirmation...
+                {t("batchMint.waitingConfirmation")}
               </AlertDescription>
             </Alert>
           )}
@@ -225,7 +225,7 @@ export default function BatchMintPage() {
           {reverted && (
             <Alert variant="destructive">
               <AlertDescription>
-                Transaction reverted on-chain.
+                {t("batchMint.reverted")}
               </AlertDescription>
             </Alert>
           )}
@@ -235,14 +235,16 @@ export default function BatchMintPage() {
             <CardHeader>
               <CardTitle>{t("mint.mintItems")}</CardTitle>
               <CardDescription>
-                Add multiple token IDs and amounts to mint in one transaction
+                {t("batchMint.itemsDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {items.map((item, index) => (
                 <div key={index} className="flex items-start gap-3">
                   <div className="flex-1 space-y-2">
-                    <Label htmlFor={`id-${index}`}>Token ID</Label>
+                    <Label htmlFor={`id-${index}`}>
+                      {t("nftDetail.tokenId")}
+                    </Label>
                     <Input
                       id={`id-${index}`}
                       type="number"
@@ -253,7 +255,9 @@ export default function BatchMintPage() {
                     />
                   </div>
                   <div className="w-32 space-y-2">
-                    <Label htmlFor={`amount-${index}`}>Amount</Label>
+                    <Label htmlFor={`amount-${index}`}>
+                      {t("exchange.amount")}
+                    </Label>
                     <Input
                       id={`amount-${index}`}
                       type="number"
@@ -271,6 +275,7 @@ export default function BatchMintPage() {
                       size="icon"
                       onClick={() => removeItem(index)}
                       className="mt-6"
+                      aria-label={t("batchMint.removeItem")}
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -280,19 +285,23 @@ export default function BatchMintPage() {
 
               <Button variant="outline" onClick={addItem} className="w-full">
                 <Plus className="mr-2 size-4" />
-                Add item
+                {t("batchMint.addItem")}
               </Button>
 
               {/* Summary */}
               <div className="space-y-3 rounded-md border border-border bg-secondary p-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total items</span>
+                  <span className="text-muted-foreground">
+                    {t("batchMint.totalItems")}
+                  </span>
                   <span className="font-medium text-foreground">
                     {items.length}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total amount</span>
+                  <span className="text-muted-foreground">
+                    {t("batchMint.totalAmount")}
+                  </span>
                   <span className="font-medium text-foreground">
                     {items.reduce(
                       (sum, item) => sum + (parseInt(item.amount) || 0),
@@ -312,12 +321,10 @@ export default function BatchMintPage() {
                 {isMinting ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
-                    Minting...
+                    {t("mint.minting")}
                   </>
                 ) : (
-                  `Batch mint ${items.length} Item${
-                    items.length > 1 ? "s" : ""
-                  }`
+                  t("batchMint.buttonLabel", { count: items.length })
                 )}
               </Button>
             </CardContent>

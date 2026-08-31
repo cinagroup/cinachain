@@ -26,7 +26,7 @@ export default function StatsPage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            NFT contract address not configured.
+            {t("admin.nftContractNotConfiguredShort")}
           </AlertDescription>
         </Alert>
       </div>
@@ -37,13 +37,13 @@ export default function StatsPage() {
     <div className="min-h-screen bg-background">
       <div className="container max-w-screen-ultra px-6 py-12">
         <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-          Administration
+          {t("admin.title")}
         </span>
         <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
-          Minting statistics<span className="text-foreground">.</span>
+          {t("admin.mintingStatistics")}<span className="text-foreground">.</span>
         </h1>
         <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-          Detailed analytics and revenue tracking for your NFT collection.
+          {t("admin.mintingStatisticsDescription")}
         </p>
 
         {/* Stats Grid */}
@@ -51,7 +51,7 @@ export default function StatsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total minted
+                {t("admin.totalMinted")}
               </CardTitle>
               <Package className="size-4 text-muted-foreground" />
             </CardHeader>
@@ -60,7 +60,9 @@ export default function StatsPage() {
                 {isLoading ? "..." : mintedCount.toLocaleString()}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                of {maxCount.toLocaleString()} total supply
+                {t("admin.ofTotalSupply", {
+                  count: maxCount.toLocaleString(),
+                })}
               </p>
             </CardContent>
           </Card>
@@ -68,7 +70,7 @@ export default function StatsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Mint price
+                {t("admin.mintPrice")}
               </CardTitle>
               <DollarSign className="size-4 text-muted-foreground" />
             </CardHeader>
@@ -76,14 +78,16 @@ export default function StatsPage() {
               <div className="font-display text-2xl text-foreground">
                 {price} ETH
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">per NFT</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("admin.perNft")}
+              </p>
             </CardContent>
           </Card>
 
           <Card className="shadow-vercel-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Est. revenue
+                {t("admin.estimatedRevenue")}
               </CardTitle>
               <TrendingUp className="size-4 text-muted-foreground" />
             </CardHeader>
@@ -92,7 +96,7 @@ export default function StatsPage() {
                 {revenue.toFixed(2)} ETH
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                estimate (public mints only)
+                {t("admin.publicMintEstimate")}
               </p>
             </CardContent>
           </Card>
@@ -100,7 +104,7 @@ export default function StatsPage() {
           <Card className="shadow-vercel-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Progress
+                {t("admin.progress")}
               </CardTitle>
               <BarChart3 className="size-4 text-muted-foreground" />
             </CardHeader>
@@ -109,7 +113,7 @@ export default function StatsPage() {
                 {progress.toFixed(1)}%
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                collection completed
+                {t("admin.collectionCompleted")}
               </p>
             </CardContent>
           </Card>
@@ -120,13 +124,15 @@ export default function StatsPage() {
           <CardHeader>
             <CardTitle>{t("admin.mintingProgress")}</CardTitle>
             <CardDescription>
-              Visual representation of collection completion
+              {t("admin.progressDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Progress</span>
+                <span className="text-muted-foreground">
+                  {t("admin.progress")}
+                </span>
                 <span className="font-medium">
                   {mintedCount.toLocaleString()} / {maxCount.toLocaleString()}
                 </span>
@@ -142,19 +148,25 @@ export default function StatsPage() {
                   <p className="font-display text-lg text-foreground">
                     {mintedCount.toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Minted</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("admin.mintedCount")}
+                  </p>
                 </div>
                 <div className="rounded-md border border-border bg-card p-3 text-center">
                   <p className="font-display text-lg text-foreground">
                     {remaining.toLocaleString()}
                   </p>
-                  <p className="text-xs text-muted-foreground">Remaining</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("admin.remaining")}
+                  </p>
                 </div>
                 <div className="rounded-md border border-border bg-card p-3 text-center">
                   <p className="font-display text-lg text-foreground">
                     {progress.toFixed(1)}%
                   </p>
-                  <p className="text-xs text-muted-foreground">Complete</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("admin.complete")}
+                  </p>
                 </div>
               </div>
             </div>

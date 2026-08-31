@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form"
-import { useDebounce } from "usehooks-ts"
+import { useDebounceValue } from "usehooks-ts"
 import { type Address, type BaseError } from "viem"
 import { useWaitForTransactionReceipt } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContractWriteButton } from "@/components/blockchain/contract-write-button"
@@ -20,11 +21,12 @@ interface Erc1155WriteSetApprovalForAllProps {
 export function Erc1155WriteApproveForAll({
   address,
 }: Erc1155WriteSetApprovalForAllProps) {
+  const { t } = useI18n()
   const { register, handleSubmit, watch } = useForm()
   const watchToAddress: Address = watch("toAddress")
   const watchShouldApproved: boolean = watch("shouldApproved")
-  const debouncedToAddress = useDebounce(watchToAddress, 500)
-  const debouncedShouldApproved = useDebounce(watchShouldApproved, 500)
+  const [debouncedToAddress] = useDebounceValue(watchToAddress, 500)
+  const [debouncedShouldApproved] = useDebounceValue(watchShouldApproved, 500)
 
   const {
     data: config,
@@ -59,9 +61,9 @@ export function Erc1155WriteApproveForAll({
     <Card>
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-          <label>Address</label>
+          <label>{t("integration.field.address")}</label>
           <input {...register("toAddress")} className="input" />
-          <label>Approve?</label>
+          <label>{t("integration.field.approveQuestion")}</label>
           <input
             type="checkbox"
             {...register("shouldApproved")}
@@ -70,11 +72,11 @@ export function Erc1155WriteApproveForAll({
           <ContractWriteButton
             isLoadingTx={isLoadingTx}
             isLoadingWrite={isLoadingWrite}
-            loadingTxText="Approving..."
+            loadingTxText={t("integration.action.approving")}
             type="submit"
             write={!!writeContract}
           >
-            Approve For All
+            {t("integration.action.approveForAll")}
           </ContractWriteButton>
           <TransactionStatus
             error={error as BaseError}
@@ -89,9 +91,14 @@ export function Erc1155WriteApproveForAll({
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC1155 Set Approval For All</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-1155",
+            action: t("integration.action.approveForAll"),
+          })}
+        </h3>
         <p className="text-center text-sm text-gray-500">
-          Approve all tokens to any address
+          {t("integration.approveAllDescription")}
         </p>
       </CardFooter>
     </Card>

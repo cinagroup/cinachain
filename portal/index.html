@@ -76,6 +76,30 @@
       }
     </script>
 
+    <!-- Apply the saved/browser locale before React paints to avoid an
+         English-language flash when a returning visitor uses another locale. -->
+    <script>
+      ;(function () {
+        try {
+          var supported = ["zh", "en", "ja", "ko", "ru", "es", "pt", "fr"]
+          var stored = localStorage.getItem("cinachain.locale")
+          var browserLocale =
+            (navigator.languages && navigator.languages[0]) ||
+            navigator.language ||
+            "en"
+          var candidate = (stored || browserLocale)
+            .toLowerCase()
+            .replace("_", "-")
+            .split("-")[0]
+          var locale = supported.indexOf(candidate) >= 0 ? candidate : "en"
+          var htmlLang = locale === "zh" ? "zh-CN" : locale
+          document.documentElement.lang = htmlLang
+        } catch (e) {
+          document.documentElement.lang = "en"
+        }
+      })()
+    </script>
+
     <!--
       Theme (no FOUC). Runs before first paint: reads the stored preference
       ("light" | "dark" | "system") and applies the resolved theme to <html

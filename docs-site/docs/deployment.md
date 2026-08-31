@@ -13,11 +13,10 @@ CI (`deploy.yml`) deploys on push to `main`:
 
 ## Contracts (manual, Base Sepolia)
 
-```bash
-DEPLOY_PRIVATE_KEY=0x... node scripts/deploy-mega.mjs              # CinaMega
-CINA_MEGA_CONTRACT=0x... node scripts/init-mega-templates.mjs      # templates + lock (irreversible)
-CINA_MEGA_CONTRACT=0x... node scripts/test-mega.mjs                # on-chain verification
-```
+Use the manual `deploy-contracts` GitHub Actions workflow so the deployment
+key remains in the repository secret store and never appears in shell history.
+For local Foundry operations, import an encrypted keystore with
+`cast wallet import cinachain-deployer --interactive` and use `--account`.
 
 ## Env
 

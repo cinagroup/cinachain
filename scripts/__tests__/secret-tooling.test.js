@@ -20,6 +20,7 @@ import {
 
 const adminName = ["ADMIN", "KEY"].join("_")
 const ingressName = ["INGRESS", "ENC", "KEY"].join("_")
+const deployKeyName = ["DEPLOY", "PRIVATE", "KEY"].join("_")
 const literalValue = ["fixture", "plain", "value"].join("-")
 const adminSecretId = "a".repeat(32)
 const ingressSecretId = "b".repeat(32)
@@ -72,6 +73,7 @@ describe("current repository secret assignment detection", () => {
     ["JSON", () => JSON.stringify({ [adminName]: literalValue })],
     ["PowerShell", () => `$env:${ingressName} = '${literalValue}'`],
     ["mixed-case PowerShell", () => `$EnV:Ingress_Enc_Key = '${literalValue}'`],
+    ["deployment key", () => `${deployKeyName}=0x${"12".repeat(32)}`],
   ])("flags a %s plaintext assignment", (_label, makeSource) => {
     const findings = findPlaintextSecretAssignments(makeSource())
 

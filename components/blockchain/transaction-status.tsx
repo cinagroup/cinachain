@@ -1,6 +1,9 @@
+"use client"
+
 import { HTMLAttributes } from "react"
 import { BaseError } from "viem"
 
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 import { BlockExplorerLink } from "./block-explorer-link"
@@ -22,6 +25,8 @@ export const TransactionStatus = ({
   hash,
   ...props
 }: TransactionStatusProps) => {
+  const { t } = useI18n()
+
   return (
     <>
       <div
@@ -33,14 +38,16 @@ export const TransactionStatus = ({
       >
         {(isLoadingTx || isSuccess) && (
           <>
-            {isLoadingTx ? "Processing transaction..." : "Success!"}
+            {isLoadingTx
+              ? t("transaction.processing")
+              : t("transaction.success")}
             <BlockExplorerLink showExplorerName address={hash} type="tx" />
           </>
         )}
       </div>
       {isError && (
         <div className="break-words font-medium text-red-500" role="alert">
-          Error: {error?.shortMessage ?? "Transaction failed."}
+          {t("transaction.errorPrefix")} {error?.shortMessage ?? t("transaction.failed")}
         </div>
       )}
     </>

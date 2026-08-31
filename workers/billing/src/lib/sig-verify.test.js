@@ -27,8 +27,8 @@ function sign(message, privateKeyHex) {
     signed instanceof Uint8Array
       ? signed.slice(1)
       : typeof signed.toBytes === "function"
-        ? signed.toBytes("compact")
-        : signed.toCompactRawBytes()
+      ? signed.toBytes("compact")
+      : signed.toCompactRawBytes()
   const recovery = signed instanceof Uint8Array ? signed[0] : signed.recovery
   if (recovery !== 0 && recovery !== 1) {
     throw new Error("unsupported Ethereum recovery bit")
@@ -40,16 +40,19 @@ function sign(message, privateKeyHex) {
 
 describe("sig-verify", () => {
   const PK = "1111111111111111111111111111111111111111111111111111111111111111"
+  const API_KEY_HASH = "ab".repeat(32)
 
   it("buildBindingMessage has the expected shape", () => {
     const m = buildBindingMessage(
       "0x1111111111111111111111111111111111111111",
       "abc123",
-      "2026-08-05T00:00:00Z"
+      "2026-08-05T00:00:00Z",
+      API_KEY_HASH
     )
     expect(m).toContain("cinachain.com wants you to sign in")
     expect(m).toContain("Nonce: abc123")
     expect(m).toContain("Chain ID: 84532")
+    expect(m).toContain(`API Key SHA-256: ${API_KEY_HASH}`)
   })
 
   it("recovers the correct EOA address", () => {
@@ -67,7 +70,8 @@ describe("sig-verify", () => {
     const message = buildBindingMessage(
       address,
       "nonce123",
-      "2026-08-05T00:00:00Z"
+      "2026-08-05T00:00:00Z",
+      API_KEY_HASH
     )
     const sig = sign(message, PK)
     const recovered = recoverEOAAddress(message, sig)
@@ -107,7 +111,8 @@ describe("sig-verify", () => {
     const m = buildBindingMessage(
       address,
       "nonce-42",
-      "2026-08-05T00:00:00.000Z"
+      "2026-08-05T00:00:00.000Z",
+      API_KEY_HASH
     )
     const parsed = parseBindingMessage(m)
     expect(parsed).toEqual({
@@ -116,6 +121,8 @@ describe("sig-verify", () => {
       issuedAt: "2026-08-05T00:00:00.000Z",
       uri: "https://billing-api.cinachain.com",
       chainId: "84532",
+      action: "bind-api-key",
+      apiKeyHash: API_KEY_HASH,
     })
   })
 
@@ -125,7 +132,8 @@ describe("sig-verify", () => {
     const good = buildBindingMessage(
       "0x1111111111111111111111111111111111111111",
       "n",
-      "2026-08-05T00:00:00Z"
+      "2026-08-05T00:00:00Z",
+      API_KEY_HASH
     )
     expect(parseBindingMessage(good.replace("Nonce: n", ""))).toBeNull()
     expect(

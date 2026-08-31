@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react"
 import { deployContract, waitForTransactionReceipt } from "viem/actions"
 import { usePublicClient, useWalletClient } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { BlockExplorerLink } from "@/components/blockchain/block-explorer-link"
@@ -12,6 +13,7 @@ import { erc1155ByteCode } from "../artifacts/core/erc1155-bytecode"
 import { useErc1155TokenStorage } from "../hooks/use-erc1155-token-storage"
 
 export function Erc1155Deploy() {
+  const { t } = useI18n()
   const [token, setTokenStorage] = useErc1155TokenStorage()
   const [isSigning, setIsSigning] = useState<boolean>(false)
   const [isWaitingTransaction, setIsWaitingTransaction] =
@@ -58,13 +60,13 @@ export function Erc1155Deploy() {
     <Card>
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-          <label>Name</label>
+          <label>{t("integration.field.name")}</label>
           <input
             className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <label>Symbol</label>
+          <label>{t("integration.field.symbol")}</label>
           <input
             className="input"
             value={symbol}
@@ -73,16 +75,19 @@ export function Erc1155Deploy() {
           <ContractWriteButton
             isLoadingTx={isWaitingTransaction}
             isLoadingWrite={isSigning}
-            loadingTxText="Deploying..."
+            loadingTxText={t("integration.action.deploying")}
             write={Boolean(name && symbol)}
           >
-            Deploy
+            {t("integration.action.deploy")}
           </ContractWriteButton>
         </form>
         {(token || isWaitingTransaction) && (
           <div className="flex max-w-full flex-wrap items-center justify-between break-words pb-2 pt-5">
             <span className="font-semibold">
-              {token ? "Mint Contract Address" : "Deploying contract"}:
+              {token
+                ? t("integration.mintContractAddress")
+                : t("integration.action.deployingContract")}
+              :
             </span>
             <BlockExplorerLink address={token} />
           </div>
@@ -90,9 +95,14 @@ export function Erc1155Deploy() {
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC1155 Deploy</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-1155",
+            action: t("integration.action.deploy"),
+          })}
+        </h3>
         <p className="text-center text-sm text-gray-500">
-          Deploy a new mintable ERC1155 token to any blockchain
+          {t("integration.deployNewDescription", { standard: "ERC-1155" })}
         </p>
       </CardFooter>
     </Card>

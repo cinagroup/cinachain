@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form"
-import { useDebounce } from "usehooks-ts"
+import { useDebounceValue } from "usehooks-ts"
 import { type Address, type BaseError } from "viem"
 import { useAccount, useWaitForTransactionReceipt } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContractWriteButton } from "@/components/blockchain/contract-write-button"
@@ -18,6 +19,7 @@ interface Erc1155WriteTransferProps {
 }
 
 export function Erc1155WriteTransfer({ address }: Erc1155WriteTransferProps) {
+  const { t } = useI18n()
   const { register, watch, handleSubmit } = useForm()
 
   const watchDifferentFromAddress: boolean = watch("differentFromAddress")
@@ -25,10 +27,10 @@ export function Erc1155WriteTransfer({ address }: Erc1155WriteTransferProps) {
   const watchAmount: string = watch("amount")
   const watchFromAddress: Address = watch("fromAddress")
   const watchToAddress: Address = watch("toAddress")
-  const debouncedTokenId = useDebounce(watchTokenId, 500)
-  const debouncedAmount = useDebounce(watchAmount, 500)
-  const debouncedFromAddress = useDebounce(watchFromAddress, 500)
-  const debouncedToAddress = useDebounce(watchToAddress, 500)
+  const [debouncedTokenId] = useDebounceValue(watchTokenId, 500)
+  const [debouncedAmount] = useDebounceValue(watchAmount, 500)
+  const [debouncedFromAddress] = useDebounceValue(watchFromAddress, 500)
+  const [debouncedToAddress] = useDebounceValue(watchToAddress, 500)
 
   const { address: accountAddress } = useAccount()
 
@@ -78,7 +80,7 @@ export function Erc1155WriteTransfer({ address }: Erc1155WriteTransferProps) {
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
           <div className="flex items-center justify-between text-sm">
-            <label>Use different from address</label>
+            <label>{t("integration.field.useDifferentFrom")}</label>
             <div className="size-6">
               <input
                 {...register("differentFromAddress")}
@@ -89,24 +91,24 @@ export function Erc1155WriteTransfer({ address }: Erc1155WriteTransferProps) {
           </div>
           {watchDifferentFromAddress && (
             <>
-              <label>From Address</label>
+              <label>{t("integration.field.fromAddress")}</label>
               <input {...register("fromAddress")} className="input" />
             </>
           )}
-          <label>To Address</label>
+          <label>{t("integration.field.toAddress")}</label>
           <input {...register("toAddress")} className="input" />
-          <label>Token ID</label>
+          <label>{t("integration.field.tokenId")}</label>
           <input type="number" {...register("tokenId")} className="input" />
-          <label>Amount</label>
+          <label>{t("integration.field.amount")}</label>
           <input type="number" {...register("amount")} className="input" />
           <ContractWriteButton
             isLoadingTx={isLoadingTx}
             isLoadingWrite={isLoadingWrite}
-            loadingTxText="Transferring..."
+            loadingTxText={t("integration.action.transferring")}
             type="submit"
             write={!!writeContract}
           >
-            Transfer
+            {t("integration.action.transfer")}
           </ContractWriteButton>
           <TransactionStatus
             error={error as BaseError}
@@ -119,9 +121,14 @@ export function Erc1155WriteTransfer({ address }: Erc1155WriteTransferProps) {
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC1155 Transfer</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-1155",
+            action: t("integration.action.transfer"),
+          })}
+        </h3>
         <p className="text-center text-sm text-gray-500">
-          Transfer NFTs or FTs to any address
+          {t("integration.transferAnyDescription", { standard: "NFT/FT" })}
         </p>
       </CardFooter>
     </Card>

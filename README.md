@@ -29,7 +29,7 @@ Custom-domain bindings and the live revision must be verified in the Cloudflare 
 ## Quick Start
 
 ```bash
-npm ci --legacy-peer-deps
+npm ci
 npm run dev
 ```
 

@@ -16,6 +16,7 @@
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://*.walletconnect.com https://verify.walletconnect.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self' data: https://fonts.reown.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.cinachain.com https://*.basescan.org https://sepolia.base.org https://base-sepolia.publicnode.com https://*.g.alchemy.com https://cloudflare-ipfs.com https://ipfs.io https://*.walletconnect.com https://verify.walletconnect.com https://api.web3modal.org https://secure.walletconnect.org https://auth.magic.link https://api.toaster.magic.link https://pulse.walletconnect.org https://rpc.walletconnect.org https://fonts.reown.com https://cca-lite.coinbase.com wss://*.walletconnect.com; frame-src 'self' https://verify.walletconnect.org https://*.walletconnect.com https://secure.walletconnect.org https://auth.magic.link; frame-ancestors 'none'; base-uri 'self'; form-action 'self'

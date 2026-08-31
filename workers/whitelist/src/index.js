@@ -1,11 +1,13 @@
 // Cloudflare Worker - Whitelist API
 // Fail-closed by default. Only returns eligible:true when address is verified.
 //
-// v2 changes:
+// v3 security model:
 //   • POST /admin/whitelist now builds a Merkle tree (leaves = keccak256 of
 //     the raw 20-byte address, matching CinaNFT's
 //     keccak256(abi.encodePacked(msg.sender))) and stores per-address proofs.
-//   • Per-address mint limits (body.limits map) instead of a single limit.
+//   • The API advertises the contract-enforced fixed limit of 3. Dynamic
+//     off-chain limits are rejected because the deployed Merkle leaf binds
+//     only the address and cannot enforce them against direct contract calls.
 //   • CORS: the Access-Control-Allow-Origin header is only emitted for
 //     allowlisted origins (never the literal "null", which sandboxed iframes
 //     could spoof).
@@ -29,6 +31,10 @@ const ADMIN_RATE_WINDOW_MS = 60 * 60 * 1000
 
 // Hard cap on whitelist size (abuse protection)
 const MAX_ADDRESSES = 5000
+const MAX_ADMIN_BODY_BYTES = 512 * 1024
+const CACHE_TTL_MS = 10_000
+
+let currentWhitelistCache = null
 
 function corsHeaders(request) {
   const origin = request.headers.get("Origin") || ""
@@ -45,8 +51,14 @@ function corsHeaders(request) {
 function jsonResponse(request, body, status = 200) {
   const headers = corsHeaders(request)
   headers["Content-Type"] = "application/json"
+  headers["X-Content-Type-Options"] = "nosniff"
+  const isPublicLookup =
+    request.method === "GET" &&
+    new URL(request.url).pathname.startsWith("/whitelist/")
   headers["Cache-Control"] =
-    status === 200 ? "public, max-age=10, s-maxage=60" : "no-store"
+    status === 200 && isPublicLookup
+      ? "public, max-age=10, s-maxage=60"
+      : "no-store"
   return new Response(JSON.stringify(body), { status, headers })
 }
 
@@ -116,26 +128,74 @@ function getProof(levels, leaf) {
   return proof
 }
 
-/** KV fixed-window rate limit; returns true when allowed */
+/** KV fixed-window rate limit; returns an explicit fail-closed state. */
 async function checkRateLimit(env, request) {
   const kv = env && env.CINA_WHITELIST_KV
-  if (!kv) return true // KV missing → fail-open on rate limiting (auth still gates)
+  if (!kv) return "unavailable"
   try {
     const ip = request.headers.get("CF-Connecting-IP") || "unknown"
     const windowStart = Math.floor(Date.now() / ADMIN_RATE_WINDOW_MS)
     const key = `ratelimit:admin:${ip}:${windowStart}`
     const raw = await kv.get(key)
     const count = raw ? parseInt(raw, 10) : 0
-    if (count >= ADMIN_RATE_LIMIT) return false
+    if (count >= ADMIN_RATE_LIMIT) return "blocked"
     await kv.put(key, String(count + 1), { expirationTtl: 7200 })
-    return true
+    return "allowed"
   } catch (err) {
-    // Best effort: transient KV errors must not turn into non-JSON 500s.
-    // NOTE: the counter is read-then-write (KV has no atomic increment), so
-    // the 10/hour cap is approximate under concurrent requests — acceptable
-    // defense-in-depth behind the admin token.
-    return true
+    return "unavailable"
   }
+}
+
+async function readJsonWithinLimit(request, maxBytes) {
+  const declared = Number(request.headers.get("Content-Length"))
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new RangeError("Request body too large")
+  }
+  if (!request.body) return null
+  const reader = request.body.getReader()
+  const chunks = []
+  let total = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel()
+        throw new RangeError("Request body too large")
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return JSON.parse(new TextDecoder().decode(bytes))
+}
+
+async function readCurrentWhitelist(kv) {
+  const now = Date.now()
+  if (currentWhitelistCache && currentWhitelistCache.expiresAt > now) {
+    return currentWhitelistCache.data
+  }
+  const raw = await kv.get("whitelist:current")
+  const data = raw ? JSON.parse(raw) : null
+  currentWhitelistCache = { data, expiresAt: now + CACHE_TTL_MS }
+  return data
+}
+
+async function checkBindingRateLimit(env, request, route) {
+  if (!env.WHITELIST_RATE_LIMITER?.limit) return true
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown"
+  const result = await env.WHITELIST_RATE_LIMITER.limit({
+    key: `${ip}:${route}`,
+  })
+  return result.success
 }
 
 export default {
@@ -144,15 +204,22 @@ export default {
 
     // CORS preflight
     if (request.method === "OPTIONS") {
+      const origin = request.headers.get("Origin") || ""
+      if (!ALLOWED_ORIGINS.has(origin)) {
+        return jsonResponse(request, { error: "Origin not allowed" }, 403)
+      }
       return new Response(null, { status: 204, headers: corsHeaders(request) })
     }
 
     // Health check
-    if (url.pathname === "/" || url.pathname === "/health") {
+    if (
+      request.method === "GET" &&
+      (url.pathname === "/" || url.pathname === "/health")
+    ) {
       return jsonResponse(request, {
         ok: true,
         service: "cinachain-whitelist-api",
-        version: "v2",
+        version: "v3",
         kvBound: !!(env && env.CINA_WHITELIST_KV),
         timestamp: Date.now(),
       })
@@ -161,6 +228,15 @@ export default {
     // Only allow GET and POST
     if (request.method !== "GET" && request.method !== "POST") {
       return jsonResponse(request, { error: "Method not allowed" }, 405)
+    }
+
+    try {
+      const route = url.pathname === "/admin/whitelist" ? "admin" : "lookup"
+      if (!(await checkBindingRateLimit(env, request, route))) {
+        return jsonResponse(request, { error: "Too many requests" }, 429)
+      }
+    } catch {
+      return jsonResponse(request, { error: "Rate limiter unavailable" }, 503)
     }
 
     // POST /admin/whitelist — upload whitelist data (admin only)
@@ -172,11 +248,19 @@ export default {
       }
 
       // Rate limit per IP
-      if (!(await checkRateLimit(env, request))) {
+      const adminRate = await checkRateLimit(env, request)
+      if (adminRate === "blocked") {
         return jsonResponse(
           request,
           { error: "Too many requests. Try again later." },
           429
+        )
+      }
+      if (adminRate === "unavailable") {
+        return jsonResponse(
+          request,
+          { error: "Admin rate limiter unavailable" },
+          503
         )
       }
 
@@ -190,7 +274,21 @@ export default {
       }
 
       try {
-        const body = await request.json()
+        if (
+          !/^application\/json(?:\s*;|$)/i.test(
+            request.headers.get("Content-Type") || ""
+          )
+        ) {
+          return jsonResponse(
+            request,
+            { error: "Content-Type must be application/json" },
+            415
+          )
+        }
+        const body = await readJsonWithinLimit(request, MAX_ADMIN_BODY_BYTES)
+        if (!body || typeof body !== "object" || Array.isArray(body)) {
+          return jsonResponse(request, { error: "Invalid request body" }, 400)
+        }
         const rawAddresses = Array.isArray(body.addresses) ? body.addresses : []
         if (rawAddresses.length === 0) {
           return jsonResponse(request, { error: "No addresses provided" }, 400)
@@ -208,7 +306,11 @@ export default {
         const addresses = []
         for (const a of rawAddresses) {
           if (!isValidAddress(a)) {
-            return jsonResponse(request, { error: `Invalid address: ${a}` }, 400)
+            return jsonResponse(
+              request,
+              { error: `Invalid address: ${a}` },
+              400
+            )
           }
           const addr = a.toLowerCase()
           if (!seen.has(addr)) {
@@ -217,22 +319,42 @@ export default {
           }
         }
 
-        // Per-address mint limits (clamped 1..3 — the contract's hard cap)
-        const defaultLimit =
-          typeof body.mintLimit === "number" &&
-          Number.isInteger(body.mintLimit) &&
-          body.mintLimit >= 1 &&
-          body.mintLimit <= MAX_WHITELIST_LIMIT
-            ? body.mintLimit
-            : 3
-        const limits = {}
-        if (body.limits && typeof body.limits === "object") {
-          for (const [addr, lim] of Object.entries(body.limits)) {
-            const a = addr.toLowerCase()
-            if (!isValidAddress(a)) continue
-            const l = Number(lim)
-            if (Number.isInteger(l) && l >= 1 && l <= MAX_WHITELIST_LIMIT) {
-              limits[a] = l
+        if (
+          body.mintLimit !== undefined &&
+          body.mintLimit !== MAX_WHITELIST_LIMIT
+        ) {
+          return jsonResponse(
+            request,
+            {
+              error: `mintLimit must equal the on-chain limit (${MAX_WHITELIST_LIMIT})`,
+            },
+            400
+          )
+        }
+        if (body.limits !== undefined) {
+          if (
+            !body.limits ||
+            typeof body.limits !== "object" ||
+            Array.isArray(body.limits)
+          ) {
+            return jsonResponse(
+              request,
+              { error: "Invalid limits object" },
+              400
+            )
+          }
+          for (const [addr, limit] of Object.entries(body.limits)) {
+            if (
+              !isValidAddress(addr) ||
+              Number(limit) !== MAX_WHITELIST_LIMIT
+            ) {
+              return jsonResponse(
+                request,
+                {
+                  error: `All limits must equal the on-chain limit (${MAX_WHITELIST_LIMIT})`,
+                },
+                400
+              )
             }
           }
         }
@@ -247,8 +369,7 @@ export default {
 
         const data = {
           addresses,
-          limits,
-          defaultLimit,
+          defaultLimit: MAX_WHITELIST_LIMIT,
           merkleRoot: root,
           proofs,
           updatedAt: Date.now(),
@@ -256,19 +377,36 @@ export default {
         }
 
         await kv.put("whitelist:current", JSON.stringify(data))
+        currentWhitelistCache = {
+          data,
+          expiresAt: Date.now() + CACHE_TTL_MS,
+        }
 
         return jsonResponse(request, {
           ok: true,
           message: `Whitelist updated with ${addresses.length} addresses`,
           count: addresses.length,
           merkleRoot: root,
-          mintLimit: defaultLimit,
+          mintLimit: MAX_WHITELIST_LIMIT,
         })
       } catch (err) {
+        const status =
+          err instanceof RangeError
+            ? 413
+            : err instanceof SyntaxError
+            ? 400
+            : 500
         return jsonResponse(
           request,
-          { error: "Failed to parse request body" },
-          400
+          {
+            error:
+              status === 413
+                ? "Request body too large"
+                : status === 400
+                ? "Failed to parse request body"
+                : "Failed to update whitelist",
+          },
+          status
         )
       }
     }
@@ -278,20 +416,12 @@ export default {
       return jsonResponse(request, { error: "Method not allowed" }, 405)
     }
 
-    // Parse: /whitelist/:address
-    const segments = url.pathname.split("/").filter(Boolean)
-    if (segments[0] !== "whitelist") {
+    const routeMatch = /^\/whitelist\/(0x[a-fA-F0-9]{40})$/.exec(url.pathname)
+    if (!routeMatch) {
       return jsonResponse(request, { error: "Not found" }, 404)
     }
 
-    const address = segments[1]?.toLowerCase()
-    if (!address || !isValidAddress(address)) {
-      return jsonResponse(
-        request,
-        { error: "Invalid address", expected: "/whitelist/0x..." },
-        400
-      )
-    }
+    const address = routeMatch[1].toLowerCase()
 
     const kv = env && env.CINA_WHITELIST_KV
 
@@ -310,8 +440,8 @@ export default {
     // KV configured - read whitelist data
     let data
     try {
-      const raw = await kv.get("whitelist:current")
-      if (!raw) {
+      data = await readCurrentWhitelist(kv)
+      if (!data) {
         return jsonResponse(request, {
           eligible: false,
           proof: null,
@@ -321,7 +451,6 @@ export default {
           message: "Public mint active (no whitelist data)",
         })
       }
-      data = JSON.parse(raw)
     } catch (err) {
       // Fail-closed: on any error, deny
       return jsonResponse(
@@ -338,17 +467,13 @@ export default {
       )
     }
 
-    const addresses = Array.isArray(data.addresses) ? data.addresses : []
-    const defaultLimit =
-      typeof data.defaultLimit === "number" ? data.defaultLimit : 3
     const merkleRoot = data.merkleRoot || null
     const proofsMap =
       data.proofs && typeof data.proofs === "object" ? data.proofs : {}
-    const limitsMap =
-      data.limits && typeof data.limits === "object" ? data.limits : {}
-
-    const normalized = addresses.map((a) => String(a).toLowerCase())
-    const isInWhitelist = normalized.includes(address)
+    const isInWhitelist = Object.prototype.hasOwnProperty.call(
+      proofsMap,
+      address
+    )
 
     if (!isInWhitelist) {
       return jsonResponse(request, {
@@ -361,15 +486,15 @@ export default {
       })
     }
 
-    // Look up precomputed proof + per-address limit
+    // The deployed contract enforces a fixed maximum of 3. Returning a lower
+    // off-chain number would be cosmetic and bypassable via direct calls.
     const proof = proofsMap[address] || null
-    const mintLimit = limitsMap[address] ?? defaultLimit
 
     return jsonResponse(request, {
       eligible: true,
       proof,
       merkleRoot,
-      mintLimit,
+      mintLimit: MAX_WHITELIST_LIMIT,
       phase: "whitelist",
     })
   },

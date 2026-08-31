@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
+
 import worker from "./index.js"
 
 const ENV = {
@@ -6,6 +7,21 @@ const ENV = {
   CINAAUTH_CLIENT_ID: "test-client",
   CINAAUTH_CLIENT_SECRET: "cina_cs_testsecret",
   ALLOWED_ORIGINS: "https://nft.cinachain.com,http://localhost:3000",
+  ALLOWED_REDIRECT_URIS:
+    "https://nft.cinachain.com/auth/callback,http://localhost:3000/auth/callback",
+}
+
+const VALID_VERIFIER = "v".repeat(43)
+
+function tokenBody(overrides = {}) {
+  return new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: "test-client",
+    code: "one-time-code",
+    redirect_uri: "https://nft.cinachain.com/auth/callback",
+    code_verifier: VALID_VERIFIER,
+    ...overrides,
+  }).toString()
 }
 
 function captureUpstreamFetch() {
@@ -34,7 +50,7 @@ describe("cinachain-auth-proxy", () => {
   it("injects client_secret_basic on token requests and strips browser headers", async () => {
     const captured = captureUpstreamFetch()
     const request = new Request(
-      "https://nft.cinachain.com/api/auth/oauth2/token?x=1",
+      "https://nft.cinachain.com/api/auth/oauth2/token",
       {
         method: "POST",
         headers: {
@@ -42,14 +58,14 @@ describe("cinachain-auth-proxy", () => {
           origin: "https://nft.cinachain.com",
           cookie: "session=1",
         },
-        body: "grant_type=authorization_code&client_id=test-client",
+        body: tokenBody(),
       }
     )
     const response = await worker.fetch(request, ENV)
 
     // Path-preserving forward to the upstream origin.
     expect(captured.request.url).toBe(
-      "https://auth.cinaseek.ai/api/auth/oauth2/token?x=1"
+      "https://auth.cinaseek.ai/api/auth/oauth2/token"
     )
     // RFC 6749 §2.3.1 credentials (plain alnum here, so no form-encoding).
     expect(captured.request.headers.get("authorization")).toBe(
@@ -59,9 +75,7 @@ describe("cinachain-auth-proxy", () => {
     expect(captured.request.headers.get("origin")).toBeNull()
     expect(captured.request.headers.get("cookie")).toBeNull()
     // The buffered-body forward carries the grant payload through.
-    expect(await captured.request.text()).toBe(
-      "grant_type=authorization_code&client_id=test-client"
-    )
+    expect(await captured.request.text()).toBe(tokenBody())
     expect(response.status).toBe(200)
     expect(response.headers.get("cache-control")).toBe("no-store")
   })
@@ -70,17 +84,21 @@ describe("cinachain-auth-proxy", () => {
     const captured = captureUpstreamFetch()
     const request = new Request(
       "https://nft.cinachain.com/api/auth/oauth2/token",
-      { method: "POST", body: "grant_type=authorization_code" }
+      {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: tokenBody({ client_id: "my+client id" }),
+      }
     )
     await worker.fetch(request, {
       ...ENV,
       CINAAUTH_CLIENT_ID: "my+client id",
-      CINAAUTH_CLIENT_SECRET: "cina_cs_s/ecret+value",
+      CINAAUTH_CLIENT_SECRET: "test-secret/special+value",
     })
     expect(captured.request.headers.get("authorization")).toBe(
       `Basic ${btoa(
         `${encodeURIComponent("my+client id")}:${encodeURIComponent(
-          "cina_cs_s/ecret+value"
+          "test-secret/special+value"
         )}`
       )}`
     )
@@ -90,7 +108,11 @@ describe("cinachain-auth-proxy", () => {
     const captured = captureUpstreamFetch()
     const request = new Request(
       "https://nft.cinachain.com/api/auth/oauth2/token",
-      { method: "POST", body: "grant_type=authorization_code" }
+      {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: tokenBody(),
+      }
     )
     await worker.fetch(request, { ...ENV, CINAAUTH_CLIENT_SECRET: undefined })
     expect(captured.request.headers.get("authorization")).toBeNull()
@@ -109,6 +131,78 @@ describe("cinachain-auth-proxy", () => {
     )
     // No Origin header on the incoming request → no CORS echo.
     expect(response.headers.get("access-control-allow-origin")).toBeNull()
+  })
+
+  it("replaces caller-controlled credentials on token requests", async () => {
+    const captured = captureUpstreamFetch()
+    const request = new Request(
+      "https://nft.cinachain.com/api/auth/oauth2/token",
+      {
+        method: "POST",
+        headers: {
+          authorization: "Basic attacker-controlled",
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: tokenBody(),
+      }
+    )
+    await worker.fetch(request, ENV)
+    expect(captured.request.headers.get("authorization")).toBe(
+      `Basic ${btoa("test-client:cina_cs_testsecret")}`
+    )
+  })
+
+  it("rejects non-code grants and unexpected proxy paths", async () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal("fetch", fetchSpy)
+    const tokenRequest = new Request(
+      "https://nft.cinachain.com/api/auth/oauth2/token",
+      {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: tokenBody({ grant_type: "refresh_token" }),
+      }
+    )
+    const grantResponse = await worker.fetch(tokenRequest, ENV)
+    const pathResponse = await worker.fetch(
+      new Request("https://nft.cinachain.com/api/auth/oauth2/register"),
+      ENV
+    )
+    expect(grantResponse.status).toBe(400)
+    expect(pathResponse.status).toBe(404)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it("rejects oversized token bodies before upstream fetch", async () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal("fetch", fetchSpy)
+    const request = new Request(
+      "https://nft.cinachain.com/api/auth/oauth2/token",
+      {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: `code=${"x".repeat(17_000)}`,
+      }
+    )
+    const response = await worker.fetch(request, ENV)
+    expect(response.status).toBe(413)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it("enforces the optional Cloudflare rate-limit binding", async () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal("fetch", fetchSpy)
+    const response = await worker.fetch(
+      new Request(
+        "https://nft.cinachain.com/api/auth/.well-known/openid-configuration"
+      ),
+      {
+        ...ENV,
+        AUTH_RATE_LIMITER: { limit: vi.fn(() => ({ success: false })) },
+      }
+    )
+    expect(response.status).toBe(429)
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 
   it("answers CORS preflight for allowed origins", async () => {

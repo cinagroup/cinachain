@@ -1,10 +1,9 @@
 "use client"
 
+import type { ComponentPropsWithoutRef } from "react"
 import Link from "next/link"
-import { motion, MotionProps } from "framer-motion"
 
 import { cn } from "@/lib/utils"
-import { fadeUpVariant } from "@/lib/utils/motion"
 import { buttonVariants } from "@/components/ui/button"
 import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 import { WalletAddress } from "@/components/blockchain/wallet-address"
@@ -93,9 +92,7 @@ const demos = [
   },
 ]
 
-interface ExampleDemosProps extends MotionProps {
-  className?: string
-}
+type ExampleDemosProps = ComponentPropsWithoutRef<"section">
 
 export function ExampleDemos({ className, ...props }: ExampleDemosProps) {
   return (
@@ -114,7 +111,7 @@ export function ExampleDemos({ className, ...props }: ExampleDemosProps) {
   )
 }
 
-interface DemoCardProps extends MotionProps {
+interface DemoCardProps {
   demo: React.ReactNode
   title: string
   description: string
@@ -124,11 +121,11 @@ interface DemoCardProps extends MotionProps {
 
 function DemoCard({ title, description, href, demo, large }: DemoCardProps) {
   return (
-    <motion.div
-      variants={fadeUpVariant()}
-      className={`relative col-span-1 overflow-hidden rounded-xl border bg-card px-4 shadow-sm transition-shadow hover:shadow-md ${
-        large ? "md:col-span-2" : ""
-      }`}
+    <div
+      className={cn(
+        "relative col-span-1 overflow-hidden rounded-xl border bg-card px-4 shadow-sm transition-shadow hover:shadow-md motion-safe:duration-500 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2",
+        large && "md:col-span-2"
+      )}
     >
       <div className="flex h-60 items-center justify-center">{demo}</div>
       <div className="mx-auto max-w-xl text-center">
@@ -144,6 +141,6 @@ function DemoCard({ title, description, href, demo, large }: DemoCardProps) {
           </Link>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }

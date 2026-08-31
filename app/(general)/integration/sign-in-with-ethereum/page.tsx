@@ -1,9 +1,14 @@
+"use client"
+
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { cinaIntegrations } from "@/data/cina-integrations"
 import { LuBook } from "react-icons/lu"
 
+import { useI18n } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { IntegrationWorkbenchLoading } from "@/components/blockchain/integration-workbench-loading"
 import { WalletConnect } from "@/components/blockchain/wallet-connect"
 import {
   PageHeader,
@@ -15,26 +20,31 @@ import { PageSection } from "@/components/layout/page-section"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
 import { IsWalletDisconnected } from "@/components/shared/is-wallet-disconnected"
 import { LightDarkImage } from "@/components/shared/light-dark-image"
-import { ButtonSIWELogin } from "@/integrations/siwe/components/button-siwe-login"
-import { ButtonSIWELogout } from "@/integrations/siwe/components/button-siwe-logout"
-import { IsSignedIn } from "@/integrations/siwe/components/is-signed-in"
-import { IsSignedOut } from "@/integrations/siwe/components/is-signed-out"
+
+const SiweWorkbench = dynamic(
+  () => import("./siwe-workbench").then((module) => module.SiweWorkbench),
+  {
+    ssr: false,
+    loading: () => <IntegrationWorkbenchLoading />,
+  }
+)
 
 export default function SIWEPage() {
+  const { t } = useI18n()
+
   return (
     <div className="container relative mt-20">
       <PageHeader className="pb-8">
         <LightDarkImage
           LightImage={cinaIntegrations.siwe.imgDark}
           DarkImage={cinaIntegrations.siwe.imgLight}
-          alt="Sign in with Ethereum logo"
+          alt={t("integration.logoAlt", { standard: "SIWE" })}
           width={100}
           height={100}
         />
         <PageHeaderHeading>SIWE</PageHeaderHeading>
         <PageHeaderDescription>
-          Sign-In with Ethereum is Web3 authentication using an Ethereum
-          account.
+          {t("integration.siweDescription")}
         </PageHeaderDescription>
         <PageHeaderCTA>
           <Link
@@ -44,18 +54,13 @@ export default function SIWEPage() {
             className={cn(buttonVariants({ variant: "outline" }))}
           >
             <LuBook className="mr-2 size-4" />
-            Documentation
+            {t("integration.documentation")}
           </Link>
         </PageHeaderCTA>
       </PageHeader>
       <PageSection>
         <IsWalletConnected>
-          <IsSignedIn>
-            <ButtonSIWELogout />
-          </IsSignedIn>
-          <IsSignedOut>
-            <ButtonSIWELogin />
-          </IsSignedOut>
+          <SiweWorkbench />
         </IsWalletConnected>
         <IsWalletDisconnected>
           <WalletConnect className="mx-auto inline-block" />

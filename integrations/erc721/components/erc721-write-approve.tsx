@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form"
-import { useDebounce } from "usehooks-ts"
+import { useDebounceValue } from "usehooks-ts"
 import { type Address, type BaseError } from "viem"
 import { useWaitForTransactionReceipt } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContractWriteButton } from "@/components/blockchain/contract-write-button"
@@ -18,11 +19,12 @@ interface Erc721WriteApproveProps {
 }
 
 export function Erc721WriteApprove({ address }: Erc721WriteApproveProps) {
+  const { t } = useI18n()
   const { register, handleSubmit, watch } = useForm()
   const watchToAddress: Address = watch("toAddress")
   const watchTokenId: string = watch("tokenId")
-  const debouncedToAddress = useDebounce(watchToAddress, 500)
-  const debouncedTokenId = useDebounce(watchTokenId, 500)
+  const [debouncedToAddress] = useDebounceValue(watchToAddress, 500)
+  const [debouncedTokenId] = useDebounceValue(watchTokenId, 500)
 
   const {
     data: config,
@@ -57,18 +59,18 @@ export function Erc721WriteApprove({ address }: Erc721WriteApproveProps) {
     <Card>
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-          <label>Address</label>
+          <label>{t("integration.field.address")}</label>
           <input {...register("toAddress")} className="input" />
-          <label>Token ID</label>
+          <label>{t("integration.field.tokenId")}</label>
           <input type="number" {...register("tokenId")} className="input" />
           <ContractWriteButton
             isLoadingTx={isLoadingTx}
             isLoadingWrite={isLoadingWrite}
-            loadingTxText="Approving..."
+            loadingTxText={t("integration.action.approving")}
             type="submit"
             write={!!writeContract}
           >
-            Approve
+            {t("integration.action.approve")}
           </ContractWriteButton>
           <TransactionStatus
             error={error as BaseError}
@@ -81,9 +83,14 @@ export function Erc721WriteApprove({ address }: Erc721WriteApproveProps) {
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC721 Approve</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-721",
+            action: t("integration.action.approve"),
+          })}
+        </h3>
         <p className="text-center text-sm text-muted-foreground">
-          Approve NFTs to any address
+          {t("integration.approveAnyDescription")}
         </p>
       </CardFooter>
     </Card>

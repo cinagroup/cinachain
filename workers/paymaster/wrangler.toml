@@ -1,8 +1,27 @@
 name = "cinachain-paymaster"
 main = "src/index.js"
-compatibility_date = "2026-06-01"
+compatibility_date = "2026-08-29"
+workers_dev = false
+preview_urls = false
+routes = [
+  { pattern = "paymaster-api.cinachain.com/*", zone_name = "cinachain.com" }
+]
+
+[vars]
+PAYMASTER_ENABLED = "false"
+PAYMASTER_POLICY_MODE = "disabled"
+ENTRYPOINT_ADDRESS = ""
+
+[[ratelimits]]
+name = "PAYMASTER_RATE_LIMITER"
+namespace_id = "1005"
+simple = { limit = 30, period = 60 }
 
 # CDP Paymaster URL — set via wrangler secret:
 # npx wrangler secret put CDP_PAYMASTER_URL
 # Value format: https://api.developer.coinbase.com/rpc/v1/base/<YOUR_KEY>
 # Get from: https://portal.cdp.coinbase.com → Paymaster → Configuration
+
+[observability]
+enabled = true
+head_sampling_rate = 0.1

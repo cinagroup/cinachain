@@ -1,8 +1,6 @@
-#!/usr/bin/env node
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-
 import { createPublicClient, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 
@@ -59,7 +57,7 @@ export function normalizePrivateKey(value) {
   const trimmed = String(value || "").trim()
   const normalized = trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`
   if (!/^0x[0-9a-f]{64}$/iu.test(normalized)) {
-    throw new Error("DEPLOY_PRIVATE_KEY is missing or malformed")
+    throw new Error("CINATOKEN_MINTER_PRIVATE_KEY is missing or malformed")
   }
   return normalized
 }
@@ -67,49 +65,54 @@ export function normalizePrivateKey(value) {
 export async function verifyCinaTokenSigner({ privateKey, receipt, client }) {
   const normalizedKey = normalizePrivateKey(privateKey)
   const signer = privateKeyToAccount(normalizedKey).address
-  const declaredOwner = getAddress(receipt.deployer)
-  if (signer !== declaredOwner) {
-    throw new Error("DEPLOY_PRIVATE_KEY signer does not match the deployment receipt owner")
+  const deployer = getAddress(receipt.deployer)
+  if (signer === deployer) {
+    throw new Error("CinaToken minter must not reuse the deployment signer")
   }
 
   const chainId = await client.getChainId()
   if (chainId !== receipt.chainId) {
-    throw new Error(`RPC chain ID ${chainId} does not match receipt chain ID ${receipt.chainId}`)
+    throw new Error(
+      `RPC chain ID ${chainId} does not match receipt chain ID ${receipt.chainId}`
+    )
   }
 
-  for (const contractName of ["CinaBadge", "CinaCredit"]) {
-    const address = getAddress(receipt.contracts[contractName])
+  const badgeAddress = getAddress(receipt.contracts.CinaBadge)
+  const creditAddress = getAddress(receipt.contracts.CinaCredit)
+  for (const [contractName, address] of [
+    ["CinaBadge", badgeAddress],
+    ["CinaCredit", creditAddress],
+  ]) {
     const bytecode = await client.getBytecode({ address })
     if (!bytecode || bytecode === "0x") {
       throw new Error(`${contractName} has no deployed bytecode`)
     }
+  }
 
-    let liveOwner = null
-    try {
-      liveOwner = getAddress(
-        await client.readContract({ address, abi: ownerAbi, functionName: "owner" }),
-      )
-    } catch {
-      // No owner() — AccessControl model (CinaCreditV2): require MINTER_ROLE.
-      const role = await client.readContract({
-        address,
-        abi: accessControlAbi,
-        functionName: "MINTER_ROLE",
-      })
-      const granted = await client.readContract({
-        address,
-        abi: accessControlAbi,
-        functionName: "hasRole",
-        args: [role, signer],
-      })
-      if (!granted) {
-        throw new Error(`${contractName}: signer lacks MINTER_ROLE (AccessControl model)`)
-      }
-      continue
-    }
-    if (liveOwner !== signer) {
-      throw new Error(`${contractName} owner does not match the DEPLOY_PRIVATE_KEY signer`)
-    }
+  const badgeOwner = getAddress(
+    await client.readContract({
+      address: badgeAddress,
+      abi: ownerAbi,
+      functionName: "owner",
+    })
+  )
+  if (badgeOwner !== signer) {
+    throw new Error("CinaBadge owner does not match the dedicated signer")
+  }
+
+  const role = await client.readContract({
+    address: creditAddress,
+    abi: accessControlAbi,
+    functionName: "MINTER_ROLE",
+  })
+  const granted = await client.readContract({
+    address: creditAddress,
+    abi: accessControlAbi,
+    functionName: "hasRole",
+    args: [role, signer],
+  })
+  if (!granted) {
+    throw new Error("CinaCredit signer lacks MINTER_ROLE")
   }
 
   return { signer, chainId }
@@ -117,20 +120,24 @@ export async function verifyCinaTokenSigner({ privateKey, receipt, client }) {
 
 async function main() {
   const receipt = JSON.parse(
-    readFileSync(join(root, "config/cinatoken-chain.base-sepolia.json"), "utf8"),
+    readFileSync(join(root, "config/cinatoken-chain.base-sepolia.json"), "utf8")
   )
   const publicEnv = readFileSync(join(root, ".env.production"), "utf8")
   const rpcUrl =
-    process.env.CINACHAIN_RPC_URL || readPublicEnvValue(publicEnv, "NEXT_PUBLIC_BASE_RPC")
-  if (!rpcUrl) throw new Error("CINACHAIN_RPC_URL/NEXT_PUBLIC_BASE_RPC is missing")
+    process.env.CINACHAIN_RPC_URL ||
+    readPublicEnvValue(publicEnv, "NEXT_PUBLIC_BASE_RPC")
+  if (!rpcUrl)
+    throw new Error("CINACHAIN_RPC_URL/NEXT_PUBLIC_BASE_RPC is missing")
 
   const client = createPublicClient({ transport: http(rpcUrl) })
   const result = await verifyCinaTokenSigner({
-    privateKey: process.env.DEPLOY_PRIVATE_KEY,
+    privateKey: process.env.CINATOKEN_MINTER_PRIVATE_KEY,
     receipt,
     client,
   })
-  console.log(`Verified CinaToken signer ${result.signer} on chain ${result.chainId}`)
+  console.log(
+    `Verified CinaToken signer ${result.signer} on chain ${result.chainId}`
+  )
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

@@ -1,40 +1,74 @@
 /**
  * 扫描 worker 中 status=minting 的 Key 入金记录 → owner 链上铸造 CinaCredit → 确认闭环。
- * 用法: DEPLOY_PRIVATE_KEY=0x... BILLING_URL=... ADMIN_KEY=... node scripts/ingress-mint.mjs
+ * 默认禁用：KV 入金流程不具备事务化铸币幂等保障。
  */
-import { createWalletClient, createPublicClient, http } from "viem"
-import { baseSepolia } from "viem/chains"
+import { createPublicClient, createWalletClient, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
+import { baseSepolia } from "viem/chains"
 
-const PK = process.env.DEPLOY_PRIVATE_KEY
-const BILLING_URL = process.env.BILLING_URL || "https://billing-api.cinachain.com"
+if (
+  process.env.ENABLE_INGRESS_MINT !== "I_ACKNOWLEDGE_NON_TRANSACTIONAL_INGRESS"
+) {
+  throw new Error(
+    "Ingress minting is disabled until a transactional, provider-authoritative settlement store is deployed"
+  )
+}
+const PK = process.env.CINATOKEN_MINTER_PRIVATE_KEY
+const BILLING_URL =
+  process.env.BILLING_URL || "https://billing-api.cinachain.com"
 const ADMIN_KEY = process.env.ADMIN_KEY
-const CREDIT = process.env.CINA_CREDIT_CONTRACT || "0x22f3e0aaa4785169d2c227d37df17c168fbae85a"
+const CREDIT =
+  process.env.CINA_CREDIT_CONTRACT ||
+  "0x22f3e0aaa4785169d2c227d37df17c168fbae85a"
 const RPC = process.env.DEPLOY_RPC_URL || "https://sepolia.base.org"
-if (!PK || !ADMIN_KEY) throw new Error("DEPLOY_PRIVATE_KEY and ADMIN_KEY required")
+if (!PK || !ADMIN_KEY) {
+  throw new Error("CINATOKEN_MINTER_PRIVATE_KEY and ADMIN_KEY required")
+}
 
 const account = privateKeyToAccount(PK)
-const wallet = createWalletClient({ account, chain: baseSepolia, transport: http(RPC) })
-const publicClient = createPublicClient({ chain: baseSepolia, transport: http(RPC) })
+const wallet = createWalletClient({
+  account,
+  chain: baseSepolia,
+  transport: http(RPC),
+})
+const publicClient = createPublicClient({
+  chain: baseSepolia,
+  transport: http(RPC),
+})
 
 const MINT_ABI = [
-  { name: "mintTo", type: "function", stateMutability: "nonpayable",
-    inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [] },
+  {
+    name: "mintTo",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
 ]
 
 // 1 micro-credit = 1e12 wei (与 worker WEI_PER_MICRO 一致)
 const WEI_PER_MICRO = 1_000_000_000_000n
 
-const res = await fetch(`${BILLING_URL}/v1/admin/ingress?status=minting`, { headers: { "X-Admin-Key": ADMIN_KEY } })
+const res = await fetch(`${BILLING_URL}/v1/admin/ingress?status=minting`, {
+  headers: { "X-Admin-Key": ADMIN_KEY },
+})
 if (!res.ok) throw new Error(`admin/ingress ${res.status}: ${await res.text()}`)
 const { records } = await res.json()
-if (!records.length) { console.log("✔ 无待铸造入金记录"); process.exit(0) }
+if (!records.length) {
+  console.log("✔ 无待铸造入金记录")
+  process.exit(0)
+}
 
 let hadFailures = false
 for (const rec of records) {
   const amountWei = BigInt(rec.confirmedMicro) * WEI_PER_MICRO
   const hash = await wallet.writeContract({
-    address: CREDIT, abi: MINT_ABI, functionName: "mintTo",
+    address: CREDIT,
+    abi: MINT_ABI,
+    functionName: "mintTo",
     args: [rec.owner, amountWei],
   })
   const receipt = await publicClient.waitForTransactionReceipt({ hash })
@@ -51,14 +85,23 @@ for (const rec of records) {
       headers: { "X-Admin-Key": ADMIN_KEY, "Content-Type": "application/json" },
       body: confirmBody,
     })
-    if (confirm.ok) { confirmed = true; break }
-    console.warn(`⚠ confirm attempt ${attempt + 1} failed for ${rec.id} (${confirm.status}) — retrying`)
+    if (confirm.ok) {
+      confirmed = true
+      break
+    }
+    console.warn(
+      `⚠ confirm attempt ${attempt + 1} failed for ${rec.id} (${
+        confirm.status
+      }) — retrying`
+    )
     await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)))
   }
   // 确认失败后记录停留在 minting：重跑会按同一 confirmedMicro 再次 mintTo，必须先人工核对链上 txHash 再处理
   if (!confirmed) {
     hadFailures = true
-    console.error(`❌ confirm FAILED after 3 attempts for ${rec.id} — record stays minting; check tx ${hash} before re-running`)
+    console.error(
+      `❌ confirm FAILED after 3 attempts for ${rec.id} — record stays minting; check tx ${hash} before re-running`
+    )
   }
 }
 if (hadFailures) {

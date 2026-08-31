@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { Address } from "viem"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 
@@ -21,6 +22,7 @@ interface Erc721ReadProps {
 }
 
 export function Erc721Read({ address }: Erc721ReadProps) {
+  const { t } = useI18n()
   const [tokenId, setTokenId] = useState<number>()
 
   const bigIntTokenId = BigInt(tokenId || 1)
@@ -29,7 +31,7 @@ export function Erc721Read({ address }: Erc721ReadProps) {
     <Card>
       <CardContent>
         <div className="flex flex-col justify-center gap-4">
-          <label>Token ID</label>
+          <label>{t("integration.field.tokenId")}</label>
           <input
             className="input"
             type="number"
@@ -55,15 +57,21 @@ export function Erc721Read({ address }: Erc721ReadProps) {
           />
           <div className="mt-4 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between">
-              <span className="font-medium">Contract Name:</span>
+              <span className="font-medium">
+                {t("integration.field.contractName")}:
+              </span>
               <ERC721Name address={address} />
             </div>
             <div className="flex flex-wrap items-center justify-between">
-              <span className="font-medium">Contract Symbol:</span>
+              <span className="font-medium">
+                {t("integration.field.contractSymbol")}:
+              </span>
               <ERC721Symbol address={address} />
             </div>
             <div className="flex flex-wrap items-center justify-between break-words">
-              <span className="font-medium">Token Owner:</span>
+              <span className="font-medium">
+                {t("integration.field.tokenOwner")}:
+              </span>
               <ERC721OwnerOf
                 address={address}
                 className="overflow-x-scroll"
@@ -71,7 +79,9 @@ export function Erc721Read({ address }: Erc721ReadProps) {
               />
             </div>
             <div className="flex flex-wrap items-center justify-between">
-              <span className="font-medium">Total Supply:</span>
+              <span className="font-medium">
+                {t("integration.field.totalSupply")}:
+              </span>
               <ERC721TotalSupply address={address} />
             </div>
           </div>
@@ -79,9 +89,14 @@ export function Erc721Read({ address }: Erc721ReadProps) {
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC721 Read</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-721",
+            action: t("integration.action.read"),
+          })}
+        </h3>
         <p className="text-center text-sm text-muted-foreground">
-          See detailed NFT information
+          {t("integration.readNftDescription")}
         </p>
       </CardFooter>
     </Card>

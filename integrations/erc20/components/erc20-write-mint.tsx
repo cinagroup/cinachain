@@ -1,11 +1,12 @@
-import { AppKitButton } from "@reown/appkit/react"
 import { useForm } from "react-hook-form"
-import { useDebounce } from "usehooks-ts"
+import { useDebounceValue } from "usehooks-ts"
 import { parseEther, type Address, type BaseError } from "viem"
 import { useAccount, useWaitForTransactionReceipt } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { AppKitConnectButton } from "@/components/blockchain/appkit-connect-button"
 import { ContractWriteButton } from "@/components/blockchain/contract-write-button"
 import { TransactionStatus } from "@/components/blockchain/transaction-status"
 import { IsWalletConnected } from "@/components/shared/is-wallet-connected"
@@ -22,9 +23,10 @@ interface ERC20WriteMintProps {
 }
 
 function ERC20ContractMintTokens({ address }: ERC20WriteMintProps) {
+  const { t } = useI18n()
   const { register, watch, handleSubmit } = useForm()
   const watchAmount: string = watch("amount")
-  const debouncedAmount = useDebounce(watchAmount, 500)
+  const [debouncedAmount] = useDebounceValue(watchAmount, 500)
 
   const { address: accountAddress } = useAccount()
 
@@ -63,16 +65,16 @@ function ERC20ContractMintTokens({ address }: ERC20WriteMintProps) {
 
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-      <label>Amount</label>
+      <label>{t("integration.field.amount")}</label>
       <input className="input" placeholder="1000" {...register("amount")} />
       <ContractWriteButton
         isLoadingTx={isLoadingTx}
         isLoadingWrite={isLoadingWrite}
-        loadingTxText="Minting..."
+        loadingTxText={t("integration.action.minting")}
         type="submit"
         write={!!writeContract}
       >
-        Mint
+        {t("integration.action.mint")}
       </ContractWriteButton>
       <TransactionStatus
         error={error as BaseError}
@@ -86,6 +88,8 @@ function ERC20ContractMintTokens({ address }: ERC20WriteMintProps) {
 }
 
 export function ERC20WriteMint({ address }: ERC20WriteMintProps) {
+  const { t } = useI18n()
+
   return (
     <>
       <IsWalletConnected>
@@ -96,16 +100,21 @@ export function ERC20WriteMint({ address }: ERC20WriteMintProps) {
           </CardContent>
           <Separator className="my-4" />
           <CardFooter className="justify-between">
-            <h3 className="text-center">ERC20 Mint</h3>
+            <h3 className="text-center">
+              {t("integration.cardTitle", {
+                standard: "ERC-20",
+                action: t("integration.action.mint"),
+              })}
+            </h3>
             <p className="text-center text-sm text-muted-foreground">
-              Mint tokens to yourself
+              {t("integration.mintSelfDescription")}
             </p>
           </CardFooter>
         </Card>
       </IsWalletConnected>
       <IsWalletDisconnected>
         <div className="flex items-center justify-center gap-10">
-          <AppKitButton balance="hide" />
+          <AppKitConnectButton />
         </div>
       </IsWalletDisconnected>
     </>

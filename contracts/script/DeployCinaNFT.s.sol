@@ -10,7 +10,7 @@ import {CinaNFT} from "../src/CinaNFT.sol";
 /// Usage (Base Sepolia testnet):
 ///   forge script script/DeployCinaNFT.s.sol \
 ///     --rpc-url $BASE_SEPOLIA_RPC_URL \
-///     --private-key $PRIVATE_KEY \
+///     --account cinachain-deployer \
 ///     --broadcast \
 ///     --verify \
 ///     --etherscan-api-key $BASESCAN_API_KEY \
@@ -20,7 +20,7 @@ import {CinaNFT} from "../src/CinaNFT.sol";
 /// Usage (Base Mainnet):
 ///   forge script script/DeployCinaNFT.s.sol \
 ///     --rpc-url $BASE_RPC_URL \
-///     --private-key $PRIVATE_KEY \
+///     --account cinachain-deployer \
 ///     --broadcast \
 ///     --verify \
 ///     --etherscan-api-key $BASESCAN_API_KEY \
@@ -35,8 +35,9 @@ contract DeployCinaNFT is Script {
     uint256 constant MINT_PRICE = 0.001 ether;
 
     function run() external {
-        // Get owner from env or use deployer
-        address owner = vm.envOr("OWNER", vm.addr(vm.envUint("PRIVATE_KEY")));
+        // OWNER is public configuration; the broadcaster is supplied through
+        // Foundry's encrypted keystore via --account.
+        address owner = vm.envAddress("OWNER");
 
         vm.startBroadcast();
 

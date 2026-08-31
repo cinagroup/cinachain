@@ -1,6 +1,11 @@
 name = "cinachain-mega-media"
 main = "src/index.js"
-compatibility_date = "2026-06-01"
+compatibility_date = "2026-08-29"
+workers_dev = false
+preview_urls = false
+routes = [
+  { pattern = "media.cinachain.com/*", zone_name = "cinachain.com" }
+]
 
 [[r2_buckets]]
 binding = "CINA_MEGA_MEDIA"
@@ -11,7 +16,16 @@ bucket_name = "cinachain-mega-media"
 # provisioning: e.g. https://cinachain-mega.4everland.link
 FOUR_EVERLAND_GATEWAY = ""
 # CinaMega contract on Base Sepolia
-CINA_MEGA_ADDRESS = "0x3443febc3b4e49ea931091aa54871dbcbd972a5f"
+CINA_MEGA_ADDRESS = "0x335e9569520279d9487180ffff803b718e6744bf"
 BASE_SEPOLIA_RPC = "https://sepolia.base.org"
 # cid:tokenType mapping from mega-assets/cids.json
 MEGA_TYPE_CIDS = "QmUZa75SwGeYPFrVTxCQApYcm8XgpBiAUdrsbh4EtJFYxU:1,Qme5t3gekoEcbBdVV2Vjz1ZktfeB6bsEBvGkwSR9SwSRz4:2,QmbmVXuZkzEQRVRhtENhYcE4zzJXBUjdm1kBtfwGFF2Awi:3"
+
+[[ratelimits]]
+name = "MEDIA_CHAIN_RATE_LIMITER"
+namespace_id = "1003"
+simple = { limit = 10, period = 60 }
+
+[observability]
+enabled = true
+head_sampling_rate = 0.1

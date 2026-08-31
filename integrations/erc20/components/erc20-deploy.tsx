@@ -2,6 +2,7 @@ import { useState } from "react"
 import { FieldValues, useForm } from "react-hook-form"
 import { usePublicClient, useWalletClient } from "wagmi"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { BlockExplorerLink } from "@/components/blockchain/block-explorer-link"
@@ -12,6 +13,7 @@ import { erc20MintableByteCode } from "../abis/erc20-mintable-bytecode"
 import { useERC20TokenStorage } from "../hooks/use-erc20-token-storage"
 
 export function DeployERC20Contract() {
+  const { t } = useI18n()
   const [token, setToken] = useERC20TokenStorage()
   const [isSigning, setIsSigning] = useState<boolean>(false)
   const [isWaitingTransaction, setIsWaitingTransaction] =
@@ -60,21 +62,23 @@ export function DeployERC20Contract() {
       className="flex w-full flex-col gap-4"
       onSubmit={handleSubmit(onSubmit)}
     >
-      <label>Name</label>
+      <label>{t("integration.field.name")}</label>
       <input {...register("name")} className="input" />
-      <label>Symbol</label>
+      <label>{t("integration.field.symbol")}</label>
       <input {...register("symbol")} className="input" />
       <ContractWriteButton
         isLoadingTx={isWaitingTransaction}
         isLoadingWrite={isSigning}
-        loadingTxText="Deploying..."
+        loadingTxText={t("integration.action.deploying")}
         write={Boolean(name && symbol)}
       >
-        Deploy
+        {t("integration.action.deploy")}
       </ContractWriteButton>
       {!token ? null : (
         <div className="flex max-w-full flex-wrap items-center justify-between break-words pb-2 pt-5">
-          <span className="font-semibold">Mint Contract Address:</span>
+          <span className="font-semibold">
+            {t("integration.mintContractAddress")}:
+          </span>
           <BlockExplorerLink address={token} />
         </div>
       )}
@@ -83,6 +87,8 @@ export function DeployERC20Contract() {
 }
 
 export function ERC20Deploy() {
+  const { t } = useI18n()
+
   return (
     <Card>
       <CardContent>
@@ -90,9 +96,14 @@ export function ERC20Deploy() {
       </CardContent>
       <Separator className="my-4" />
       <CardFooter className="justify-between">
-        <h3 className="text-center">ERC20 Deploy</h3>
+        <h3 className="text-center">
+          {t("integration.cardTitle", {
+            standard: "ERC-20",
+            action: t("integration.action.deploy"),
+          })}
+        </h3>
         <p className="text-center text-sm text-muted-foreground">
-          Deploy a new mintable ERC20 token to any blockchain
+          {t("integration.deployNewDescription", { standard: "ERC-20" })}
         </p>
       </CardFooter>
     </Card>

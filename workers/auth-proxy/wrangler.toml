@@ -1,6 +1,8 @@
 name = "cinachain-auth-proxy"
 main = "src/index.js"
-compatibility_date = "2026-06-01"
+compatibility_date = "2026-08-29"
+workers_dev = false
+preview_urls = false
 
 # Same-origin OIDC proxy for CinaAuth login (see DEPLOYMENT.md §2 "CinaAuth
 # 登录"). The route is more specific than the Pages custom-domain route on
@@ -18,3 +20,13 @@ CINAAUTH_UPSTREAM = "https://auth.cinaseek.ai"
 # calls send no Origin-dependent CORS handling; these cover the Pages
 # preview domain and local wrangler dev).
 ALLOWED_ORIGINS = "https://nft.cinachain.com,https://cinachain-dapp-v2.pages.dev,http://localhost:3000"
+ALLOWED_REDIRECT_URIS = "https://nft.cinachain.com/auth/callback,https://cinachain-dapp-v2.pages.dev/auth/callback,http://localhost:3000/auth/callback"
+
+[[ratelimits]]
+name = "AUTH_RATE_LIMITER"
+namespace_id = "1002"
+simple = { limit = 60, period = 60 }
+
+[observability]
+enabled = true
+head_sampling_rate = 0.1

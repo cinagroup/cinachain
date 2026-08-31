@@ -18,6 +18,7 @@ import {
 import { FaDiscord, FaGithub } from "react-icons/fa"
 
 import { cn } from "@/lib/cn"
+import { useI18n } from "@/lib/i18n"
 import {
   dapp,
   DEPLOYMENT_STAGE,
@@ -41,13 +42,15 @@ import { SiteHeader } from "@/components/layout/site-header"
  * is the brand front door, so CTAs point out to the DApp, docs and socials).
  */
 export function App() {
+  const { t } = useI18n()
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <a
         href="#main-content"
         className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-sm bg-foreground px-4 py-3 text-sm font-medium text-background transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
       >
-        Skip to content
+        {t("common.skipToContent")}
       </a>
       <SiteHeader />
 
@@ -65,10 +68,10 @@ export function App() {
           <div className="container mx-auto max-w-[960px] px-6 pb-20 pt-32 text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 shadow-vercel-sm">
               <span className="text-xs font-medium text-foreground/60">
-                Building on {PRIMARY_NETWORK_LABEL}
+                {t("hero.buildingOn", { network: PRIMARY_NETWORK_LABEL })}
               </span>
               <span className="bg-violet/10 inline-flex h-4 items-center rounded-full px-2 text-[10px] font-semibold text-violet">
-                {DEPLOYMENT_STAGE}
+                {t("status.beta")}
               </span>
             </div>
 
@@ -78,7 +81,7 @@ export function App() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-[600px] text-lg leading-8 text-muted-foreground">
-              {`A full-stack Web3 ecosystem currently running on ${PRIMARY_NETWORK_LABEL} — NFT platform, badge system, gasless transactions, and edge-deployed infrastructure.`}
+              {t("hero.description", { network: PRIMARY_NETWORK_LABEL })}
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -87,7 +90,7 @@ export function App() {
                 className={cn(buttonVariants({ size: "lg" }), "btn-pill")}
               >
                 <Sparkles className="mr-2 size-4" />
-                Explore NFTs
+                {t("hero.explore")}
               </a>
               <a
                 href={dapp.mint}
@@ -96,7 +99,7 @@ export function App() {
                   "btn-pill"
                 )}
               >
-                Mint NFT
+                {t("hero.mint")}
               </a>
               <a
                 href={dapp.dashboard}
@@ -105,7 +108,7 @@ export function App() {
                   "btn-pill"
                 )}
               >
-                Dashboard
+                {t("hero.dashboard")}
               </a>
             </div>
 
@@ -117,9 +120,9 @@ export function App() {
         <section className="content-auto-section border-t border-border">
           <div className="container mx-auto max-w-[1400px] px-6 py-24">
             <SectionHeader
-              eyebrow="Products"
-              title="A growing ecosystem."
-              description="Five products built on shared infrastructure, designed to work together."
+              eyebrow={t("products.eyebrow")}
+              title={t("products.title")}
+              description={t("products.description")}
             />
 
             <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -127,46 +130,51 @@ export function App() {
                 icon={<Layers className="size-6" />}
                 name="CinaChain NFT"
                 tag="ERC-721"
-                description="10,000 unique collectibles with whitelist + public mint phases. Full enumerable support for dashboard integration."
+                description={t("product.nft.description")}
                 href={dapp.explore}
-                cta="View collection"
+                cta={t("product.nft.cta")}
                 status={DEPLOYMENT_STAGE}
+                statusLabel={t("status.beta")}
               />
               <ProductCard
                 icon={<Award className="size-6" />}
                 name="CinaBadge"
                 tag="ERC-1155"
-                description="Soulbound achievement badges, event tickets, and membership tiers. Batch minting and airdrop support."
+                description={t("product.badge.description")}
                 href={dapp.badges}
-                cta="View badges"
+                cta={t("product.badge.cta")}
                 status={DEPLOYMENT_STAGE}
+                statusLabel={t("status.beta")}
               />
               <ProductCard
                 icon={<Coins className="size-6" />}
                 name="CinaMega"
                 tag="ERC-1155"
-                description="Three template-based mega-collections — UCINA, MCINA, CINA — with billions of copies each and a fixed 1:1000:1,000,000 exchange."
+                description={t("product.mega.description")}
                 href={dapp.collections}
-                cta="View collections"
+                cta={t("product.mega.cta")}
                 status="Beta"
+                statusLabel={t("status.beta")}
               />
               <ProductCard
                 icon={<Zap className="size-6" />}
-                name="Gasless minting"
+                name={t("product.gasless.name")}
                 tag="CDP Paymaster"
-                description="Coinbase Smart Wallet integration in beta, designed for passkey-based onboarding and sponsored mint transactions."
+                description={t("product.gasless.description")}
                 href={dapp.mint}
-                cta="Try gasless"
+                cta={t("product.gasless.cta")}
                 status="Beta"
+                statusLabel={t("status.beta")}
               />
               <ProductCard
                 icon={<Server className="size-6" />}
                 name="Edge API"
                 tag="Cloudflare Workers"
-                description="Whitelist verification and billing APIs running on Cloudflare's global edge network."
+                description={t("product.edge.description")}
                 href={edgeApi.whitelist}
-                cta="API status"
+                cta={t("product.edge.cta")}
                 status={DEPLOYMENT_STAGE}
+                statusLabel={t("status.beta")}
                 external
               />
             </div>
@@ -177,31 +185,31 @@ export function App() {
         <section className="content-auto-section border-t border-border bg-card/50">
           <div className="container mx-auto max-w-[1400px] px-6 py-24">
             <SectionHeader
-              eyebrow="Infrastructure"
-              title="A testnet stack built to scale."
-              description="Every layer is being validated on Base Sepolia before the mainnet launch."
+              eyebrow={t("infrastructure.eyebrow")}
+              title={t("infrastructure.title")}
+              description={t("infrastructure.description")}
             />
 
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <TechCard
                 icon={<Shield className="size-5" />}
                 title={PRIMARY_NETWORK_NAME}
-                description="Coinbase's Ethereum L2 configured for CinaChain contracts and transactions."
+                description={t("tech.base.description")}
               />
               <TechCard
                 icon={<Globe className="size-5" />}
                 title="IPFS"
-                description="Decentralized metadata with 3-gateway fallback for reliability."
+                description={t("tech.ipfs.description")}
               />
               <TechCard
                 icon={<Wallet className="size-5" />}
-                title="Smart wallet"
-                description="Passkey-based wallets. No seed phrases. Gasless transactions."
+                title={t("tech.wallet.title")}
+                description={t("tech.wallet.description")}
               />
               <TechCard
                 icon={<Code className="size-5" />}
                 title="Cloudflare"
-                description="Edge-deployed Pages + Workers for global delivery."
+                description={t("tech.cloudflare.description")}
               />
             </div>
           </div>
@@ -211,51 +219,51 @@ export function App() {
         <section className="content-auto-section border-t border-border">
           <div className="container mx-auto max-w-[1400px] px-6 py-24">
             <SectionHeader
-              eyebrow="Roadmap"
-              title="Built incrementally."
-              description="Each phase is validated on testnet before the next begins."
+              eyebrow={t("roadmap.eyebrow")}
+              title={t("roadmap.title")}
+              description={t("roadmap.description")}
             />
 
             <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <RoadmapCard
                 phase="01"
-                title="Infrastructure"
+                title={t("roadmap.phase1.title")}
                 status="done"
                 items={[
-                  "Cloudflare Pages deploy",
-                  "Custom IPFS gateways",
-                  "Edge Worker foundation",
+                  t("roadmap.phase1.item1"),
+                  t("roadmap.phase1.item2"),
+                  t("roadmap.phase1.item3"),
                 ]}
               />
               <RoadmapCard
                 phase="02"
-                title="NFT platform"
+                title={t("roadmap.phase2.title")}
                 status="done"
                 items={[
-                  "ERC-721 contract deployed",
-                  "Mint + whitelist system",
-                  "Dashboard & explore",
+                  t("roadmap.phase2.item1"),
+                  t("roadmap.phase2.item2"),
+                  t("roadmap.phase2.item3"),
                 ]}
               />
               <RoadmapCard
                 phase="03"
-                title="Admin & badges"
+                title={t("roadmap.phase3.title")}
                 status="done"
                 items={[
-                  "Admin control panel",
-                  "ERC-1155 badge system",
-                  "Smart wallet onboarding",
+                  t("roadmap.phase3.item1"),
+                  t("roadmap.phase3.item2"),
+                  t("roadmap.phase3.item3"),
                 ]}
               />
               <RoadmapCard
                 phase="04"
-                title="Scale & expand"
+                title={t("roadmap.phase4.title")}
                 status="active"
                 items={[
-                  "Paymaster production hardening",
-                  "Branded RPC proxy hardening",
-                  "Mainnet deployment",
-                  "Marketplace integration",
+                  t("roadmap.phase4.item1"),
+                  t("roadmap.phase4.item2"),
+                  t("roadmap.phase4.item3"),
+                  t("roadmap.phase4.item4"),
                 ]}
               />
             </div>
@@ -266,26 +274,26 @@ export function App() {
         <section className="content-auto-section border-t border-border bg-card/50">
           <div className="container mx-auto max-w-[1400px] px-6 py-24">
             <SectionHeader
-              eyebrow="Team"
-              title="Built by cinagroup."
-              description="A team focused on shipping real products on-chain."
+              eyebrow={t("team.eyebrow")}
+              title={t("team.title")}
+              description={t("team.description")}
             />
 
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <TeamCard
                 icon={<Users className="size-8" />}
                 name="cinagroup"
-                role="Core team"
+                role={t("team.coreRole")}
               />
               <TeamCard
                 icon={<BrandMark size={40} />}
                 name="CinaChain"
-                role="Brand & community"
+                role={t("team.brandRole")}
               />
               <TeamCard
                 icon={<FaGithub className="size-8" />}
-                name="Open source"
-                role="Powered by the community"
+                name={t("team.openSource")}
+                role={t("team.openSourceRole")}
               />
             </div>
           </div>
@@ -295,11 +303,11 @@ export function App() {
         <section className="content-auto-section band-dark border-t border-border">
           <div className="container mx-auto max-w-[960px] px-6 py-24 text-center">
             <h2 className="font-display text-4xl tracking-tight sm:text-5xl">
-              Start building on CinaChain
+              {t("cta.title")}
               <span className="text-white/50">.</span>
             </h2>
             <p className="mx-auto mt-4 max-w-[480px] text-base text-white/60">
-              Mint your first NFT, earn badges, and join the ecosystem.
+              {t("cta.description")}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <a
@@ -309,7 +317,7 @@ export function App() {
                   "btn-pill bg-white text-[#171717]"
                 )}
               >
-                Mint your first NFT
+                {t("cta.mint")}
                 <ArrowRight className="ml-2 size-4" />
               </a>
               <a
@@ -319,7 +327,7 @@ export function App() {
                 className="inline-flex h-12 items-center gap-2 rounded-full border border-white/20 px-6 text-base font-medium text-white transition-opacity hover:opacity-90"
               >
                 <FaDiscord className="size-4" />
-                Join Discord
+                {t("cta.discord")}
               </a>
             </div>
 
@@ -328,7 +336,7 @@ export function App() {
                 href={links.github}
                 target="_blank"
                 rel="noreferrer noopener"
-                aria-label="CinaChain on GitHub"
+                aria-label={t("aria.github")}
                 className="flex size-11 items-center justify-center text-white/50 transition-colors hover:text-white"
               >
                 <FaGithub className="size-5" />
@@ -337,7 +345,7 @@ export function App() {
                 href={links.discord}
                 target="_blank"
                 rel="noreferrer noopener"
-                aria-label="CinaChain on Discord"
+                aria-label={t("aria.discord")}
                 className="flex size-11 items-center justify-center text-white/50 transition-colors hover:text-white"
               >
                 <FaDiscord className="size-5" />
@@ -346,7 +354,9 @@ export function App() {
 
             <div className="mt-8 flex items-center justify-center gap-2 text-xs text-white/50">
               <Lock className="size-3" />
-              <span>{PRIMARY_NETWORK_LABEL} · Powered by Cloudflare</span>
+              <span>
+                {t("cta.powered", { network: PRIMARY_NETWORK_LABEL })}
+              </span>
             </div>
           </div>
         </section>
@@ -391,6 +401,7 @@ function ProductCard({
   href,
   cta,
   status,
+  statusLabel,
   external,
 }: {
   icon: ReactNode
@@ -400,6 +411,7 @@ function ProductCard({
   href: string
   cta: string
   status: "Live" | "Beta" | "Coming soon"
+  statusLabel: string
   external?: boolean
 }) {
   return (
@@ -426,7 +438,7 @@ function ProductCard({
               status === "Coming soon" && "bg-secondary text-muted-foreground"
             )}
           >
-            {status}
+            {statusLabel}
           </span>
         </div>
       </div>
@@ -458,7 +470,9 @@ function TechCard({
       <div className="mb-3 flex size-9 items-center justify-center rounded-md bg-secondary text-foreground">
         {icon}
       </div>
-      <h3 className="text-sm font-medium tracking-tight text-foreground">{title}</h3>
+      <h3 className="text-sm font-medium tracking-tight text-foreground">
+        {title}
+      </h3>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">
         {description}
       </p>
@@ -477,6 +491,8 @@ function RoadmapCard({
   status: "done" | "active"
   items: string[]
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="relative rounded-lg border border-border bg-card p-5 shadow-vercel-card">
       <div className="flex items-center justify-between">
@@ -486,12 +502,12 @@ function RoadmapCard({
         {status === "done" ? (
           <span className="flex items-center gap-1 text-xs font-medium text-success">
             <CheckCircle2 className="size-3.5" />
-            Done
+            {t("status.done")}
           </span>
         ) : (
           <span className="flex items-center gap-1 text-xs font-medium text-violet">
             <Sparkles className="size-3.5" />
-            In progress
+            {t("status.inProgress")}
           </span>
         )}
       </div>

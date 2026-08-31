@@ -16,13 +16,14 @@
 // Abuse controls (the endpoint URL is public in the frontend bundle):
 //   • Method allow-list — only the methods the DApp/pipelines actually use;
 //     debug_*/trace_*/eth_getLogs etc. are refused before reaching Alchemy.
-//   • Body size cap (64 KiB) and JSON-RPC batch cap (50).
+//   • Streaming body size cap (64 KiB); JSON-RPC batches are rejected so one
+//     rate-limit unit can never fan out into many upstream operations.
 //   • CORS Origin allow-list for browser callers (non-browser callers are
 //     bounded by the method/body caps, not CORS).
 
 interface Env {
   ALCHEMY_API_KEY?: string
-  // Workers rate-limiting binding (see wrangler.toml [[unsafe.bindings]])
+  // Workers rate-limiting binding (see wrangler.toml [[ratelimits]])
   RPC_RATE_LIMITER?: {
     limit(options: { key: string }): Promise<{ success: boolean }>
   }
@@ -61,20 +62,66 @@ const ALLOWED_METHODS = new Set([
 
 // JSON-RPC bodies are tiny (calldata/raw tx a few KB); 64 KiB is generous.
 const MAX_BODY_BYTES = 64 * 1024
-// JSON-RPC batch entries — viem/wagmi never batch anywhere near this.
-const MAX_BATCH = 50
-
 interface RpcRequest {
+  jsonrpc?: unknown
   method?: unknown
+  params?: unknown
 }
 
-// Returns the first disallowed method name, or null when every method in the
-// (possibly batched) body is allowed.
-function firstDisallowedMethod(parsed: RpcRequest | RpcRequest[]): string | null {
-  const requests = Array.isArray(parsed) ? parsed : [parsed]
-  for (const req of requests) {
-    const method = typeof req?.method === "string" ? req.method : ""
-    if (!ALLOWED_METHODS.has(method)) return method || "(missing)"
+async function readBodyWithinLimit(
+  request: Request,
+  maxBytes: number
+): Promise<string> {
+  const declared = Number(request.headers.get("Content-Length"))
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new RangeError("Request body too large")
+  }
+  if (!request.body) return ""
+
+  const reader = request.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel()
+        throw new RangeError("Request body too large")
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return new TextDecoder().decode(bytes)
+}
+
+function validateRequest(parsed: RpcRequest): string | null {
+  if (!parsed || typeof parsed !== "object" || parsed.jsonrpc !== "2.0") {
+    return "Invalid JSON-RPC request"
+  }
+  const method = typeof parsed.method === "string" ? parsed.method : ""
+  if (!ALLOWED_METHODS.has(method)) {
+    return `Method not allowed through this proxy: ${method || "(missing)"}`
+  }
+  const params = Array.isArray(parsed.params) ? parsed.params : []
+  if (method === "eth_getBlockByNumber" && params[1] !== false) {
+    return "Full-transaction block responses are not allowed"
+  }
+  if (method === "eth_feeHistory") {
+    const count = typeof params[0] === "string" ? Number(params[0]) : NaN
+    if (!Number.isSafeInteger(count) || count < 1 || count > 1024) {
+      return "eth_feeHistory block count exceeds 1024"
+    }
   }
   return null
 }
@@ -98,6 +145,9 @@ const worker = {
     }
 
     if (request.method === "OPTIONS") {
+      if (origin && !ALLOWED_ORIGINS.has(origin)) {
+        return jsonResponse({ error: "Origin not allowed" }, 403, corsHeaders)
+      }
       return new Response(null, { status: 204, headers: corsHeaders })
     }
 
@@ -109,7 +159,7 @@ const worker = {
           error: { code: -32600, message: "Only POST is supported" },
         },
         405,
-        corsHeaders,
+        corsHeaders
       )
     }
 
@@ -117,35 +167,74 @@ const worker = {
     // requests cost nothing upstream. 120 req / 60 s per client IP.
     if (env.RPC_RATE_LIMITER) {
       const ip = request.headers.get("CF-Connecting-IP") ?? "unknown"
-      const { success } = await env.RPC_RATE_LIMITER.limit({ key: ip })
+      let success = false
+      try {
+        ;({ success } = await env.RPC_RATE_LIMITER.limit({ key: ip }))
+      } catch {
+        return jsonResponse(
+          {
+            jsonrpc: "2.0",
+            id: null,
+            error: { code: -32603, message: "Rate limiter unavailable" },
+          },
+          503,
+          corsHeaders
+        )
+      }
       if (!success) {
         return jsonResponse(
           {
             jsonrpc: "2.0",
             id: null,
-            error: { code: -32005, message: "Rate limit exceeded (120 req/min per IP)" },
+            error: {
+              code: -32005,
+              message: "Rate limit exceeded (120 req/min per IP)",
+            },
           },
           429,
-          { ...corsHeaders, "Retry-After": "60" },
+          { ...corsHeaders, "Retry-After": "60" }
         )
       }
     }
 
-    const body = await request.text()
-
-    if (body.length > MAX_BODY_BYTES) {
+    if (
+      !/^application\/json(?:\s*;|$)/i.test(
+        request.headers.get("Content-Type") ?? ""
+      )
+    ) {
       return jsonResponse(
         {
           jsonrpc: "2.0",
           id: null,
-          error: { code: -32600, message: `Request body exceeds ${MAX_BODY_BYTES} bytes` },
+          error: {
+            code: -32600,
+            message: "Content-Type must be application/json",
+          },
         },
-        413,
-        corsHeaders,
+        415,
+        corsHeaders
       )
     }
 
-    let parsed: RpcRequest | RpcRequest[]
+    let body: string
+    try {
+      body = await readBodyWithinLimit(request, MAX_BODY_BYTES)
+    } catch (cause) {
+      return jsonResponse(
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: {
+            code: -32600,
+            message: `Request body exceeds ${MAX_BODY_BYTES} bytes`,
+          },
+        },
+        cause instanceof RangeError ? 413 : 400,
+        corsHeaders
+      )
+    }
+
+    let parsed: RpcRequest
     try {
       parsed = JSON.parse(body)
     } catch {
@@ -156,35 +245,38 @@ const worker = {
           error: { code: -32700, message: "Parse error" },
         },
         400,
-        corsHeaders,
+        corsHeaders
       )
     }
 
-    if (Array.isArray(parsed) && parsed.length > MAX_BATCH) {
+    if (Array.isArray(parsed)) {
       return jsonResponse(
         {
           jsonrpc: "2.0",
           id: null,
-          error: { code: -32600, message: `Batch size exceeds ${MAX_BATCH}` },
+          error: {
+            code: -32600,
+            message: "JSON-RPC batches are not supported",
+          },
         },
         400,
-        corsHeaders,
+        corsHeaders
       )
     }
 
-    const disallowed = firstDisallowedMethod(parsed)
-    if (disallowed !== null) {
+    const validationError = validateRequest(parsed)
+    if (validationError) {
       return jsonResponse(
         {
           jsonrpc: "2.0",
           id: null,
           error: {
             code: -32601,
-            message: `Method not allowed through this proxy: ${disallowed}`,
+            message: validationError,
           },
         },
         403,
-        corsHeaders,
+        corsHeaders
       )
     }
 
@@ -193,10 +285,13 @@ const worker = {
     const upstreams: string[] = []
     if (env.ALCHEMY_API_KEY) {
       upstreams.push(
-        `https://base-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
+        `https://base-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`
       )
     }
-    upstreams.push("https://sepolia.base.org", "https://base-sepolia.publicnode.com")
+    upstreams.push(
+      "https://sepolia.base.org",
+      "https://base-sepolia.publicnode.com"
+    )
 
     for (const upstream of upstreams) {
       try {
@@ -204,6 +299,7 @@ const worker = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body,
+          signal: AbortSignal.timeout(10_000),
         })
 
         // 200 = success; 400 = a well-formed JSON-RPC error (e.g. method not
@@ -212,9 +308,14 @@ const worker = {
         // 401/403/5xx → try the next upstream (covers an invalid/expired Alchemy
         // key, allowlist rejection, or upstream outage).
         if (response.status === 200 || response.status === 400) {
-          return new Response(await response.text(), {
+          return new Response(response.body, {
             status: response.status,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: {
+              ...corsHeaders,
+              "Cache-Control": "no-store",
+              "Content-Type": "application/json",
+              "X-Content-Type-Options": "nosniff",
+            },
           })
         }
       } catch {
@@ -230,7 +331,7 @@ const worker = {
         error: { code: -32603, message: "All upstream RPCs failed" },
       },
       502,
-      corsHeaders,
+      corsHeaders
     )
   },
 }
@@ -238,11 +339,16 @@ const worker = {
 function jsonResponse(
   obj: unknown,
   status: number,
-  corsHeaders: Record<string, string>,
+  corsHeaders: Record<string, string>
 ): Response {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: {
+      ...corsHeaders,
+      "Cache-Control": "no-store",
+      "Content-Type": "application/json",
+      "X-Content-Type-Options": "nosniff",
+    },
   })
 }
 

@@ -2,17 +2,18 @@ import { useEffect, useRef, useState } from "react"
 import { LuLaptop, LuMoon, LuSun } from "react-icons/lu"
 
 import { cn } from "@/lib/cn"
+import { useI18n } from "@/lib/i18n"
 import { type ThemePreference } from "@/lib/theme"
 import { useTheme } from "@/lib/use-theme"
 
 const OPTIONS: ReadonlyArray<{
   value: ThemePreference
-  label: string
+  labelKey: "theme.light" | "theme.dark" | "theme.system"
   icon: typeof LuSun
 }> = [
-  { value: "light", label: "Light", icon: LuSun },
-  { value: "dark", label: "Dark", icon: LuMoon },
-  { value: "system", label: "System", icon: LuLaptop },
+  { value: "light", labelKey: "theme.light", icon: LuSun },
+  { value: "dark", labelKey: "theme.dark", icon: LuMoon },
+  { value: "system", labelKey: "theme.system", icon: LuLaptop },
 ]
 
 /**
@@ -22,6 +23,7 @@ const OPTIONS: ReadonlyArray<{
  */
 export function ModeToggle() {
   const { preference, setTheme } = useTheme()
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -71,7 +73,7 @@ export function ModeToggle() {
       <button
         ref={triggerRef}
         type="button"
-        aria-label="Toggle theme"
+        aria-label={t("theme.toggle")}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? "theme-menu" : undefined}
@@ -86,7 +88,7 @@ export function ModeToggle() {
         <div
           id="theme-menu"
           role="menu"
-          aria-label="Select theme"
+          aria-label={t("theme.select")}
           onKeyDown={(event) => {
             const currentIndex = itemRefs.current.findIndex(
               (item) => item === document.activeElement
@@ -108,7 +110,7 @@ export function ModeToggle() {
           }}
           className="absolute right-0 z-50 mt-2 w-36 overflow-hidden rounded-md border border-border bg-card p-1 shadow-vercel-md"
         >
-          {OPTIONS.map(({ value, label, icon: Icon }, index) => (
+          {OPTIONS.map(({ value, labelKey, icon: Icon }, index) => (
             <button
               ref={(element) => {
                 itemRefs.current[index] = element
@@ -130,7 +132,7 @@ export function ModeToggle() {
               )}
             >
               <Icon className="mr-2 size-4" />
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>

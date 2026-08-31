@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +13,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PWAInstallPrompt() {
+  const { t } = useI18n()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -62,34 +64,34 @@ export function PWAInstallPrompt() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Smartphone className="size-5" />
-          Install app
+          {t("pwa.installTitle")}
         </CardTitle>
         <CardDescription>
-          Install CinaChain for offline access and faster loading
+          {t("pwa.installDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle className="size-4 text-success" />
-            <span>Works offline</span>
+            <span>{t("pwa.offline")}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle className="size-4 text-success" />
-            <span>Faster loading times</span>
+            <span>{t("pwa.faster")}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle className="size-4 text-success" />
-            <span>Home screen icon</span>
+            <span>{t("pwa.homeIcon")}</span>
           </div>
 
           <Button onClick={handleInstall} className="w-full" size="lg">
             <Download className="mr-2 size-4" />
-            Install CinaChain
+            {t("pwa.installButton")}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            Or manually: Share → Add to Home Screen
+            {t("pwa.manual")}
           </p>
         </div>
       </CardContent>

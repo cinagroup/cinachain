@@ -153,7 +153,11 @@ export default function BillingManagementPage() {
       setSuccessAction(label)
     } catch (err) {
       const anyErr = err as { shortMessage?: string; message?: string }
-      setError(anyErr.shortMessage ?? anyErr.message ?? `Failed to ${label}`)
+      setError(
+        anyErr.shortMessage ??
+          anyErr.message ??
+          t("admin.actionFailed", { action: label })
+      )
     }
   }
 
@@ -169,7 +173,7 @@ export default function BillingManagementPage() {
       setPendingList(body.pending ?? [])
     } catch (err) {
       setBadgeError(
-        err instanceof Error ? err.message : "Failed to load pending badges"
+        err instanceof Error ? err.message : t("admin.pendingBadgesLoadFailed")
       )
     } finally {
       setIsFetchingPending(false)
@@ -207,7 +211,7 @@ export default function BillingManagementPage() {
   }) => {
     setBadgeError(null)
     try {
-      if (!publicClient) throw new Error("No public client available")
+      if (!publicClient) throw new Error(t("admin.noPublicClient"))
       for (const tier of item.badges) {
         const hash = await writeContractAsync({
           address: BADGE_CONTRACT as Address,
@@ -236,12 +240,12 @@ export default function BillingManagementPage() {
         if (!confirmRes.ok)
           throw new Error(`confirm failed: ${confirmRes.status}`)
       }
-      setSuccessAction("Tier badges minted")
+      setSuccessAction(t("admin.tierBadgesMinted"))
       await fetchPending()
     } catch (err) {
       const anyErr = err as { shortMessage?: string; message?: string }
       setBadgeError(
-        anyErr.shortMessage ?? anyErr.message ?? "Failed to mint badge"
+        anyErr.shortMessage ?? anyErr.message ?? t("admin.badgeMintFailed")
       )
     }
   }
@@ -251,7 +255,7 @@ export default function BillingManagementPage() {
     setCustMsg(null)
     try {
       if (!custId || !/^\d+$/.test(custAmountWei))
-        throw new Error("Valid account id and amountWei required")
+        throw new Error(t("admin.custodialFieldsRequired"))
       const res = await fetch(`${BILLING_API_URL}/v1/custodial/${op}`, {
         method: "POST",
         headers: {
@@ -262,10 +266,16 @@ export default function BillingManagementPage() {
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? `${op} failed: ${res.status}`)
-      setCustMsg(`${op} ok — balanceWei ${String(body.balanceWei)}`)
+      setCustMsg(
+        t("admin.custodialOperationComplete", {
+          operation:
+            op === "credit" ? t("admin.credit") : t("admin.debit"),
+          balance: String(body.balanceWei),
+        })
+      )
     } catch (err) {
       setBadgeError(
-        err instanceof Error ? err.message : "Custodial operation failed"
+        err instanceof Error ? err.message : t("admin.custodialOperationFailed")
       )
     }
   }
@@ -276,8 +286,7 @@ export default function BillingManagementPage() {
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            Credit contract address not configured. Set
-            NEXT_PUBLIC_CINA_CREDIT_CONTRACT in environment.
+            {t("admin.creditContractNotConfigured")}
           </AlertDescription>
         </Alert>
       </div>
@@ -287,14 +296,13 @@ export default function BillingManagementPage() {
   return (
     <div className="container max-w-screen-ultra px-6 py-12">
       <span className="font-mono-tech text-xs uppercase tracking-wider text-muted-foreground">
-        Administration
+        {t("admin.title")}
       </span>
       <h1 className="font-display mt-3 text-3xl tracking-tight text-foreground sm:text-4xl">
         {t("admin.billingManagement")}<span className="text-foreground">.</span>
       </h1>
       <p className="mt-3 max-w-[560px] text-base text-muted-foreground">
-        Issue CinaCredit (ops-issued model), inspect the ledger, and control
-        emergency credit operations.
+        {t("admin.billingManagementDescription")}
       </p>
 
       {/* Paused warning */}
@@ -302,8 +310,7 @@ export default function BillingManagementPage() {
         <Alert variant="destructive" className="mt-6">
           <AlertCircle className="size-4" />
           <AlertDescription>
-            Credit operations are currently paused — all CinaCredit transfers,
-            mints and burns are frozen on-chain.
+            {t("admin.creditPausedWarning")}
           </AlertDescription>
         </Alert>
       )}
@@ -320,14 +327,15 @@ export default function BillingManagementPage() {
         <Alert variant="success" className="mt-6">
           <CheckCircle2 className="size-4" />
           <AlertDescription>
-            {successAction} successful!{" "}
+            {t("admin.actionSuccessful", { action: successAction })} {" "}
             <a
               href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
+              {t("common.viewOn", { explorer: EXPLORER_NAME })}{" "}
+              <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -337,7 +345,7 @@ export default function BillingManagementPage() {
         <Alert className="border-link/30 bg-link/10 mt-6">
           <Loader2 className="size-4 animate-spin text-link-deep" />
           <AlertDescription className="text-sm text-link-deep">
-            Transaction submitted. Waiting for confirmation...
+            {t("admin.transactionPending")}
           </AlertDescription>
         </Alert>
       )}
@@ -346,14 +354,15 @@ export default function BillingManagementPage() {
         <Alert variant="destructive" className="mt-6">
           <AlertCircle className="size-4" />
           <AlertDescription className="break-all">
-            Transaction reverted on-chain — the action failed.{" "}
+            {t("admin.transactionReverted")} {" "}
             <a
               href={getBlockExplorerUrl("tx", txHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 underline"
             >
-              View on {EXPLORER_NAME} <ExternalLink className="size-3" />
+              {t("common.viewOn", { explorer: EXPLORER_NAME })}{" "}
+              <ExternalLink className="size-3" />
             </a>
           </AlertDescription>
         </Alert>
@@ -365,10 +374,10 @@ export default function BillingManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Coins className="size-5" />
-              Issue credit
+              {t("admin.issueCredit")}
             </CardTitle>
             <CardDescription>
-              Mint CinaCredit directly to a recipient address (MINTER_ROLE)
+              {t("admin.issueCreditDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -385,7 +394,7 @@ export default function BillingManagementPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (credit)</Label>
+              <Label htmlFor="amount">{t("admin.creditAmount")}</Label>
               <Input
                 id="amount"
                 type="number"
@@ -399,13 +408,13 @@ export default function BillingManagementPage() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Amount in credit (1 credit = 10^18 wei units)
+              {t("admin.creditAmountDescription")}
             </p>
             <Button
               onClick={() => {
                 if (!ADDRESS_RE.test(recipient)) {
                   setError(
-                    "Invalid recipient address — must be 0x + 40 hex characters"
+                    t("admin.invalidRecipientDetailed")
                   )
                   return
                 }
@@ -413,18 +422,22 @@ export default function BillingManagementPage() {
                   !POSITIVE_INT_RE.test(amount.trim()) ||
                   BigInt(amount) <= 0n
                 ) {
-                  setError("Amount must be a positive integer")
+                  setError(t("admin.amountPositiveInteger"))
                   return
                 }
                 const weiAmount = BigInt(amount) * WEI_PER_CREDIT
                 if (
                   !window.confirm(
-                    `Issue ${amount} credit (${weiAmount} wei units) to ${recipient}?`
+                    t("admin.issueCreditConfirm", {
+                      amount,
+                      weiAmount: String(weiAmount),
+                      recipient,
+                    })
                   )
                 ) {
                   return
                 }
-                void runWrite("mintTo", "Credit issuance", [
+                void runWrite("mintTo", t("admin.creditIssuance"), [
                   recipient,
                   weiAmount,
                 ])
@@ -433,7 +446,7 @@ export default function BillingManagementPage() {
               variant="outline"
               className="w-full"
             >
-              Issue credit
+              {t("admin.issueCredit")}
             </Button>
           </CardContent>
         </Card>
@@ -443,10 +456,10 @@ export default function BillingManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="size-5" />
-              Ledger
+              {t("admin.ledger")}
             </CardTitle>
             <CardDescription>
-              Credit ledger for the connected admin address
+              {t("admin.ledgerDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -454,7 +467,7 @@ export default function BillingManagementPage() {
               <Alert variant="destructive">
                 <AlertCircle className="size-4" />
                 <AlertDescription className="break-all text-sm">
-                  Ledger unavailable
+                  {t("admin.ledgerUnavailable")}
                 </AlertDescription>
               </Alert>
             ) : (
@@ -493,10 +506,10 @@ export default function BillingManagementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="size-5" />
-              Emergency controls
+              {t("admin.emergencyControls")}
             </CardTitle>
             <CardDescription>
-              Pause or resume all on-chain credit operations
+              {t("admin.emergencyControlsDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -509,17 +522,21 @@ export default function BillingManagementPage() {
                     : "font-semibold text-green-500"
                 }
               >
-                {creditLoading ? "…" : isPaused ? "Paused" : "Active"}
+                {creditLoading
+                  ? "…"
+                  : isPaused
+                    ? t("admin.paused")
+                    : t("admin.active")}
               </span>
             </div>
             <Button
               onClick={() => {
                 if (
                   window.confirm(
-                    "Pause all CinaCredit operations? Transfers, mints and burns freeze on-chain."
+                    t("admin.pauseCreditConfirm")
                   )
                 ) {
-                  void runWrite("pause", "Pause credit operations")
+                  void runWrite("pause", t("admin.pauseCreditOperations"))
                 }
               }}
               disabled={isBusy}
@@ -531,12 +548,12 @@ export default function BillingManagementPage() {
               ) : (
                 <Pause className="mr-2 size-4" />
               )}
-              Pause credit operations
+              {t("admin.pauseCreditOperations")}
             </Button>
             <Button
               onClick={() => {
-                if (window.confirm("Resume credit operations?")) {
-                  void runWrite("unpause", "Resume credit operations")
+                if (window.confirm(t("admin.resumeCreditConfirm"))) {
+                  void runWrite("unpause", t("admin.resumeCreditOperations"))
                 }
               }}
               disabled={isBusy}
@@ -548,7 +565,7 @@ export default function BillingManagementPage() {
               ) : (
                 <Play className="mr-2 size-4" />
               )}
-              Resume credit operations
+              {t("admin.resumeCreditOperations")}
             </Button>
           </CardContent>
         </Card>
@@ -559,17 +576,16 @@ export default function BillingManagementPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BadgeCheck className="size-5" />
-            Tier badge minting
+            {t("admin.tierBadgeMinting")}
           </CardTitle>
           <CardDescription>
-            Addresses that crossed a tier threshold but have no on-chain badge
-            yet
+            {t("admin.tierBadgeMintingDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
             <Input
-              placeholder="Admin key"
+              placeholder={t("admin.adminKey")}
               type="password"
               value={adminKey}
               onChange={(e) => setAdminKey(e.target.value)}
@@ -584,7 +600,7 @@ export default function BillingManagementPage() {
               {isFetchingPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                "Refresh"
+                t("admin.refresh")
               )}
             </Button>
           </div>
@@ -593,7 +609,9 @@ export default function BillingManagementPage() {
           )}
           {pendingList.length === 0 ? (
             <p className="mt-4 text-sm text-muted-foreground">
-              {isFetchingPending ? "Loading..." : "No pending tier badges"}
+              {isFetchingPending
+                ? t("action.loading")
+                : t("admin.noPendingTierBadges")}
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
@@ -607,9 +625,12 @@ export default function BillingManagementPage() {
                       {item.address}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {item.badges.join(", ")} · cumulative{" "}
-                      {(Number(item.cumulativeSpend) / 1e18).toLocaleString()}{" "}
-                      credit
+                      {t("admin.tierBadgeCumulative", {
+                        badges: item.badges.join(", "),
+                        amount: (
+                          Number(item.cumulativeSpend) / 1e18
+                        ).toLocaleString(),
+                      })}
                     </p>
                   </div>
                   <Button
@@ -617,7 +638,7 @@ export default function BillingManagementPage() {
                     onClick={() => mintPending(item)}
                     disabled={isBusy || !adminKey}
                   >
-                    Mint
+                    {t("action.mint")}
                   </Button>
                 </li>
               ))}
@@ -631,17 +652,16 @@ export default function BillingManagementPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Coins className="size-5" />
-            Custodial accounts
+            {t("admin.custodialAccounts")}
           </CardTitle>
           <CardDescription>
-            DB bookkeeping on top of the hot-wallet pool — credit on deposit,
-            debit after pool withdrawal
+            {t("admin.custodialAccountsDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="custId">Account ID</Label>
+              <Label htmlFor="custId">{t("admin.accountId")}</Label>
               <Input
                 id="custId"
                 placeholder="cust_..."
@@ -650,7 +670,7 @@ export default function BillingManagementPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="custAmount">Amount (wei)</Label>
+              <Label htmlFor="custAmount">{t("admin.amountWei")}</Label>
               <Input
                 id="custAmount"
                 placeholder="1000000000000000000"
@@ -666,7 +686,7 @@ export default function BillingManagementPage() {
               onClick={() => custOperate("credit")}
               disabled={!adminKey}
             >
-              Credit
+              {t("admin.credit")}
             </Button>
             <Button
               variant="outline"
@@ -674,7 +694,7 @@ export default function BillingManagementPage() {
               onClick={() => custOperate("debit")}
               disabled={!adminKey}
             >
-              Debit
+              {t("admin.debit")}
             </Button>
           </div>
           {custMsg && <p className="mt-3 text-sm text-success">{custMsg}</p>}
