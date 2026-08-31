@@ -33,6 +33,10 @@ jobs:
         working-directory: workers/billing
         run: npm ci --ignore-scripts
 
+      - name: Install whitelist Worker dependencies
+        working-directory: workers/whitelist
+        run: npm ci --ignore-scripts
+
       - name: Verify generated design tokens
         run: npm run design:tokens:check
 
@@ -278,7 +282,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: ../billing/node_modules/.bin/wrangler deploy
+        run: npx --no-install wrangler deploy
 
       - name: Provision whitelist admin token
         working-directory: workers/whitelist
@@ -289,7 +293,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$WHITELIST_ADMIN_TOKEN"
-          printf '%s' "$WHITELIST_ADMIN_TOKEN" | ../billing/node_modules/.bin/wrangler secret put ADMIN_TOKEN
+          printf '%s' "$WHITELIST_ADMIN_TOKEN" | npx --no-install wrangler secret put ADMIN_TOKEN
 
       # Deploy the Paymaster edge route in fail-closed mode. Sponsorship stays
       # disabled until its CDP dashboard policy and explicit vars are reviewed.

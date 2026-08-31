@@ -44,6 +44,7 @@ next-env.d.ts
 workers/*/node_modules/
 workers/*/package-lock.json
 !workers/billing/package-lock.json
+!workers/whitelist/package-lock.json
 contracts/out/
 
 # Playwright test artifacts
